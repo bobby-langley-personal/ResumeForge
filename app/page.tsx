@@ -1,83 +1,138 @@
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
-import { supabaseServer } from '@/lib/supabase';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
-export default async function Home() {
-  // Test Supabase connection
-  let dbStatus = 'Unknown';
-  try {
-    const supabase = await supabaseServer();
-    const { error } = await supabase.from('users').select('id').limit(1);
-    dbStatus = error ? `Error: ${error.message}` : 'Connected';
-  } catch (err) {
-    dbStatus = `Connection failed: ${err}`;
-  }
-
+export default function Home() {
   return (
-    <div className="min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">ResumeForge</h1>
-          <div className="flex items-center gap-4">
-            <SignedOut>
-              <SignInButton>
-                <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                  Sign In
-                </button>
-              </SignInButton>
-            </SignedOut>
-            <SignedIn>
-              <UserButton />
-            </SignedIn>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <div className="bg-gray-100 p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-4">System Status Check</h2>
+    <div className="min-h-screen bg-background">
+      {/* Top Navbar */}
+      <nav className="border-b border-border">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <div className="flex items-center">
+              <h1 className="text-2xl font-bold text-foreground">ResumeForge</h1>
+            </div>
             
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">Authentication:</span>
-                <SignedOut>
-                  <span className="text-red-600">Not signed in</span>
-                </SignedOut>
-                <SignedIn>
-                  <span className="text-green-600">✅ Signed in successfully</span>
-                </SignedIn>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <span className="font-medium">Database:</span>
-                <span className={`${dbStatus === 'Connected' ? 'text-green-600' : 'text-red-600'}`}>
-                  {dbStatus === 'Connected' ? '✅' : '❌'} {dbStatus}
-                </span>
-              </div>
+            {/* User Menu */}
+            <div className="flex items-center">
+              <SignedOut>
+                <SignInButton>
+                  <Button variant="outline">Sign In</Button>
+                </SignInButton>
+              </SignedOut>
+              <SignedIn>
+                <UserButton 
+                  appearance={{
+                    elements: {
+                      userButtonAvatarBox: "w-10 h-10",
+                      userButtonPopoverCard: "bg-popover border-border",
+                      userButtonPopoverText: "text-popover-foreground"
+                    }
+                  }}
+                />
+              </SignedIn>
             </div>
           </div>
+        </div>
+      </nav>
 
-          <SignedOut>
-            <div className="bg-blue-50 p-6 rounded-lg">
-              <h2 className="text-xl font-semibold mb-2">Welcome to ResumeForge</h2>
-              <p className="text-gray-700 mb-4">
-                AI-powered resume and cover letter generator. Sign in to get started.
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <SignedOut>
+          <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center">
+            <div className="text-center space-y-6">
+              <h2 className="text-3xl font-bold text-foreground mb-4">Welcome to ResumeForge</h2>
+              <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">
+                AI-powered resume and cover letter generator. Create tailored documents for every job application.
               </p>
               <SignInButton>
-                <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                  Sign In to Continue
-                </button>
+                <Button size="lg">Sign In to Get Started</Button>
               </SignInButton>
             </div>
-          </SignedOut>
+          </div>
+        </SignedOut>
 
-          <SignedIn>
-            <div className="bg-green-50 p-6 rounded-lg">
-              <h2 className="text-xl font-semibold mb-2">Ready to Build</h2>
-              <p className="text-gray-700">
-                All systems are operational! The ResumeForge foundation is complete and ready for feature development.
+        <SignedIn>
+          <div className="max-w-6xl mx-auto">
+            {/* Header */}
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-foreground mb-4">Generate Your Documents</h2>
+              <p className="text-lg text-muted-foreground">
+                Paste a job description and your background to get started
               </p>
             </div>
-          </SignedIn>
-        </div>
+
+            {/* Form */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+              {/* Left Column - Job Details */}
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-xl font-semibold text-foreground mb-4">Job Details</h3>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="company">Company Name</Label>
+                  <Input 
+                    id="company"
+                    placeholder="Enter company name"
+                    className="bg-background"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="jobTitle">Job Title</Label>
+                  <Input 
+                    id="jobTitle"
+                    placeholder="Enter job title"
+                    className="bg-background"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="jobDescription">Job Description</Label>
+                  <Textarea 
+                    id="jobDescription"
+                    placeholder="Paste the full job description here..."
+                    className="min-h-[300px] bg-background"
+                  />
+                </div>
+              </div>
+
+              {/* Right Column - Your Background */}
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-xl font-semibold text-foreground mb-4">Your Background</h3>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="experience">Your Experience</Label>
+                  <Textarea 
+                    id="experience"
+                    placeholder="Paste your current resume or background experience here..."
+                    className="min-h-[400px] bg-background"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Generate Button */}
+            <div className="text-center space-y-4">
+              <Button 
+                size="lg" 
+                className="px-12 py-3 text-lg"
+                disabled
+              >
+                Generate Documents
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                Your resume and cover letter will be tailored to this specific role
+              </p>
+            </div>
+          </div>
+        </SignedIn>
       </main>
     </div>
   );
