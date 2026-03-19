@@ -78,6 +78,8 @@ export interface Database {
           job_description: string
           status: 'applied' | 'interviewing' | 'offered' | 'rejected' | 'withdrawn'
           application_date: string
+          resume_content: string | null
+          cover_letter_content: string | null
           created_at: string
           updated_at: string
         }
@@ -90,6 +92,8 @@ export interface Database {
           job_description: string
           status?: 'applied' | 'interviewing' | 'offered' | 'rejected' | 'withdrawn'
           application_date?: string
+          resume_content?: string | null
+          cover_letter_content?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -102,6 +106,8 @@ export interface Database {
           job_description?: string
           status?: 'applied' | 'interviewing' | 'offered' | 'rejected' | 'withdrawn'
           application_date?: string
+          resume_content?: string | null
+          cover_letter_content?: string | null
           created_at?: string
           updated_at?: string
         }
