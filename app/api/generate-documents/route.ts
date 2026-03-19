@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
 
           // Save to Supabase
           const supabase = await supabaseServer();
-          const { error } = await supabase
+          const { data: application, error } = await supabase
             .from('applications')
             .insert({
               user_id: userId,
@@ -102,15 +102,22 @@ export async function POST(req: NextRequest) {
               cover_letter_content: coverLetterText,
               status: 'applied',
               application_date: new Date().toISOString(),
-            });
+            })
+            .select('id')
+            .single();
 
-          if (error) {
+          if (error || !application) {
             console.error('Error saving application:', error);
-            // Don't fail the entire request for storage issues
+            sendEvent('error', { message: 'Failed to save application' });
+            return;
           }
 
-          // Send final result
-          sendEvent('done', { resumeText, coverLetterText });
+          // Send final result with application ID
+          sendEvent('done', { 
+            resumeText, 
+            coverLetterText, 
+            applicationId: application.id 
+          });
 
         } catch (error) {
           console.error('Generation error:', error);
