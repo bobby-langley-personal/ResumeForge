@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       jobTitle: application.job_title,
     });
 
-    const pdfBuffer = await renderToBuffer(pdfElement);
+    const pdfBuffer = await renderToBuffer(pdfElement as React.ReactElement<any>);
 
     // Create filename with proper format: LastName_CoverLetter_Company_Role.pdf
     const safeCompany = application.company.replace(/[^a-zA-Z0-9]/g, '_');
