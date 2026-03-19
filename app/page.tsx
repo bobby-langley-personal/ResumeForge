@@ -1,6 +1,9 @@
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
 import { supabaseServer } from '@/lib/supabase';
 
+// Force dynamic rendering to avoid static generation issues with Clerk auth
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   // Test Supabase connection
   let dbStatus = 'Unknown';
