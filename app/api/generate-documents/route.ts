@@ -151,7 +151,6 @@ export async function POST(req: NextRequest) {
               resume_content: resumeText,
               cover_letter_content: coverLetterText,
               status: 'applied',
-              application_date: new Date().toISOString(),
             })
             .select('id')
             .single();
