@@ -2,7 +2,7 @@
 // Always use these constants instead of hardcoding model strings
 
 export const MODELS = {
-  SONNET: 'claude-3-5-sonnet-20241022',
+  SONNET: 'claude-sonnet-4-6',
   HAIKU: 'claude-3-5-haiku-20241022'
 } as const;
 
