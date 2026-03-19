@@ -1,78 +1,70 @@
-export const runtime = 'nodejs';
+import { NextRequest, NextResponse } from 'next/server'
+import { auth, currentUser } from '@clerk/nextjs/server'
+import { renderToBuffer } from '@react-pdf/renderer'
+import { createElement } from 'react'
+import { supabaseServer } from '@/lib/supabase'
+import ResumePDF from '@/lib/pdf/ResumePDF'
 
-import { auth } from '@clerk/nextjs/server';
-import { NextRequest } from 'next/server';
-import { supabaseServer } from '@/lib/supabase';
-import React from 'react';
-import { renderToBuffer } from '@react-pdf/renderer';
-import ResumePDF from '@/lib/pdf/ResumePDF';
+export const runtime = 'nodejs'
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    // Verify user is signed in
-    const { userId } = await auth();
+    const { userId } = await auth()
     if (!userId) {
-      return new Response('Unauthorized', { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Parse request body
-    const { applicationId } = await req.json();
-    
+    const { applicationId } = await request.json()
     if (!applicationId) {
-      return new Response('Missing applicationId', { status: 400 });
+      return NextResponse.json({ error: 'applicationId is required' }, { status: 400 })
     }
 
-    // Get application from Supabase
-    const supabase = await supabaseServer();
+    const supabase = await supabaseServer()
+
     const { data: application, error } = await supabase
       .from('applications')
       .select('*')
       .eq('id', applicationId)
-      .single();
+      .single()
 
-    if (error) {
-      console.error('Error fetching application:', error);
-      return new Response('Application not found', { status: 404 });
+    if (error || !application) {
+      return NextResponse.json({ error: 'Application not found' }, { status: 404 })
     }
 
-    // Verify application belongs to current user
     if (application.user_id !== userId) {
-      return new Response('Forbidden', { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Check if resume content exists
     if (!application.resume_content) {
-      return new Response('Resume content not found', { status: 404 });
+      return NextResponse.json({ error: 'No resume content found' }, { status: 404 })
     }
 
-    // Get user name from Clerk (fallback approach)
-    const candidateName = 'Resume';
+    const user = await currentUser()
+    const fullName = user?.fullName || user?.firstName || 'User'
+    const lastName = user?.lastName || fullName.split(' ').pop() || 'User'
 
-    // Generate PDF using ResumePDF component
-    const pdfElement = React.createElement(ResumePDF, {
+    const props = {
       resumeText: application.resume_content,
-      candidateName: candidateName,
+      candidateName: fullName,
       company: application.company,
       jobTitle: application.job_title,
-    });
+    }
 
-    const pdfBuffer = await renderToBuffer(pdfElement);
+    const element = createElement(ResumePDF, props)
+    const pdfBuffer = await renderToBuffer(element as React.ReactElement<any>)
 
-    // Create filename with proper format: LastName_Resume_Company_Role.pdf
-    const safeCompany = application.company.replace(/[^a-zA-Z0-9]/g, '_');
-    const safeRole = application.job_title.replace(/[^a-zA-Z0-9]/g, '_');
-    const filename = `Resume_${safeCompany}_${safeRole}.pdf`;
+    const companyName = application.company.replace(/\s+/g, '_')
+    const role = application.job_title.replace(/\s+/g, '_')
+    const filename = `${lastName}_Resume_${companyName}_${role}.pdf`
 
-    // Return PDF as download
-    return new Response(new Uint8Array(pdfBuffer), {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${filename}"`,
       },
-    });
-
+    })
   } catch (error) {
-    console.error('PDF generation error:', error);
-    return new Response('Internal server error', { status: 500 });
+    console.error('PDF generation error:', error)
+    return NextResponse.json({ error: 'Failed to generate PDF' }, { status: 500 })
   }
 }
