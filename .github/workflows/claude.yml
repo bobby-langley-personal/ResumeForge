@@ -2,9 +2,9 @@ name: Claude Code
 
 on:
   issues:
-    types: [opened, labeled]
+    types: [opened, labeled, edited]
   issue_comment:
-    types: [created]
+    types: [created, edited]
   pull_request_review_comment:
     types: [created]
   pull_request_review:
@@ -29,6 +29,8 @@ jobs:
       id-token: write
       actions: write
       checks: write
+      repository-projects: write
+      packages: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -39,10 +41,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-         
+          cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run Claude Code
         uses: anthropics/claude-code-action@beta
@@ -61,7 +63,8 @@ jobs:
             - Anthropic SDK for AI generation
             - @react-pdf/renderer for PDF output
             - Vercel for deployment
-            - Always read CONTEXT.md and TYPES.md at the start of every session
+            - Always read CLAUDE_PROJECT_CONTEXT.md and TYPES.md at the
+              start of every session
 
             ================================================================
             CRITICAL: THESE TYPE ERRORS MUST NEVER HAPPEN IN THIS REPO
@@ -110,13 +113,11 @@ jobs:
             4. Edge functions are stateless — never use in-memory Maps
                for cross-request state. Use Supabase for session storage.
 
-            5. Validate generated output before saving to database.
-
-            6. JSON from Claude often has markdown fences.
+            5. JSON from Claude often has markdown fences.
                Always use parseStageJSON() from lib/pipeline-utils.ts
                instead of raw JSON.parse() on API responses.
 
-            7. Supabase RLS policies — never reference the users table
+            6. Supabase RLS policies — never reference the users table
                from within a policy on another table. Use auth.uid()
                directly to avoid infinite recursion.
 
@@ -129,7 +130,7 @@ jobs:
             GENERAL RULES:
             - Follow existing code patterns and conventions
             - Keep all existing functionality unless explicitly told otherwise
-            - Update CONTEXT.md when making significant changes
+            - Update CLAUDE_PROJECT_CONTEXT.md when making significant changes
             - Update TYPES.md whenever you add or modify any type definition
             - Consider accessibility and UX in all UI changes
 
@@ -248,6 +249,4 @@ jobs:
               --base main \
               --head "$BRANCH" \
             || echo "PR already exists or no branch found — skipping"
-          else
-            echo "No claude/* branch found — skipping PR creation"
           fi
