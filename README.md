@@ -1,3 +1,36 @@
-# ResumeForge
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Project Context ## What This Is An AI-powered resume and cover letter generator. Users paste a job description, provide their background and experience, and the app produces a tailored, ATS-optimized resume and cover letter as downloadable PDFs — ready to upload to job applications. ## Core Value Proposition Zero formatting work. Zero generic applications. Every document is tailored to the specific job in under 60 seconds. ## Primary User Flow 1. User signs in 2. Pastes or uploads their existing resume / experience 3. Pastes the job description they're applying for 4. Optionally enters the company name, role, and any personal notes 5. AI analyzes the JD and rewrites the resume to match 6. AI generates a matching cover letter 7. Both documents are available as downloadable PDFs 8. Application is saved to history so user can revisit or reuse ## Key Features - Resume tailoring — reframes existing experience to match JD keywords - ATS optimization — uses exact language from the job description - Cover letter generation — company-specific, not generic - PDF download — print-ready, properly formatted - Resume library — save multiple versions of your background - Application history — track what you've applied to - Never invents experience — only reframes what the user provides ## Differentiators - Accuracy over generation — AI rewrites, not fabricates - PDF quality matters — not browser print, real formatted documents - Persistent history — resumes and applications saved per user - Simple UX — paste JD, get documents, done ## Technical Decisions (TBD) - Stack: not decided yet - Auth: TBD (Clerk is familiar from IdeaApp) - Database: TBD (Supabase is familiar from IdeaApp) - PDF generation: TBD (@react-pdf/renderer preferred) - AI: Anthropic Claude API (claude-sonnet-4-6 for generation, claude-haiku-4-5-20251001 for classification) - Deployment: TBD (Vercel is familiar from IdeaApp) ## Out of Scope for MVP - LinkedIn scraping - Job URL auto-parsing - Email sending - Payment integration - Team/sharing features - Custom resume templates ## MVP Definition A user can sign in, paste their background and a job description, and download a tailored resume PDF and cover letter PDF. All applications are saved to their account history. ## Lessons from IdeaApp - Use edge runtime on all API routes that call Anthropic - Use a central MODELS registry — never hardcode model strings - Use prompt caching on repeated system prompts - Store session state in database not in-memory (edge functions are stateless) - Validate generated output before saving - Stream responses for anything that takes more than 2 seconds - TypeScript strict mode — add types before using new values ## Notes for Claude Code Sessions - Read this file at the start of every session - Update Current Status section when meaningful progress is made - Add to Stack & Key Decisions when a technical choice is made - This is a solo project — optimize for speed and simplicity
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
