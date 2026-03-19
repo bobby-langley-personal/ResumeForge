@@ -22,7 +22,10 @@ export default function SignInPage() {
             identityPreviewText: "text-muted-foreground",
             formResendCodeLink: "text-primary hover:text-primary/80",
             otpCodeFieldInput: "border-border",
-            alternativeMethodsBlockButton: "text-muted-foreground hover:text-foreground"
+            alternativeMethodsBlockButton: "text-muted-foreground hover:text-foreground",
+            footerAction: { display: 'none' },
+            footerPages: { display: 'none' },
+            logoBox: { display: 'none' }
           },
           layout: {
             logoPlacement: 'none'
