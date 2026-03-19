@@ -98,6 +98,8 @@ export async function POST(req: NextRequest) {
               job_title: jobTitle,
               company,
               job_description: jobDescription,
+              resume_content: resumeText,
+              cover_letter_content: coverLetterText,
               status: 'applied',
               application_date: new Date().toISOString(),
             });
