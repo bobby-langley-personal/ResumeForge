@@ -1,0 +1,253 @@
+name: Claude Code
+
+on:
+  issues:
+    types: [opened, labeled]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  pull_request_review:
+    types: [submitted]
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  claude:
+    if: |
+      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude')) ||
+      (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'claude')) ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'pull_request')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+      actions: write
+      checks: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Claude Code
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GH_PAT }}
+          custom_instructions: |
+            You are an expert full-stack developer working on ResumeForge —
+            an AI-powered resume and cover letter generator. Users paste a
+            job description and their background, and the app generates
+            tailored, ATS-optimized documents as downloadable PDFs.
+
+            REPOSITORY CONTEXT:
+            - Next.js 14 (App Router), TypeScript, Tailwind CSS, shadcn/ui
+            - Clerk for auth, Supabase for database
+            - Anthropic SDK for AI generation
+            - @react-pdf/renderer for PDF output
+            - Vercel for deployment
+            - Always read CONTEXT.md and TYPES.md at the start of every session
+
+            ================================================================
+            CRITICAL: THESE TYPE ERRORS MUST NEVER HAPPEN IN THIS REPO
+            They have burned significant time and tokens in previous projects.
+            ================================================================
+
+            ERROR 1 — Union type mismatches
+            Before using ANY string as a typed function argument:
+              1. Find the union type definition (check TYPES.md)
+              2. Add the new value to the union type FIRST
+              3. Update TYPES.md to reflect the change
+              4. Only then write the call site
+            Never assume a string value exists in a union. Always verify.
+
+            ERROR 2 — Cannot redeclare block-scoped variable
+            Never use const/let with the same name twice in the same scope
+            or sibling if/else blocks. Use unique descriptive names.
+
+            ERROR 3 — Cannot find name (variable not in scope)
+            Every variable you reference must be declared in the current
+            function scope. Do not assume outer scope variables are
+            available inside callbacks, async blocks, or helper functions.
+
+            ERROR 4 — Anthropic SDK streaming delta type
+            chunk.delta.text does not exist on the union type directly.
+            Always narrow the type first:
+              chunk.delta.type === 'text_delta' ? chunk.delta.text : ''
+
+            ================================================================
+
+            ARCHITECTURE RULES — ALWAYS FOLLOW:
+
+            1. Edge runtime on every API route that calls Anthropic:
+               export const runtime = 'edge'
+               Missing this causes 10 second Vercel timeouts.
+
+            2. Never hardcode model strings. Always use lib/models.ts:
+               import { MODELS } from '@/lib/models'
+               model: MODELS.SONNET  or  model: MODELS.HAIKU
+
+            3. SSE streaming — never implement inline. Use lib/sse-reader.ts:
+               import { readSSEStream } from '@/lib/sse-reader'
+               Single data: lines can span multiple TCP chunks.
+               Raw line splitting without buffering truncates large payloads.
+
+            4. Edge functions are stateless — never use in-memory Maps
+               for cross-request state. Use Supabase for session storage.
+
+            5. Validate generated output before saving to database.
+
+            6. JSON from Claude often has markdown fences.
+               Always use parseStageJSON() from lib/pipeline-utils.ts
+               instead of raw JSON.parse() on API responses.
+
+            7. Supabase RLS policies — never reference the users table
+               from within a policy on another table. Use auth.uid()
+               directly to avoid infinite recursion.
+
+            CANNOT RUN SHELL COMMANDS:
+            You cannot run npx tsc --noEmit in this environment.
+            A mandatory TypeScript check runs automatically after your
+            changes. If it fails you will receive the full error output
+            as a comment. Fix every error before pushing again.
+
+            GENERAL RULES:
+            - Follow existing code patterns and conventions
+            - Keep all existing functionality unless explicitly told otherwise
+            - Update CONTEXT.md when making significant changes
+            - Update TYPES.md whenever you add or modify any type definition
+            - Consider accessibility and UX in all UI changes
+
+      # Runs automatically after Claude — completely outside Claude's control
+      - name: Mandatory TypeScript verification
+        id: typecheck
+        run: |
+          echo "Running mandatory TypeScript verification..."
+          set +e
+          npx tsc --noEmit 2>&1 | tee tsc_output.txt
+          TSC_EXIT=${PIPESTATUS[0]}
+          set -e
+          echo "tsc_exit=$TSC_EXIT" >> $GITHUB_OUTPUT
+          {
+            echo "tsc_output<<EOF"
+            cat tsc_output.txt
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+          exit $TSC_EXIT
+
+      - name: Post type errors back to Claude as a comment
+        if: failure() && steps.typecheck.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_PAT }}
+          script: |
+            const tscOutput = process.env.TSC_OUTPUT;
+            const issueNumber = context.issue?.number
+              || context.payload.pull_request?.number;
+            if (!issueNumber) {
+              console.log('No issue number found, skipping comment');
+              return;
+            }
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+            });
+            const errorCount = comments.filter(c =>
+              c.body && c.body.includes('TypeScript Check Failed')
+            ).length;
+
+            if (errorCount >= 3) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: [
+                  '## 🛑 Type Check Loop Detected — Human Review Required',
+                  '',
+                  'This issue has failed TypeScript checks **3 times in a row**.',
+                  'Stopping the correction loop to prevent further token waste.',
+                  '',
+                  'A human needs to manually review the type definitions.',
+                  'Check `TYPES.md` and the errors in previous comments.',
+                ].join('\n')
+              });
+              process.exit(1);
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: [
+                `## ❌ TypeScript Check Failed — Fix Required (Attempt ${errorCount + 1}/3)`,
+                '',
+                '@claude Your changes have TypeScript errors. You cannot run',
+                '`tsc` directly — read the errors below and fix them in the',
+                'source files, then push again.',
+                '',
+                '```',
+                tscOutput,
+                '```',
+                '',
+                '**Before fixing — read TYPES.md first.**',
+                '',
+                '**Most common causes in this repo:**',
+                '- String not in union type → add it to the type definition first',
+                '- Cannot redeclare variable → use a unique variable name',
+                '- Cannot find name → declare the variable in the current scope',
+                '- chunk.delta.text → narrow with chunk.delta.type === "text_delta" first',
+                '',
+                'Fix ALL errors above, not just the first one.',
+              ].join('\n')
+            });
+        env:
+          TSC_OUTPUT: ${{ steps.typecheck.outputs.tsc_output }}
+
+      - name: Fail workflow if type check failed
+        if: failure() && steps.typecheck.outcome == 'failure'
+        run: |
+          echo "❌ TypeScript errors found. PR creation blocked."
+          exit 1
+
+      - name: Auto-create PR if type check passed
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          BRANCH=$(git branch -r | grep 'claude/' | tail -1 | xargs)
+          BRANCH=${BRANCH#origin/}
+          if [ -n "$BRANCH" ]; then
+            ISSUE_NUMBER=${{ github.event.issue.number }}
+            ISSUE_TITLE=$(gh issue view $ISSUE_NUMBER --json title -q .title 2>/dev/null || echo "Claude fix")
+            gh pr create \
+              --title "Claude: $ISSUE_TITLE" \
+              --body "Closes #$ISSUE_NUMBER
+
+            ## ✅ TypeScript Verified
+            This PR was opened only after \`npx tsc --noEmit\` passed with zero errors.
+
+            ## Changes
+            Automatically generated by Claude Code in response to issue #$ISSUE_NUMBER." \
+              --base main \
+              --head "$BRANCH" \
+            || echo "PR already exists or no branch found — skipping"
+          else
+            echo "No claude/* branch found — skipping PR creation"
+          fi
