@@ -2,7 +2,7 @@ import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 import { Anthropic } from '@anthropic-ai/sdk';
 import { getModels } from '@/lib/models';
-import { parseStageJSON } from '@/lib/pipeline-utils';
+import { parseStageJSON, buildContextBlock } from '@/lib/pipeline-utils';
 import { FitAnalysis } from '@/types/fit-analysis';
 
 export async function POST(req: NextRequest) {
@@ -16,10 +16,12 @@ export async function POST(req: NextRequest) {
       return new Response('Unauthorized', { status: 401 });
     }
 
-    const { company, jobTitle, jobDescription, backgroundExperience } = await req.json();
+    const { company, jobTitle, jobDescription, backgroundExperience, additionalContext = [] } = await req.json();
     if (!company || !jobTitle || !jobDescription || !backgroundExperience) {
       return new Response('Missing required fields', { status: 400 });
     }
+
+    const contextBlock = buildContextBlock(additionalContext);
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const { HAIKU } = await getModels();
@@ -42,7 +44,7 @@ Output valid JSON only, no markdown fences:
       messages: [
         {
           role: 'user',
-          content: `Job Title: ${jobTitle}\nCompany: ${company}\nJob Description: ${jobDescription}\n\nCandidate Background:\n${backgroundExperience}\n\nAnalyze the fit between this candidate and the role.`
+          content: `Job Title: ${jobTitle}\nCompany: ${company}\nJob Description: ${jobDescription}\n\nCandidate Background:\n${backgroundExperience}${contextBlock}\n\nAnalyze the fit between this candidate and the role.`
         }
       ]
     });

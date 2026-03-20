@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { readSSEStream } from '@/lib/sse-reader';
 import { Upload, FileText, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { FitAnalysis } from '@/types/fit-analysis';
+import { ResumeItem } from '@/types/resume';
+import ContextSelector from '@/components/ContextSelector';
 
 type UIState = 'idle' | 'analyzing' | 'review' | 'generating' | 'done' | 'error';
 
@@ -107,6 +109,7 @@ export default function Home() {
   const [inputMethod, setInputMethod] = useState<'upload' | 'manual'>('upload');
   const [fitAnalysis, setFitAnalysis] = useState<FitAnalysis | null>(null);
   const [pendingFormData, setPendingFormData] = useState<FormData | null>(null);
+  const [additionalContext, setAdditionalContext] = useState<ResumeItem[]>([]);
   const [includeCoverLetter, setIncludeCoverLetter] = useState(false);
   const [company, setCompany] = useState('');
   const [jobTitle, setJobTitle] = useState('');
@@ -189,7 +192,7 @@ export default function Home() {
       const response = await fetch('/api/analyze-fit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, additionalContext: additionalContext.map(i => ({ title: i.title, type: i.item_type, text: i.content.text })) }),
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -216,7 +219,7 @@ export default function Home() {
       const response = await fetch('/api/generate-documents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...pendingFormData, fitAnalysis, includeCoverLetter }),
+        body: JSON.stringify({ ...pendingFormData, fitAnalysis, includeCoverLetter, additionalContext: additionalContext.map(i => ({ title: i.title, type: i.item_type, text: i.content.text })) }),
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -309,6 +312,7 @@ export default function Home() {
     setFitAnalysis(null);
     setPendingFormData(null);
     setIncludeCoverLetter(false);
+    setAdditionalContext([]);
     setErrorMessage('');
     setApplicationId(null);
     setCompany('');
@@ -526,6 +530,12 @@ export default function Home() {
                   {/* Right Column - Your Background */}
                   <div className="space-y-6">
                     <h3 className="text-xl font-semibold text-foreground mb-4">Your Background</h3>
+
+                    <ContextSelector
+                      onLoadBackground={text => { setInputMethod('manual'); setManualExperience(text); }}
+                      onAdditionalContextChange={setAdditionalContext}
+                      disabled={uiState === 'analyzing'}
+                    />
 
                     <div className="flex space-x-4 mb-6">
                       <Button

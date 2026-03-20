@@ -1,3 +1,12 @@
+interface ContextItem { title: string; type: string; text: string }
+
+// Builds an additional context block to append to AI prompts.
+export function buildContextBlock(items: ContextItem[]): string {
+  if (!items || items.length === 0) return '';
+  const sections = items.map(i => `### ${i.title} (${i.type})\n${i.text}`).join('\n\n');
+  return `\n\n---\nAdditional context provided by the candidate:\n\n${sections}`;
+}
+
 // Shared JSON parser for Claude API responses.
 // Claude sometimes wraps JSON in markdown fences, adds preamble text,
 // or appends trailing commentary — this handles all of those cases.

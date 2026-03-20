@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 import { Anthropic } from '@anthropic-ai/sdk';
 import { getModels } from '@/lib/models';
+import { buildContextBlock } from '@/lib/pipeline-utils';
 import { supabaseServer } from '@/lib/supabase';
 import { FitAnalysis } from '@/types/fit-analysis';
 
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
     console.log('[generate-documents] Auth check passed, userId:', userId);
 
     // Parse request body
-    const { company, jobTitle, jobDescription, backgroundExperience, isFromUploadedFile, fitAnalysis: precomputedAnalysis, includeCoverLetter = false } = await req.json();
+    const { company, jobTitle, jobDescription, backgroundExperience, isFromUploadedFile, fitAnalysis: precomputedAnalysis, includeCoverLetter = false, additionalContext = [] } = await req.json();
     console.log('[generate-documents] Parsed body:', { 
       company, 
       jobTitle, 
@@ -112,7 +113,7 @@ Output the resume in EXACTLY this format. Use • for bullet points. Separate ea
             messages: [
               {
                 role: 'user',
-                content: `Company: ${company}\nJob Title: ${jobTitle}\nJob Description: ${jobDescription}\n\n${isFromUploadedFile ? 'The following background was extracted from the candidate\'s existing resume. Use it as the source of truth for their experience, but reframe and tailor it specifically for the target role.\n\n' : ''}My Background:\n${backgroundExperience}\n\nPlease create a tailored resume.`
+                content: `Company: ${company}\nJob Title: ${jobTitle}\nJob Description: ${jobDescription}\n\n${isFromUploadedFile ? 'The following background was extracted from the candidate\'s existing resume. Use it as the source of truth for their experience, but reframe and tailor it specifically for the target role.\n\n' : ''}My Background:\n${backgroundExperience}${buildContextBlock(additionalContext)}\n\nPlease create a tailored resume.`
               }
             ],
             stream: true
