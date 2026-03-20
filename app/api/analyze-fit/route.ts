@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
     const response = await anthropic.messages.create({
       model: HAIKU,
-      max_tokens: 2000,
+      max_tokens: 4000,
       system: `You are a brutally honest but constructive career advisor.
 Analyze how well the candidate's background matches the job description. Be specific — name actual skills, tools, and experiences that match or are missing. Do not be generic.
 Adapt your analysis based on the role type (technical, management, sales, customer success, research).
@@ -66,10 +66,10 @@ Output valid JSON only, no markdown fences:
 
     const text = response.content[0].type === 'text' ? response.content[0].text : '';
     console.log('[analyze-fit] Raw model response length:', text.length);
-    console.log('[analyze-fit] Raw model response:', text.slice(0, 300));
+    console.log('[analyze-fit] Raw model response:', text.slice(0, 500));
 
     const fitAnalysis = parseStageJSON<FitAnalysis>(text);
-    console.log('[analyze-fit] Parsed successfully:', JSON.stringify(fitAnalysis).slice(0, 200));
+    console.log('[analyze-fit] Parsed successfully:', JSON.stringify(fitAnalysis).slice(0, 300));
 
     return Response.json(fitAnalysis);
   } catch (error) {
