@@ -111,6 +111,7 @@ export default function Home() {
   const [pendingFormData, setPendingFormData] = useState<FormData | null>(null);
   const [additionalContext, setAdditionalContext] = useState<ResumeItem[]>([]);
   const [includeCoverLetter, setIncludeCoverLetter] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
   const [company, setCompany] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [jobDescription, setJobDescription] = useState('');
@@ -319,6 +320,7 @@ export default function Home() {
     setUploadedFileName('');
     setIsPreviewExpanded(false);
     setInputMethod('upload');
+    setResetKey(k => k + 1);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -449,7 +451,7 @@ export default function Home() {
                           {fitAnalysis.strengths.map((s, i) => (
                             <li key={i} className="text-sm text-muted-foreground flex gap-2">
                               <span className="text-green-600 mt-0.5">✓</span>
-                              <span>{s}</span>
+                              <span>{s.point}{s.source && <span className="ml-1 text-xs italic opacity-50">({s.source})</span>}</span>
                             </li>
                           ))}
                         </ul>
@@ -461,7 +463,7 @@ export default function Home() {
                           {fitAnalysis.gaps.map((g, i) => (
                             <li key={i} className="text-sm text-muted-foreground flex gap-2">
                               <span className="text-red-500 mt-0.5">✗</span>
-                              <span>{g}</span>
+                              <span>{g.point}{g.source && <span className="ml-1 text-xs italic opacity-50">({g.source})</span>}</span>
                             </li>
                           ))}
                         </ul>
@@ -473,7 +475,7 @@ export default function Home() {
                           {fitAnalysis.suggestions.map((s, i) => (
                             <li key={i} className="text-sm text-muted-foreground flex gap-2">
                               <span className="text-blue-500 mt-0.5">→</span>
-                              <span>{s}</span>
+                              <span>{s.point}{s.source && <span className="ml-1 text-xs italic opacity-50">({s.source})</span>}</span>
                             </li>
                           ))}
                         </ul>
@@ -576,6 +578,7 @@ export default function Home() {
                     <h3 className="text-xl font-semibold text-foreground mb-4">Your Background</h3>
 
                     <ContextSelector
+                      key={resetKey}
                       onLoadBackground={text => { setInputMethod('manual'); setManualExperience(text); }}
                       onAdditionalContextChange={setAdditionalContext}
                       disabled={uiState === 'analyzing'}

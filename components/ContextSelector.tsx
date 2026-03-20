@@ -28,6 +28,14 @@ export default function ContextSelector({ onLoadBackground, onAdditionalContextC
           setSelectedId(defaultItem.id);
           onLoadBackground(defaultItem.content.text);
         }
+        // Pre-select up to 3 most recent non-default items as additional context
+        const nonDefault = data.filter(i => !i.is_default).slice(0, 3);
+        if (nonDefault.length > 0) {
+          const ids = new Set(nonDefault.map(i => i.id));
+          setAdditionalIds(ids);
+          setExpanded(true);
+          onAdditionalContextChange(nonDefault);
+        }
       })
       .catch(() => setLoaded(true));
   // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -8,11 +8,16 @@ export type RoleType =
   | 'research'
   | 'other'
 
+export interface FitPoint {
+  point: string
+  source?: string  // artifact title the insight was derived from, omitted if general
+}
+
 export interface FitAnalysis {
   overallFit: OverallFit
-  strengths: string[]
-  gaps: string[]
-  suggestions: string[]
+  strengths: FitPoint[]
+  gaps: FitPoint[]
+  suggestions: FitPoint[]
   plannedImprovements: string[]
   roleType: RoleType
 }
