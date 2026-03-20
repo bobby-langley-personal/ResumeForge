@@ -383,7 +383,7 @@ export default function Home() {
           <div className="max-w-6xl mx-auto">
             {/* Header */}
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-foreground mb-4">Land The Interview</h2>
+              <h2 className="text-3xl font-bold text-foreground mb-4">Get To Work</h2>
               <p className="text-lg text-muted-foreground">
                 Paste a job description, upload your resume, and 
 get an AI-tailored, ATS-optimized resume and cover letter in seconds.
