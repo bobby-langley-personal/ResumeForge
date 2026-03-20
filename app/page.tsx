@@ -97,6 +97,7 @@ const FIT_COLORS: Record<string, string> = {
 
 export default function Home() {
   const [uiState, setUIState] = useState<UIState>('idle');
+  const [resetKey, setResetKey] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');
   const [resumeContent, setResumeContent] = useState('');
   const [coverLetterContent, setCoverLetterContent] = useState('');
@@ -302,6 +303,7 @@ export default function Home() {
   };
 
   const resetForm = () => {
+    setResetKey(k => k + 1);
     setUIState('idle');
     setStatusMessage('');
     setResumeContent('');

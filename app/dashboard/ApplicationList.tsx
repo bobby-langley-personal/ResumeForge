@@ -4,16 +4,13 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import ApplicationCard from './ApplicationCard';
+import { ApplicationItem } from './page';
 
-export interface ApplicationItem {
-  id: string;
-  company: string;
-  job_title: string;
-  cover_letter_content: string | null;
-  created_at: string;
+interface Props {
+  initialItems: ApplicationItem[];
 }
 
-export default function ApplicationList({ initialItems }: { initialItems: ApplicationItem[] }) {
+export default function ApplicationList({ initialItems }: Props) {
   const [items, setItems] = useState<ApplicationItem[]>(initialItems);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
@@ -21,13 +18,18 @@ export default function ApplicationList({ initialItems }: { initialItems: Applic
   const toggleSelect = (id: string) => {
     setSelected(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
 
   const toggleSelectAll = () => {
-    setSelected(selected.size === items.length ? new Set() : new Set(items.map(i => i.id)));
+    if (selected.size === items.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(items.map(i => i.id)));
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -39,6 +41,7 @@ export default function ApplicationList({ initialItems }: { initialItems: Applic
   };
 
   const handleBulkDelete = async () => {
+    if (selected.size === 0) return;
     if (!confirm(`Delete ${selected.size} application${selected.size > 1 ? 's' : ''}?`)) return;
     setDeleting(true);
     const res = await fetch('/api/applications', {
@@ -55,6 +58,7 @@ export default function ApplicationList({ initialItems }: { initialItems: Applic
 
   return (
     <div>
+      {/* Bulk action toolbar */}
       <div className="flex items-center gap-3 mb-4">
         <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none">
           <input
@@ -66,7 +70,12 @@ export default function ApplicationList({ initialItems }: { initialItems: Applic
           {selected.size > 0 ? `${selected.size} selected` : 'Select all'}
         </label>
         {selected.size > 0 && (
-          <Button size="sm" variant="destructive" onClick={handleBulkDelete} disabled={deleting}>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={handleBulkDelete}
+            disabled={deleting}
+          >
             <Trash2 className="w-3.5 h-3.5 mr-1.5" />
             {deleting ? 'Deleting…' : `Delete ${selected.size}`}
           </Button>

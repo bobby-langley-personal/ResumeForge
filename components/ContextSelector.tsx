@@ -31,8 +31,7 @@ export default function ContextSelector({ onLoadBackground, onAdditionalContextC
         // Pre-select up to 3 most recent non-default items as additional context
         const nonDefault = data.filter(i => !i.is_default).slice(0, 3);
         if (nonDefault.length > 0) {
-          const ids = new Set(nonDefault.map(i => i.id));
-          setAdditionalIds(ids);
+          setAdditionalIds(new Set(nonDefault.map(i => i.id)));
           setExpanded(true);
           onAdditionalContextChange(nonDefault);
         }
@@ -48,13 +47,11 @@ export default function ContextSelector({ onLoadBackground, onAdditionalContextC
   };
 
   const toggleAdditional = (item: ResumeItem) => {
-    setAdditionalIds(prev => {
-      const next = new Set(prev);
-      if (next.has(item.id)) next.delete(item.id);
-      else next.add(item.id);
-      onAdditionalContextChange(items.filter(i => next.has(i.id)));
-      return next;
-    });
+    const next = new Set(additionalIds);
+    if (next.has(item.id)) next.delete(item.id);
+    else next.add(item.id);
+    setAdditionalIds(next);
+    onAdditionalContextChange(items.filter(i => next.has(i.id)));
   };
 
   if (!loaded || items.length === 0) return null;

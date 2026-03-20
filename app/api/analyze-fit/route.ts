@@ -66,10 +66,10 @@ Output valid JSON only, no markdown fences:
 
     const text = response.content[0].type === 'text' ? response.content[0].text : '';
     console.log('[analyze-fit] Raw model response length:', text.length);
-    console.log('[analyze-fit] Raw model response:', text.slice(0, 300));
+    console.log('[analyze-fit] Raw model response:', text.slice(0, 500));
 
     const fitAnalysis = parseStageJSON<FitAnalysis>(text);
-    console.log('[analyze-fit] Parsed successfully:', JSON.stringify(fitAnalysis).slice(0, 200));
+    console.log('[analyze-fit] Parsed successfully:', JSON.stringify(fitAnalysis).slice(0, 300));
 
     return Response.json(fitAnalysis);
   } catch (error) {
