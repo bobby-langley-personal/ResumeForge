@@ -3,10 +3,8 @@ export const runtime = 'nodejs';
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 
-// Note: These packages need to be installed
-// npm install pdf-parse mammoth @types/pdf-parse
-// const pdf = require('pdf-parse');
-// const mammoth = require('mammoth');
+const pdf = require('pdf-parse');
+const mammoth = require('mammoth');
 
 export async function POST(req: NextRequest) {
   console.log('[extract-resume] Request received');
@@ -49,21 +47,13 @@ export async function POST(req: NextRequest) {
       const buffer = Buffer.from(await file.arrayBuffer());
 
       if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-        // TODO: Install pdf-parse package
-        // const data = await pdf(buffer);
-        // extractedText = data.text;
-        
-        // Temporary placeholder - replace with actual PDF parsing
-        extractedText = 'PDF parsing requires pdf-parse package to be installed. Please run: npm install pdf-parse';
+        const data = await pdf(buffer);
+        extractedText = data.text;
         
       } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
                  file.name.toLowerCase().endsWith('.docx')) {
-        // TODO: Install mammoth package  
-        // const result = await mammoth.extractRawText({ buffer });
-        // extractedText = result.value;
-        
-        // Temporary placeholder - replace with actual DOCX parsing
-        extractedText = 'DOCX parsing requires mammoth package to be installed. Please run: npm install mammoth';
+        const result = await mammoth.extractRawText({ buffer });
+        extractedText = result.value;
       }
 
       if (!extractedText.trim()) {
