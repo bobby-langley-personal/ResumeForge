@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { readSSEStream } from '@/lib/sse-reader';
+import { FitAnalysis } from '@/types/fit-analysis';
 import { Upload, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 
 type UIState = 'idle' | 'generating' | 'done' | 'error';
@@ -25,6 +26,7 @@ export default function Home() {
   const [resumeContent, setResumeContent] = useState('');
   const [coverLetterContent, setCoverLetterContent] = useState('');
   const [applicationId, setApplicationId] = useState<string | null>(null);
+  const [fitAnalysis, setFitAnalysis] = useState<FitAnalysis | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [uploadedFileContent, setUploadedFileContent] = useState('');
   const [uploadedFileName, setUploadedFileName] = useState('');
@@ -130,6 +132,9 @@ export default function Home() {
             case 'cover_letter_chunk':
               setCoverLetterContent(prev => prev + event.content);
               break;
+            case 'analysis':
+              setFitAnalysis(event.data);
+              break;
             case 'done':
               setStatusMessage('Generation complete!');
               setUIState('done');
@@ -201,6 +206,7 @@ export default function Home() {
     setStatusMessage('');
     setResumeContent('');
     setCoverLetterContent('');
+    setFitAnalysis(null);
     setErrorMessage('');
     setApplicationId(null);
     setUploadedFileContent('');
@@ -494,6 +500,43 @@ export default function Home() {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Fit Analysis Panel */}
+            {fitAnalysis && (
+              <div className="mb-8 p-6 bg-muted rounded-lg border space-y-4">
+                <h3 className="text-lg font-semibold text-foreground">Fit Analysis</h3>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium text-muted-foreground">Overall Fit:</span>
+                  <span className="font-semibold">{fitAnalysis.overallFit}</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <h4 className="text-sm font-semibold text-green-700 mb-2">Strengths</h4>
+                    <ul className="space-y-1">
+                      {fitAnalysis.strengths.map((s, i) => (
+                        <li key={i} className="text-sm text-muted-foreground">• {s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-red-700 mb-2">Gaps</h4>
+                    <ul className="space-y-1">
+                      {fitAnalysis.gaps.map((g, i) => (
+                        <li key={i} className="text-sm text-muted-foreground">• {g}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-blue-700 mb-2">Suggestions</h4>
+                    <ul className="space-y-1">
+                      {fitAnalysis.suggestions.map((s, i) => (
+                        <li key={i} className="text-sm text-muted-foreground">• {s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
               </div>
             )}
 

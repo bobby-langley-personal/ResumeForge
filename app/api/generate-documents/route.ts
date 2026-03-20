@@ -181,6 +181,8 @@ Output the resume in EXACTLY this format. Use • for bullet points. Separate ea
             return;
           }
 
+          sendEvent('cover_letter_done');
+
           // Phase 3: Generate fit analysis
           sendEvent('status', { message: 'Analyzing fit for role...' });
           console.log('[generate-documents] Starting fit analysis generation');
@@ -213,7 +215,9 @@ Output valid JSON only, no markdown fences:
             fitAnalysis = parseStageJSON<FitAnalysis>(analysisText);
             
             console.log('[generate-documents] Fit analysis completed:', fitAnalysis);
-            sendEvent('analysis', { data: fitAnalysis });
+            const analysisEvent = JSON.stringify({ type: 'analysis', data: fitAnalysis });
+            console.log('[generate-documents] Sending analysis event:', analysisEvent);
+            controller.enqueue(encoder.encode(`data: ${analysisEvent}\n\n`));
 
           } catch (analysisError) {
             console.error('[generate-documents] Fit analysis generation failed:', analysisError);
