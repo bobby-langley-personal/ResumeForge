@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { readSSEStream } from '@/lib/sse-reader';
+import { Upload, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 
 type UIState = 'idle' | 'generating' | 'done' | 'error';
 
@@ -15,6 +16,7 @@ interface FormData {
   jobTitle: string;
   jobDescription: string;
   backgroundExperience: string;
+  isFromUploadedFile?: boolean;
 }
 
 export default function Home() {
@@ -24,7 +26,48 @@ export default function Home() {
   const [coverLetterContent, setCoverLetterContent] = useState('');
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [uploadedFileContent, setUploadedFileContent] = useState('');
+  const [uploadedFileName, setUploadedFileName] = useState('');
+  const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [inputMethod, setInputMethod] = useState<'upload' | 'manual'>('upload');
   const formRef = useRef<HTMLFormElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setErrorMessage('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/extract-resume', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error);
+      }
+
+      const result = await response.json();
+      setUploadedFileContent(result.text);
+      setUploadedFileName(result.fileName);
+      setIsPreviewExpanded(true);
+      
+    } catch (error) {
+      console.error('File upload failed:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to extract text from file');
+      setUIState('error');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,12 +77,19 @@ export default function Home() {
       company: formData.get('company') as string,
       jobTitle: formData.get('jobTitle') as string,
       jobDescription: formData.get('jobDescription') as string,
-      backgroundExperience: formData.get('experience') as string,
+      backgroundExperience: inputMethod === 'upload' && uploadedFileContent 
+        ? uploadedFileContent 
+        : formData.get('experience') as string,
+      isFromUploadedFile: inputMethod === 'upload' && !!uploadedFileContent,
     };
 
     // Validate form data
     if (!data.company || !data.jobTitle || !data.jobDescription || !data.backgroundExperience) {
-      setErrorMessage('Please fill in all fields');
+      if (inputMethod === 'upload' && !uploadedFileContent) {
+        setErrorMessage('Please fill in all job details and upload a resume file');
+      } else {
+        setErrorMessage('Please fill in all fields');
+      }
       setUIState('error');
       return;
     }
@@ -153,6 +203,13 @@ export default function Home() {
     setCoverLetterContent('');
     setErrorMessage('');
     setApplicationId(null);
+    setUploadedFileContent('');
+    setUploadedFileName('');
+    setIsPreviewExpanded(false);
+    setInputMethod('upload');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   return (
@@ -292,17 +349,110 @@ export default function Home() {
                     <h3 className="text-xl font-semibold text-foreground mb-4">Your Background</h3>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="experience">Your Experience</Label>
-                    <Textarea 
-                      id="experience"
-                      name="experience"
-                      placeholder="Paste your current resume or background experience here..."
-                      className="min-h-[400px] bg-background"
+                  {/* Input Method Toggle */}
+                  <div className="flex space-x-4 mb-6">
+                    <Button
+                      type="button"
+                      variant={inputMethod === 'upload' ? 'default' : 'outline'}
+                      onClick={() => setInputMethod('upload')}
                       disabled={uiState === 'generating'}
-                      required
-                    />
+                      className="flex items-center space-x-2"
+                    >
+                      <Upload className="w-4 h-4" />
+                      <span>Upload Resume</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={inputMethod === 'manual' ? 'default' : 'outline'}
+                      onClick={() => setInputMethod('manual')}
+                      disabled={uiState === 'generating'}
+                      className="flex items-center space-x-2"
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span>Paste Text</span>
+                    </Button>
                   </div>
+
+                  {/* Option A - Upload Resume */}
+                  {inputMethod === 'upload' && (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="resumeFile">Upload your existing resume</Label>
+                        <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 hover:border-muted-foreground/50 transition-colors">
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            id="resumeFile"
+                            accept=".pdf,.docx"
+                            onChange={handleFileUpload}
+                            disabled={uiState === 'generating' || isUploading}
+                            className="hidden"
+                          />
+                          <label
+                            htmlFor="resumeFile"
+                            className="cursor-pointer flex flex-col items-center space-y-2"
+                          >
+                            <Upload className="w-8 h-8 text-muted-foreground" />
+                            <div className="text-center">
+                              <p className="text-sm font-medium">
+                                {isUploading ? 'Processing file...' : 'Click to upload or drag and drop'}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                PDF or DOCX files up to 5MB
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Uploaded File Preview */}
+                      {uploadedFileName && uploadedFileContent && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label>Extracted content from {uploadedFileName}</Label>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setIsPreviewExpanded(!isPreviewExpanded)}
+                              className="flex items-center space-x-1"
+                            >
+                              <span>{isPreviewExpanded ? 'Collapse' : 'Expand'}</span>
+                              {isPreviewExpanded ? (
+                                <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </div>
+                          {isPreviewExpanded && (
+                            <Textarea
+                              value={uploadedFileContent}
+                              onChange={(e) => setUploadedFileContent(e.target.value)}
+                              placeholder="Extracted text will appear here..."
+                              className="min-h-[300px] bg-background font-mono text-sm"
+                              disabled={uiState === 'generating'}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Option B - Manual Text Entry */}
+                  {inputMethod === 'manual' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="experience">Or paste your experience manually</Label>
+                      <Textarea 
+                        id="experience"
+                        name="experience"
+                        placeholder="Paste your current resume or background experience here..."
+                        className="min-h-[400px] bg-background"
+                        disabled={uiState === 'generating'}
+                        required
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 

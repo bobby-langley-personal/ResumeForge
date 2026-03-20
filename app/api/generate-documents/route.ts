@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     console.log('[generate-documents] Auth check passed, userId:', userId);
 
     // Parse request body
-    const { company, jobTitle, jobDescription, backgroundExperience } = await req.json();
+    const { company, jobTitle, jobDescription, backgroundExperience, isFromUploadedFile } = await req.json();
     console.log('[generate-documents] Parsed body:', { 
       company, 
       jobTitle, 
@@ -64,7 +64,17 @@ export async function POST(req: NextRequest) {
             const resumeStream = await anthropic.messages.create({
             model: MODELS.SONNET,
             max_tokens: 4000,
-            system: `You are an expert resume writer. Reframe and emphasize the user's experience to match the job description. Never invent experience. 
+            system: `You are an expert resume writer with 15+ years of experience helping candidates land roles at top companies. Your job is to deeply analyze the candidate's background and the job description, then produce a tailored, ATS-optimized resume that gives them the best possible chance of getting an interview.
+
+Rules:
+- Reframe and emphasize the candidate's REAL experience to match the JD
+- Extract and highlight specific metrics, numbers, and outcomes from their background (e.g. "reduced resolution time by 50%")
+- Mirror the exact language and keywords from the job description
+- Never invent experience, companies, titles, or metrics
+- If the candidate's background is a stretch for the role, make the best honest case possible
+- Prioritize recent and relevant experience
+- Cut or minimize experience that is irrelevant to the target role
+- Write bullet points that follow the format: [Action verb] + [what you did] + [measurable outcome]
 
 Output the resume in EXACTLY this format:
 
@@ -98,7 +108,7 @@ Output the resume in EXACTLY this format. Use • for bullet points. Separate ea
             messages: [
               {
                 role: 'user',
-                content: `Company: ${company}\nJob Title: ${jobTitle}\nJob Description: ${jobDescription}\n\nMy Background:\n${backgroundExperience}\n\nPlease create a tailored resume.`
+                content: `Company: ${company}\nJob Title: ${jobTitle}\nJob Description: ${jobDescription}\n\n${isFromUploadedFile ? 'The following background was extracted from the candidate\'s existing resume. Use it as the source of truth for their experience, but reframe and tailor it specifically for the target role.\n\n' : ''}My Background:\n${backgroundExperience}\n\nPlease create a tailored resume.`
               }
             ],
             stream: true
