@@ -41,7 +41,6 @@ export async function POST(request: NextRequest) {
 
     const user = await currentUser()
     const fullName = user?.fullName || user?.firstName || 'User'
-    const lastName = user?.lastName || fullName.split(' ').pop() || 'User'
 
     const props = {
       resumeText: application.resume_content,
@@ -53,9 +52,9 @@ export async function POST(request: NextRequest) {
     const element = createElement(ResumePDF, props)
     const pdfBuffer = await renderToBuffer(element as React.ReactElement<any>)
 
-    const companyName = application.company.replace(/\s+/g, '_')
-    const role = application.job_title.replace(/\s+/g, '_')
-    const filename = `${lastName}_Resume_${companyName}_${role}.pdf`
+    const companyName = application.company.replace(/[^a-zA-Z0-9]/g, '_')
+    const role = application.job_title.replace(/[^a-zA-Z0-9]/g, '_')
+    const filename = `Resume_${companyName}_${role}.pdf`
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {

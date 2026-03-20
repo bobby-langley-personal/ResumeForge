@@ -555,7 +555,7 @@ export default function Home() {
                       <Button
                         type="button"
                         variant={inputMethod === 'upload' ? 'default' : 'outline'}
-                        onClick={() => setInputMethod('upload')}
+                        onClick={() => { setInputMethod('upload'); fileInputRef.current?.click(); }}
                         disabled={uiState === 'analyzing'}
                         className="flex items-center space-x-2"
                       >
