@@ -1,6 +1,10 @@
 -- Run this in the Supabase SQL editor:
 -- Dashboard → SQL Editor → paste and run
 
+-- Ensure base columns exist (may be missing if table predates migration 001)
+ALTER TABLE resumes ADD COLUMN IF NOT EXISTS title TEXT NOT NULL DEFAULT '';
+ALTER TABLE resumes ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+
 -- Add is_default flag so one resume can auto-populate the home page
 ALTER TABLE resumes ADD COLUMN IF NOT EXISTS is_default BOOLEAN NOT NULL DEFAULT FALSE;
 

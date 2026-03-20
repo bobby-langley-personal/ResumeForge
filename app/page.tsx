@@ -175,11 +175,7 @@ export default function Home() {
     };
 
     if (!data.company || !data.jobTitle || !data.jobDescription || !data.backgroundExperience) {
-      if (inputMethod === 'upload' && !uploadedFileContent) {
-        setErrorMessage('Please fill in all job details and upload a resume file');
-      } else {
-        setErrorMessage('Please fill in all fields');
-      }
+      setErrorMessage('Please fill in all fields and provide your background (upload a file, paste text, or load from library)');
       setUIState('error');
       return;
     }

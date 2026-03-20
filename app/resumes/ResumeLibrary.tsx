@@ -148,10 +148,10 @@ export default function ResumeLibrary({ initialItems }: Props) {
                 )}
               </div>
               <p className="text-xs text-muted-foreground mt-1 truncate">
-                {item.content.text.slice(0, 120)}…
+                {item.content?.text?.slice(0, 120) ?? ''}…
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {item.content.text.length.toLocaleString()} chars
+                {(item.content?.text?.length ?? 0).toLocaleString()} chars
               </p>
             </div>
             <div className="flex items-center gap-1 shrink-0">
