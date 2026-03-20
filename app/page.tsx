@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
+import { SignedIn, SignedOut, SignInButton } from '@clerk/nextjs';
+import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -325,32 +326,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top Navbar */}
-      <nav className="border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <h1 className="text-2xl font-bold text-foreground">ResumeForge</h1>
-            <div className="flex items-center">
-              <SignedOut>
-                <SignInButton>
-                  <Button variant="outline">Sign In</Button>
-                </SignInButton>
-              </SignedOut>
-              <SignedIn>
-                <UserButton
-                  appearance={{
-                    elements: {
-                      userButtonAvatarBox: "w-10 h-10",
-                      userButtonPopoverCard: "bg-popover border-border",
-                      userButtonPopoverText: "text-popover-foreground"
-                    }
-                  }}
-                />
-              </SignedIn>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
