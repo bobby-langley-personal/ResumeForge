@@ -17,6 +17,7 @@ Current valid columns:
 - `source_resume_id` (string | null) - ID of source resume used
 - `generated_resume` (string | null) - Generated resume content
 - `generated_cover_letter` (string | null) - Generated cover letter content
+- `fit_analysis` (jsonb | null) - AI-generated fit analysis containing overall fit rating, strengths, gaps, and suggestions
 - `status` (ApplicationStatus) - Application status enum
 - `created_at` (string) - Auto-populated by Postgres default
 - `updated_at` (string) - Auto-updated by Postgres

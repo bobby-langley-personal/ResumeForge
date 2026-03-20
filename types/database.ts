@@ -78,6 +78,7 @@ export interface Database {
           job_description: string
           resume_content: string | null
           cover_letter_content: string | null
+          fit_analysis: Json | null
           status: 'applied' | 'interviewing' | 'offered' | 'rejected' | 'withdrawn'
           application_date: string
           created_at: string
@@ -92,6 +93,7 @@ export interface Database {
           job_description: string
           resume_content?: string | null
           cover_letter_content?: string | null
+          fit_analysis?: Json | null
           status?: 'applied' | 'interviewing' | 'offered' | 'rejected' | 'withdrawn'
           application_date?: string
           created_at?: string
@@ -106,6 +108,7 @@ export interface Database {
           job_description?: string
           resume_content?: string | null
           cover_letter_content?: string | null
+          fit_analysis?: Json | null
           status?: 'applied' | 'interviewing' | 'offered' | 'rejected' | 'withdrawn'
           application_date?: string
           created_at?: string

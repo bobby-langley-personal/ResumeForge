@@ -21,8 +21,8 @@ Flat listing of all types, interfaces, and unions in the ResumeForge codebase.
 - Update: all fields optional
 
 ### Applications Table  
-- Row: id (string), user_id (string), resume_id (string | null), job_title (string), company (string), job_description (string), resume_content (string | null), cover_letter_content (string | null), status (ApplicationStatus), application_date (string), created_at (string), updated_at (string)
-- Insert: id (optional), user_id (string), resume_id (optional), job_title (string), company (string), job_description (string), resume_content (optional), cover_letter_content (optional), status (optional), application_date (optional), created_at (optional), updated_at (optional)
+- Row: id (string), user_id (string), resume_id (string | null), job_title (string), company (string), job_description (string), resume_content (string | null), cover_letter_content (string | null), fit_analysis (FitAnalysis | null), status (ApplicationStatus), application_date (string), created_at (string), updated_at (string)
+- Insert: id (optional), user_id (string), resume_id (optional), job_title (string), company (string), job_description (string), resume_content (optional), cover_letter_content (optional), fit_analysis (optional), status (optional), application_date (optional), created_at (optional), updated_at (optional)
 - Update: all fields optional
 
 ## Model Types
@@ -37,3 +37,14 @@ Flat listing of all types, interfaces, and unions in the ResumeForge codebase.
 
 ### ApplicationStatus
 - Union type: 'applied' | 'interviewing' | 'offered' | 'rejected' | 'withdrawn'
+
+## Fit Analysis Types
+
+### OverallFit
+- Union type: 'Strong Fit' | 'Good Fit' | 'Stretch Role'
+
+### RoleType
+- Union type: 'technical' | 'management' | 'sales' | 'customer_success' | 'research' | 'other'
+
+### FitAnalysis
+- Interface: overallFit (OverallFit), strengths (string[]), gaps (string[]), suggestions (string[]), roleType (RoleType)
