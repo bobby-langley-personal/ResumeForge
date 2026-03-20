@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { supabaseServer } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
-import ApplicationCard from './ApplicationCard';
+import ApplicationList from './ApplicationList';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, FileSearch } from 'lucide-react';
 
@@ -16,22 +16,16 @@ export default async function DashboardPage() {
   const supabase = await supabaseServer();
   const { data: applications, error } = await supabase
     .from('applications')
-    .select('id, company, job_title, cover_letter_content, created_at')
+    .select('id, company, job_title, cover_letter_content, status, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('[dashboard] Supabase error:', error.message);
-  }
-
-  const items = applications ?? [];
+  if (error) console.error('[dashboard] Supabase error:', error.message);
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-2xl font-bold text-foreground">My Applications</h2>
           <Link href="/">
@@ -42,36 +36,29 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
-        {/* Empty state */}
-        {items.length === 0 && (
+        {(applications ?? []).length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
             <FileSearch className="w-12 h-12 text-muted-foreground" />
             <h3 className="text-lg font-semibold text-foreground">No applications yet</h3>
             <p className="text-sm text-muted-foreground max-w-xs">
               Generate your first tailored resume to see it here.
             </p>
-            <Link href="/">
-              <Button>Generate Your First Resume</Button>
-            </Link>
+            <Link href="/"><Button>Generate Your First Resume</Button></Link>
           </div>
-        )}
-
-        {/* Card grid */}
-        {items.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {items.map((app) => (
-              <ApplicationCard
-                key={app.id}
-                id={app.id}
-                company={app.company}
-                jobTitle={app.job_title}
-                createdAt={app.created_at}
-                hasCoverLetter={!!app.cover_letter_content}
-              />
-            ))}
-          </div>
+        ) : (
+          <ApplicationList initialItems={(applications ?? []) as ApplicationItem[]} />
         )}
       </main>
     </div>
   );
+}
+
+// exported for ApplicationList to use the same type
+export interface ApplicationItem {
+  id: string;
+  company: string;
+  job_title: string;
+  cover_letter_content: string | null;
+  status: string;
+  created_at: string;
 }

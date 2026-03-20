@@ -97,6 +97,7 @@ const FIT_COLORS: Record<string, string> = {
 
 export default function Home() {
   const [uiState, setUIState] = useState<UIState>('idle');
+  const [resetKey, setResetKey] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');
   const [resumeContent, setResumeContent] = useState('');
   const [coverLetterContent, setCoverLetterContent] = useState('');
@@ -301,6 +302,7 @@ export default function Home() {
   };
 
   const resetForm = () => {
+    setResetKey(k => k + 1);
     setUIState('idle');
     setStatusMessage('');
     setResumeContent('');
@@ -551,6 +553,7 @@ export default function Home() {
                     <h3 className="text-xl font-semibold text-foreground mb-4">Your Background</h3>
 
                     <ContextSelector
+                      key={resetKey}
                       onLoadBackground={text => { setInputMethod('manual'); setManualExperience(text); }}
                       onAdditionalContextChange={setAdditionalContext}
                       disabled={uiState === 'analyzing'}
