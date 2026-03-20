@@ -58,11 +58,13 @@ export default function CoverLetterPDF({
     day: 'numeric'
   });
 
-  // Split cover letter text into paragraphs
+  // Split cover letter text into paragraphs, stripping any AI-generated
+  // greeting line (Dear ...,) since the template renders its own header
   const paragraphs = coverLetterText
     .split('\n\n')
-    .filter(paragraph => paragraph.trim().length > 0)
-    .map(paragraph => paragraph.trim());
+    .map(p => p.trim())
+    .filter(p => p.length > 0)
+    .filter(p => !/^dear\b/i.test(p));  // remove greeting — rendered below
 
   return (
     <Document>
