@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
     const contextBlock = buildContextBlock(additionalContext);
 
-    // Build a list of artifact names so the model can reference them
+    // Build artifact name list so the model can tag sources
     const artifactList = additionalContext.length > 0
       ? `\nAvailable artifacts (by name): "Primary Resume"${additionalContext.map((a: { title: string }) => `, "${a.title}"`).join('')}`
       : '';

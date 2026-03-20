@@ -8,7 +8,7 @@ export async function GET() {
     const { userId } = await auth();
     if (!userId) return new Response('Unauthorized', { status: 401 });
 
-    const supabase = await supabaseServer();
+    const supabase = supabaseServer();
     const { data, error } = await supabase
       .from('resumes')
       .select('id, title, content, item_type, is_default, created_at, updated_at')
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   const { title, content, item_type = 'resume', is_default = false } = await req.json();
   if (!title || !content?.text) return new Response('title and content.text are required', { status: 400 });
 
-  const supabase = await supabaseServer();
+  const supabase = supabaseServer();
 
   // Clear existing default first if this one is being set as default
   if (is_default) {

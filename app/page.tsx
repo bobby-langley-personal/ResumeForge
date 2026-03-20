@@ -112,6 +112,7 @@ export default function Home() {
   const [pendingFormData, setPendingFormData] = useState<FormData | null>(null);
   const [additionalContext, setAdditionalContext] = useState<ResumeItem[]>([]);
   const [includeCoverLetter, setIncludeCoverLetter] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
   const [company, setCompany] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [jobDescription, setJobDescription] = useState('');
@@ -321,6 +322,7 @@ export default function Home() {
     setUploadedFileName('');
     setIsPreviewExpanded(false);
     setInputMethod('upload');
+    setResetKey(k => k + 1);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -373,13 +375,47 @@ export default function Home() {
 
             {/* Progress Indicator */}
             {(uiState === 'analyzing' || uiState === 'generating') && (
-              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                  <p className="text-blue-800">
-                    {uiState === 'analyzing' ? 'Analyzing your fit for this role...' : statusMessage}
-                  </p>
-                </div>
+              <div className="mb-6 p-5 bg-blue-50 border border-blue-200 rounded-lg space-y-4">
+                {(() => {
+                  const steps = [
+                    { label: 'Analyzing fit', done: uiState === 'generating' },
+                    { label: 'Generating resume', done: uiState === 'generating' && (statusMessage.toLowerCase().includes('cover') || statusMessage.toLowerCase().includes('saving') || statusMessage.toLowerCase().includes('complete')) },
+                    ...(includeCoverLetter ? [{ label: 'Writing cover letter', done: statusMessage.toLowerCase().includes('saving') || statusMessage.toLowerCase().includes('complete') }] : []),
+                    { label: 'Saving', done: statusMessage.toLowerCase().includes('complete') },
+                  ];
+                  const doneCount = steps.filter(s => s.done).length;
+                  const pct = Math.round((doneCount / steps.length) * 100);
+                  const activeLabel = uiState === 'analyzing' ? 'Analyzing your fit for this role…' : (statusMessage || 'Working…');
+                  const currentStep = Math.min(doneCount, steps.length - 1);
+
+                  return (
+                    <>
+                      <div className="flex items-center gap-3">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-300 border-t-blue-600 shrink-0" />
+                        <p className="text-sm font-medium text-blue-900">{activeLabel}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-xs text-blue-700">
+                          <span>Step {doneCount + 1} of {steps.length}</span>
+                          <span>{pct}%</span>
+                        </div>
+                        <div className="h-1.5 bg-blue-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-blue-600 rounded-full transition-all duration-700 ease-out"
+                            style={{ width: `${Math.max(pct, uiState === 'analyzing' ? 8 : 20)}%` }}
+                          />
+                        </div>
+                        <div className="flex gap-4 mt-1 flex-wrap">
+                          {steps.map((s, i) => (
+                            <span key={i} className={`text-xs flex items-center gap-1 ${s.done ? 'text-blue-600' : i === currentStep ? 'text-blue-900 font-semibold' : 'text-blue-400'}`}>
+                              {s.done ? '✓' : i === currentStep ? '›' : '·'} {s.label}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             )}
 
@@ -417,10 +453,7 @@ export default function Home() {
                           {fitAnalysis.strengths.map((s, i) => (
                             <li key={i} className="text-sm text-muted-foreground flex gap-2">
                               <span className="text-green-600 mt-0.5">✓</span>
-                              <span>
-                                {s.point}
-                                {s.source && <span className="text-xs text-muted-foreground/60 ml-1">({s.source})</span>}
-                              </span>
+                              <span>{s.point}{s.source && <span className="ml-1 text-xs italic opacity-50">({s.source})</span>}</span>
                             </li>
                           ))}
                         </ul>
@@ -432,10 +465,7 @@ export default function Home() {
                           {fitAnalysis.gaps.map((g, i) => (
                             <li key={i} className="text-sm text-muted-foreground flex gap-2">
                               <span className="text-red-500 mt-0.5">✗</span>
-                              <span>
-                                {g.point}
-                                {g.source && <span className="text-xs text-muted-foreground/60 ml-1">({g.source})</span>}
-                              </span>
+                              <span>{g.point}{g.source && <span className="ml-1 text-xs italic opacity-50">({g.source})</span>}</span>
                             </li>
                           ))}
                         </ul>
@@ -447,10 +477,7 @@ export default function Home() {
                           {fitAnalysis.suggestions.map((s, i) => (
                             <li key={i} className="text-sm text-muted-foreground flex gap-2">
                               <span className="text-blue-500 mt-0.5">→</span>
-                              <span>
-                                {s.point}
-                                {s.source && <span className="text-xs text-muted-foreground/60 ml-1">({s.source})</span>}
-                              </span>
+                              <span>{s.point}{s.source && <span className="ml-1 text-xs italic opacity-50">({s.source})</span>}</span>
                             </li>
                           ))}
                         </ul>

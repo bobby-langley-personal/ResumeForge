@@ -56,10 +56,6 @@ export default function ApplicationList({ initialItems }: Props) {
     setDeleting(false);
   };
 
-  const handleStatusChange = (id: string, status: string) => {
-    setItems(prev => prev.map(i => i.id === id ? { ...i, status } : i));
-  };
-
   return (
     <div>
       {/* Bulk action toolbar */}
@@ -95,11 +91,9 @@ export default function ApplicationList({ initialItems }: Props) {
             jobTitle={app.job_title}
             createdAt={app.created_at}
             hasCoverLetter={!!app.cover_letter_content}
-            status={app.status}
             selected={selected.has(app.id)}
             onToggleSelect={toggleSelect}
             onDelete={handleDelete}
-            onStatusChange={handleStatusChange}
           />
         ))}
       </div>

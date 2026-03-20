@@ -8,7 +8,7 @@ export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ i
   if (!userId) return new Response('Unauthorized', { status: 401 });
   const { id } = await params;
 
-  const supabase = await supabaseServer();
+  const supabase = supabaseServer();
 
   // Verify ownership
   const { data: item } = await supabase
