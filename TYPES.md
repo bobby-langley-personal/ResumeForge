@@ -1,52 +1,124 @@
 # Types and Interfaces
 
-Flat listing of all types, interfaces, and unions in the ResumeForge codebase.
+Current type definitions for the ResumeForge codebase. This is the source of truth for database columns and shared interfaces.
+
+---
 
 ## Database Types
 
-### Database
-- Main database schema interface with tables, views, functions, enums, and composite types
+### `Database`
+Main Supabase schema interface (`types/supabase.ts`). All table Row/Insert/Update types are derived from this.
 
-### Json  
-- Union type for JSON values: string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+### `Json`
+`string | number | boolean | null | { [key: string]: Json | undefined } | Json[]`
 
-### Users Table
-- Row: id (string), email (string), full_name (string | null), created_at (string), updated_at (string)
-- Insert: id (string), email (string), full_name (optional), created_at (optional), updated_at (optional) 
-- Update: all fields optional
+---
 
-### Resumes Table
-- Row: id (string), user_id (string), title (string), content (Json: { text: string, fileName?: string }), item_type (ItemType), is_default (boolean), created_at (string), updated_at (string)
-- Insert: id (optional), user_id (string), title (string), content (Json), item_type (optional, default 'resume'), is_default (optional, default false), created_at (optional), updated_at (optional)
-- Update: all fields optional
-- item_type values: 'resume' | 'cover_letter' | 'portfolio' | 'other'
-- Only one item per user can have is_default = true (enforced by partial unique index)
+## Table: `resumes` (My Documents library)
 
-### Applications Table  
-- Row: id (string), user_id (string), resume_id (string | null), job_title (string), company (string), job_description (string), resume_content (string | null), cover_letter_content (string | null), status (ApplicationStatus), application_date (string), fit_analysis (Json | null), created_at (string), updated_at (string)
-- Insert: id (optional), user_id (string), resume_id (optional), job_title (string), company (string), job_description (string), resume_content (optional), cover_letter_content (optional), status (optional), application_date (optional), fit_analysis (optional), created_at (optional), updated_at (optional)
-- Update: all fields optional
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | string | UUID, primary key |
+| `user_id` | string | Clerk user ID |
+| `title` | string | Display name |
+| `content` | Json | `{ text: string, fileName?: string }` — stored as JSONB |
+| `item_type` | ItemType | `'resume' \| 'cover_letter' \| 'portfolio' \| 'other'` |
+| `is_default` | boolean | Only one per user (partial unique index) |
+| `created_at` | string | ISO timestamp |
+| `updated_at` | string | ISO timestamp |
 
-## Model Types
+### `ItemType`
+`'resume' | 'cover_letter' | 'portfolio' | 'other'`
 
-### ModelType
-- Union of SONNET and HAIKU model strings
+### `ITEM_TYPE_LABELS`
+Display labels map: `{ resume: 'Resume', cover_letter: 'Cover Letter', portfolio: 'Portfolio', other: 'Other' }`
 
-### MODELS
-- Object containing SONNET: 'claude-3-5-sonnet-20241022', HAIKU: 'claude-3-5-haiku-20241022'
+### `ResumeItem`
+```typescript
+{
+  id: string
+  user_id: string
+  title: string
+  content: { text: string; fileName?: string }
+  item_type: ItemType
+  is_default: boolean
+  created_at: string
+  updated_at: string
+}
+```
 
-## Application Status
+---
 
-### ApplicationStatus
-- Union type: 'applied' | 'interviewing' | 'offered' | 'rejected' | 'withdrawn'
+## Table: `applications` (AI Resumes)
 
-## Fit Analysis Types
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | string | UUID, primary key |
+| `user_id` | string | Clerk user ID |
+| `company` | string | Company name |
+| `job_title` | string | Position title |
+| `job_description` | string | Full job posting text |
+| `job_url` | string \| null | Source URL if imported |
+| `source_resume_id` | string \| null | Library item used as base |
+| `resume_content` | string \| null | Generated resume text |
+| `cover_letter_content` | string \| null | Generated cover letter text |
+| `status` | ApplicationStatus | Not shown in UI, kept in DB |
+| `fit_analysis` | Json \| null | Stored `FitAnalysis` object |
+| `created_at` | string | ISO timestamp |
+| `updated_at` | string | ISO timestamp |
 
-### OverallFit
-- Union type: 'Strong Fit' | 'Good Fit' | 'Stretch Role'
+### `ApplicationStatus`
+`'applied' | 'interviewing' | 'offered' | 'rejected' | 'withdrawn'`
+> Status is stored in the database but intentionally not exposed in the UI.
 
-### RoleType
-- Union type: 'technical' | 'management' | 'sales' | 'customer_success' | 'research' | 'other'
+### `ApplicationItem` (dashboard display type)
+Exported from `app/dashboard/page.tsx`:
+```typescript
+{
+  id: string
+  company: string
+  job_title: string
+  cover_letter_content: string | null
+  created_at: string
+}
+```
 
-### FitAnalysis
-- Interface: overallFit (OverallFit), strengths (string[]), gaps (string[]), suggestions (string[]), roleType (RoleType)
+---
+
+## Fit Analysis Types (`types/fit-analysis.ts`)
+
+### `OverallFit`
+`'Strong Fit' | 'Good Fit' | 'Stretch Role'`
+
+### `RoleType`
+`'technical' | 'management' | 'sales' | 'customer_success' | 'research' | 'other'`
+
+### `FitPoint`
+```typescript
+{
+  point: string      // the insight text
+  source?: string    // artifact name it came from ("Primary Resume" or library item title)
+}
+```
+
+### `FitAnalysis`
+```typescript
+{
+  overallFit: OverallFit
+  strengths: FitPoint[]
+  gaps: FitPoint[]
+  suggestions: FitPoint[]
+  plannedImprovements: string[]   // 3–5 concrete resume changes the generator will make
+  roleType: RoleType
+}
+```
+
+---
+
+## Model Types (`lib/models.ts`)
+
+### Current model IDs
+- `SONNET`: `claude-sonnet-4-6` (used for document generation)
+- `HAIKU`: `claude-haiku-4-5-20251001` (used for fit analysis)
+
+> Never hardcode these. Use `getModels()` which fetches from the Anthropic API with a 1-hour in-memory cache and hardcoded fallback.
