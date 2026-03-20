@@ -5,7 +5,6 @@ import { NextRequest } from 'next/server';
 import { Anthropic } from '@anthropic-ai/sdk';
 import { MODELS } from '@/lib/models';
 import { supabaseServer } from '@/lib/supabase';
-import { parseStageJSON } from '@/lib/pipeline-utils';
 import { FitAnalysis } from '@/types/fit-analysis';
 
 export async function POST(req: NextRequest) {
@@ -32,7 +31,7 @@ export async function POST(req: NextRequest) {
     console.log('[generate-documents] Auth check passed, userId:', userId);
 
     // Parse request body
-    const { company, jobTitle, jobDescription, backgroundExperience, isFromUploadedFile } = await req.json();
+    const { company, jobTitle, jobDescription, backgroundExperience, isFromUploadedFile, fitAnalysis: precomputedAnalysis } = await req.json();
     console.log('[generate-documents] Parsed body:', { 
       company, 
       jobTitle, 
@@ -57,7 +56,7 @@ export async function POST(req: NextRequest) {
         try {
           let resumeText = '';
           let coverLetterText = '';
-          let fitAnalysis: FitAnalysis | null = null;
+          let fitAnalysis: FitAnalysis | null = precomputedAnalysis ?? null;
 
           // Phase 1: Generate resume
           sendEvent('status', { message: 'Analyzing job description...' });
@@ -182,50 +181,6 @@ Output the resume in EXACTLY this format. Use • for bullet points. Separate ea
           }
 
           sendEvent('cover_letter_done');
-
-          // Phase 3: Generate fit analysis
-          sendEvent('status', { message: 'Analyzing fit for role...' });
-          console.log('[generate-documents] Starting fit analysis generation');
-
-          try {
-            const analysisResponse = await anthropic.messages.create({
-              model: MODELS.HAIKU,
-              max_tokens: 1500,
-              system: `You are a brutally honest but constructive career advisor.
-Analyze how well the candidate's background matches the job description. Be specific — name actual skills, tools, and experiences that match or are missing. Do not be generic.
-Adapt your analysis based on the role type (technical, management, sales, customer success, research).
-
-Output valid JSON only, no markdown fences:
-{
-  "overallFit": "Strong Fit" | "Good Fit" | "Stretch Role",
-  "strengths": ["string", "string", "string"],
-  "gaps": ["string", "string", "string"],
-  "suggestions": ["string", "string", "string"],
-  "roleType": "technical" | "management" | "sales" | "customer_success" | "research" | "other"
-}`,
-              messages: [
-                {
-                  role: 'user',
-                  content: `Job Title: ${jobTitle}\nCompany: ${company}\nJob Description: ${jobDescription}\n\nCandidate Resume:\n${resumeText}\n\nAnalyze the fit between this candidate and the role.`
-                }
-              ]
-            });
-
-            const analysisText = analysisResponse.content[0].type === 'text' ? analysisResponse.content[0].text : '';
-            fitAnalysis = parseStageJSON<FitAnalysis>(analysisText);
-            
-            console.log('[generate-documents] Fit analysis completed:', fitAnalysis);
-            const analysisEvent = JSON.stringify({ type: 'analysis', data: fitAnalysis });
-            console.log('[generate-documents] Sending analysis event:', analysisEvent);
-            controller.enqueue(encoder.encode(`data: ${analysisEvent}\n\n`));
-
-          } catch (analysisError) {
-            console.error('[generate-documents] Fit analysis generation failed:', analysisError);
-            console.error('[generate-documents] Analysis error message:', 
-              analysisError instanceof Error ? analysisError.message : String(analysisError));
-            // Don't return here - continue with saving even if analysis fails
-            console.log('[generate-documents] Continuing without fit analysis');
-          }
 
           // Save to Supabase
           console.log('[generate-documents] Starting Supabase save operation');
