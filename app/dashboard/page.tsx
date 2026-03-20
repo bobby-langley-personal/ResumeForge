@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { supabaseServer } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
-import ApplicationCard from './ApplicationCard';
+import ApplicationList, { ApplicationItem } from './ApplicationList';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, FileSearch } from 'lucide-react';
 
@@ -56,20 +56,8 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        {/* Card grid */}
         {items.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {items.map((app) => (
-              <ApplicationCard
-                key={app.id}
-                id={app.id}
-                company={app.company}
-                jobTitle={app.job_title}
-                createdAt={app.created_at}
-                hasCoverLetter={!!app.cover_letter_content}
-              />
-            ))}
-          </div>
+          <ApplicationList initialItems={items as ApplicationItem[]} />
         )}
       </main>
     </div>

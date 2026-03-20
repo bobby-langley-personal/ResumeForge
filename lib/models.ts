@@ -1,6 +1,6 @@
 // Fetches available Anthropic models and picks the best Sonnet and Haiku.
-// Uses Next.js fetch caching (revalidates every hour) so the API is not
-// called on every request.
+// Module-level in-memory cache avoids repeated API calls within the same
+// process lifetime. Falls back to known-good IDs if the API is unreachable.
 
 interface AnthropicModel {
   id: string;
@@ -8,36 +8,48 @@ interface AnthropicModel {
   created_at: string;
 }
 
+const FALLBACK = {
+  SONNET: 'claude-sonnet-4-6',
+  HAIKU: 'claude-haiku-4-5-20251001',
+};
+
+let _cache: { SONNET: string; HAIKU: string } | null = null;
+let _cacheExpiry = 0;
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
 export async function getModels(): Promise<{ SONNET: string; HAIKU: string }> {
+  if (_cache && Date.now() < _cacheExpiry) return _cache;
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not set');
+  if (!apiKey) return FALLBACK;
 
-  const res = await fetch('https://api.anthropic.com/v1/models', {
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    // Cache for 1 hour — model lists change infrequently
-    next: { revalidate: 3600 },
-  });
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/models', {
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      next: { revalidate: 3600 },
+    });
 
-  if (!res.ok) throw new Error(`Failed to fetch models: ${res.status}`);
+    if (!res.ok) return FALLBACK;
 
-  const data = await res.json();
-  const models: AnthropicModel[] = data.data ?? [];
+    const data = await res.json();
+    const models: AnthropicModel[] = data.data ?? [];
 
-  // Sort newest first by created_at, then pick first match for each family
-  const sorted = [...models].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
+    const sorted = [...models].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
 
-  const sonnet = sorted.find(m => m.id.includes('sonnet'));
-  const haiku = sorted.find(m => m.id.includes('haiku'));
-
-  if (!sonnet) throw new Error('No Sonnet model found in Anthropic model list');
-  if (!haiku) throw new Error('No Haiku model found in Anthropic model list');
-
-  return { SONNET: sonnet.id, HAIKU: haiku.id };
+    _cache = {
+      SONNET: sorted.find(m => m.id.includes('sonnet'))?.id ?? FALLBACK.SONNET,
+      HAIKU: sorted.find(m => m.id.includes('haiku'))?.id ?? FALLBACK.HAIKU,
+    };
+    _cacheExpiry = Date.now() + CACHE_TTL;
+    return _cache;
+  } catch {
+    return FALLBACK;
+  }
 }
 
 export type ModelType = string;
