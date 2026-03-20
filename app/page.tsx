@@ -97,6 +97,7 @@ const FIT_COLORS: Record<string, string> = {
 
 export default function Home() {
   const [uiState, setUIState] = useState<UIState>('idle');
+  const [resetKey, setResetKey] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');
   const [resumeContent, setResumeContent] = useState('');
   const [coverLetterContent, setCoverLetterContent] = useState('');
@@ -301,6 +302,7 @@ export default function Home() {
   };
 
   const resetForm = () => {
+    setResetKey(k => k + 1);
     setUIState('idle');
     setStatusMessage('');
     setResumeContent('');
@@ -415,7 +417,10 @@ export default function Home() {
                           {fitAnalysis.strengths.map((s, i) => (
                             <li key={i} className="text-sm text-muted-foreground flex gap-2">
                               <span className="text-green-600 mt-0.5">✓</span>
-                              <span>{s}</span>
+                              <span>
+                                {s.point}
+                                {s.source && <span className="text-xs text-muted-foreground/60 ml-1">({s.source})</span>}
+                              </span>
                             </li>
                           ))}
                         </ul>
@@ -427,7 +432,10 @@ export default function Home() {
                           {fitAnalysis.gaps.map((g, i) => (
                             <li key={i} className="text-sm text-muted-foreground flex gap-2">
                               <span className="text-red-500 mt-0.5">✗</span>
-                              <span>{g}</span>
+                              <span>
+                                {g.point}
+                                {g.source && <span className="text-xs text-muted-foreground/60 ml-1">({g.source})</span>}
+                              </span>
                             </li>
                           ))}
                         </ul>
@@ -439,11 +447,28 @@ export default function Home() {
                           {fitAnalysis.suggestions.map((s, i) => (
                             <li key={i} className="text-sm text-muted-foreground flex gap-2">
                               <span className="text-blue-500 mt-0.5">→</span>
-                              <span>{s}</span>
+                              <span>
+                                {s.point}
+                                {s.source && <span className="text-xs text-muted-foreground/60 ml-1">({s.source})</span>}
+                              </span>
                             </li>
                           ))}
                         </ul>
                       </div>
+
+                      {fitAnalysis.plannedImprovements?.length > 0 && (
+                        <div>
+                          <h3 className="text-sm font-semibold text-orange-600 mb-2">Planned Improvements</h3>
+                          <ul className="space-y-1">
+                            {fitAnalysis.plannedImprovements.map((p, i) => (
+                              <li key={i} className="text-sm text-muted-foreground flex gap-2">
+                                <span className="text-orange-500 mt-0.5">✦</span>
+                                <span>{p}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
 
                     {/* Actions */}
@@ -528,6 +553,7 @@ export default function Home() {
                     <h3 className="text-xl font-semibold text-foreground mb-4">Your Background</h3>
 
                     <ContextSelector
+                      key={resetKey}
                       onLoadBackground={text => { setInputMethod('manual'); setManualExperience(text); }}
                       onAdditionalContextChange={setAdditionalContext}
                       disabled={uiState === 'analyzing'}
