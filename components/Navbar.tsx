@@ -17,6 +17,9 @@ export default function Navbar() {
               <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Dashboard
               </Link>
+              <Link href="/resumes" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Library
+              </Link>
             </SignedIn>
           </div>
 

@@ -39,6 +39,8 @@ export interface Database {
           user_id: string
           title: string
           content: Json
+          item_type: string
+          is_default: boolean
           created_at: string
           updated_at: string
         }
@@ -47,6 +49,8 @@ export interface Database {
           user_id: string
           title: string
           content: Json
+          item_type?: string
+          is_default?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -55,6 +59,8 @@ export interface Database {
           user_id?: string
           title?: string
           content?: Json
+          item_type?: string
+          is_default?: boolean
           created_at?: string
           updated_at?: string
         }

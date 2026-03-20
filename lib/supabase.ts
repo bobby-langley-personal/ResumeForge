@@ -1,8 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
 import type { Database } from '@/types/database';
 
-// Browser client for client components
+// Browser client for client components (anon key, RLS applies)
 export const supabaseBrowser = () => {
   return createClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,20 +9,14 @@ export const supabaseBrowser = () => {
   );
 };
 
-// Server client for server components and API routes  
+// Server client for API routes — uses service role key to bypass RLS.
+// Auth is enforced via Clerk's auth() before calling this; user_id is
+// always filtered manually in each query.
 export const supabaseServer = async () => {
-  const cookieStore = await cookies();
-  
   return createClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      global: {
-        headers: {
-          Authorization: `Bearer ${cookieStore.get('sb-access-token')?.value || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-        },
-      },
-    }
+    process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY!,
+    { auth: { persistSession: false } }
   );
 };
 
