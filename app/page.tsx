@@ -12,6 +12,72 @@ import { FitAnalysis } from '@/types/fit-analysis';
 
 type UIState = 'idle' | 'analyzing' | 'review' | 'generating' | 'done' | 'error';
 
+const IS_DEV = process.env.NODE_ENV === 'development';
+
+const DEV_JD = `Kforce has a client in New York, NY that is seeking a Technical Support Specialist to join a fast-paced, global support organization within the financial technology space.
+
+Responsibilities:
+- Engage with customers to resolve issues submitted through support tickets in accordance with defined service levels
+- Troubleshoot and resolve both general inquiries and complex technical issues
+- Craft clear, professional, and tailored written communications to help customers understand and resolve their issues
+- Collaborate cross-functionally with internal teams including Partner Management, Business Development, Compliance, Product, and Engineering
+- Serve as a trusted advisor to customers with a professional, empathetic, and approachable communication style
+- Validate, document, and complete escalation requests while ensuring proper follow-up and resolution
+- Participate in incident management activities, including communicating customer impact and status updates
+- Identify opportunities for operational improvements and contribute to solutions that help scale the support organization
+- Maintain and update internal documentation to support consistency and knowledge sharing
+
+Requirements:
+- 2+ years of experience in a fast-paced, customer-facing support environment
+- Experience using ticketing systems such as Zendesk, HubSpot, or similar platforms
+- Strong written and verbal communication skills
+- Customer-focused mindset with a strong commitment to delivering high-quality service
+- Comfortable working with Slack, macOS, and Google Workspace
+- Prior experience in financial services, payments, or fintech preferred
+- Familiarity with data analytics tools for troubleshooting preferred`;
+
+const DEV_RESUME = `Robert Langley
+Palm Beach, FL | (772) 801-9259 | bobby@bobbylangley.com | linkedin.com/in/bobby-langley/
+
+SUMMARY
+Technical Support Engineer with 4+ years of experience resolving complex issues for SaaS customers through clear written communication and systematic troubleshooting. Passionate about turning customer pain points into product improvements and building support processes that scale.
+
+EXPERIENCE
+Grubbrr | Boca Raton, FL | May 2021 – Sept. 2025
+
+L3 Support Engineer | Oct. 2023 – Sep. 2025
+• Established the Engineering Support / L3 department and led initiatives that reduced average ticket resolution time by 50%
+• Integrated Jira with Salesforce and incorporated 10 additional data points for analytics, enabling data-driven identification of high-priority bugs
+• Performed code-level debugging and log analysis to identify root causes of production issues
+• Managed ongoing customer relationships primarily through written communication, turning at-risk clients into product advocates
+• Leveraged Zendesk to manage and optimize support workflows, surfacing ticket trends to drive product feedback loops
+• Authored internal knowledge base articles reducing repetitive escalations by 30%
+• Trained QA and Support Leads on advanced tools (Postman, network sniffing, Web Inspector), improving troubleshooting efficiency by ~40%
+
+Technical Product Owner | Apr. 2023 – Sep. 2023
+• Championed customer feedback to drive a platform refactor that reduced customer churn from 60% to 20% over 12 months
+• Created 100+ supportability tickets that reduced time-intensive dev/PO discussions by 30%
+• Refactored 3 payment integrations (Square, Verifone, Freedompay), eliminating charging errors
+
+QA / Deployment Engineer | Oct. 2022 – Mar. 2023
+• Resolved 400+ ticket backlog by proactively assisting offshore QA team
+• Owned Tizen IDE and AWS hosting, becoming company's centralized resource for build management
+• Developed custom React & Kotlin kiosk builds for tradeshows, boosting sales conversions
+
+Developer (Intern) | May 2021 – Oct. 2022
+• Created proof-of-concept apps for Sales/Executives, directly contributing to new client acquisitions
+• Engineered workarounds to run modern Angular/HTML/CSS on deprecated platform, extending viability by 18+ months
+• Built JavaScript/HTML diagnostic tools and REST API integrations used by Support teams
+
+EDUCATION
+Boca Code | Boca Raton, FL — Software Engineering Certification
+Florida State University | Tallahassee, FL — B.S. Environmental Science
+
+TECHNICAL SKILLS
+Languages & Frameworks: JavaScript, TypeScript, Angular, HTML/CSS, Node.js
+Tools & Platforms: Jira, Salesforce, GitHub, AWS, Postman, Confluence, Zendesk
+Specializations: API development, WebSocket integrations, automation scripting, QA/regression testing, technical documentation`;
+
 interface FormData {
   company: string;
   jobTitle: string;
@@ -40,8 +106,20 @@ export default function Home() {
   const [inputMethod, setInputMethod] = useState<'upload' | 'manual'>('upload');
   const [fitAnalysis, setFitAnalysis] = useState<FitAnalysis | null>(null);
   const [pendingFormData, setPendingFormData] = useState<FormData | null>(null);
+  const [company, setCompany] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
+  const [jobDescription, setJobDescription] = useState('');
+  const [manualExperience, setManualExperience] = useState('');
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fillTestData = () => {
+    setInputMethod('manual');
+    setCompany('Kforce / Fintech Client');
+    setJobTitle('Technical Support Specialist');
+    setJobDescription(DEV_JD);
+    setManualExperience(DEV_RESUME);
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -81,14 +159,13 @@ export default function Home() {
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const formData = new FormData(e.target as HTMLFormElement);
     const data: FormData = {
-      company: formData.get('company') as string,
-      jobTitle: formData.get('jobTitle') as string,
-      jobDescription: formData.get('jobDescription') as string,
+      company,
+      jobTitle,
+      jobDescription,
       backgroundExperience: inputMethod === 'upload' && uploadedFileContent
         ? uploadedFileContent
-        : formData.get('experience') as string,
+        : manualExperience,
       isFromUploadedFile: inputMethod === 'upload' && !!uploadedFileContent,
     };
 
@@ -231,6 +308,10 @@ export default function Home() {
     setPendingFormData(null);
     setErrorMessage('');
     setApplicationId(null);
+    setCompany('');
+    setJobTitle('');
+    setJobDescription('');
+    setManualExperience('');
     setUploadedFileContent('');
     setUploadedFileName('');
     setIsPreviewExpanded(false);
@@ -412,6 +493,13 @@ export default function Home() {
             {/* Input Form */}
             {(uiState === 'idle' || uiState === 'analyzing' || uiState === 'error') && (
               <form ref={formRef} onSubmit={handleFormSubmit}>
+                {IS_DEV && (
+                  <div className="mb-6 flex justify-end">
+                    <Button type="button" variant="outline" size="sm" onClick={fillTestData}>
+                      [Dev] Fill Test Data
+                    </Button>
+                  </div>
+                )}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                   {/* Left Column - Job Details */}
                   <div className="space-y-6">
@@ -421,11 +509,12 @@ export default function Home() {
                       <Label htmlFor="company">Company Name</Label>
                       <Input
                         id="company"
-                        name="company"
                         placeholder="Enter company name"
                         className="bg-background"
                         disabled={uiState === 'analyzing'}
                         required
+                        value={company}
+                        onChange={(e) => setCompany(e.target.value)}
                       />
                     </div>
 
@@ -433,11 +522,12 @@ export default function Home() {
                       <Label htmlFor="jobTitle">Job Title</Label>
                       <Input
                         id="jobTitle"
-                        name="jobTitle"
                         placeholder="Enter job title"
                         className="bg-background"
                         disabled={uiState === 'analyzing'}
                         required
+                        value={jobTitle}
+                        onChange={(e) => setJobTitle(e.target.value)}
                       />
                     </div>
 
@@ -445,11 +535,12 @@ export default function Home() {
                       <Label htmlFor="jobDescription">Job Description</Label>
                       <Textarea
                         id="jobDescription"
-                        name="jobDescription"
                         placeholder="Paste the full job description here..."
                         className="min-h-[300px] bg-background"
                         disabled={uiState === 'analyzing'}
                         required
+                        value={jobDescription}
+                        onChange={(e) => setJobDescription(e.target.value)}
                       />
                     </div>
                   </div>
@@ -550,11 +641,12 @@ export default function Home() {
                         <Label htmlFor="experience">Or paste your experience manually</Label>
                         <Textarea
                           id="experience"
-                          name="experience"
                           placeholder="Paste your current resume or background experience here..."
                           className="min-h-[400px] bg-background"
                           disabled={uiState === 'analyzing'}
                           required
+                          value={manualExperience}
+                          onChange={(e) => setManualExperience(e.target.value)}
                         />
                       </div>
                     )}

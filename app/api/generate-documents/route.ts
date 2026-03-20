@@ -3,7 +3,7 @@ export const runtime = 'edge';
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 import { Anthropic } from '@anthropic-ai/sdk';
-import { MODELS } from '@/lib/models';
+import { getModels } from '@/lib/models';
 import { supabaseServer } from '@/lib/supabase';
 import { FitAnalysis } from '@/types/fit-analysis';
 
@@ -58,13 +58,15 @@ export async function POST(req: NextRequest) {
           let coverLetterText = '';
           let fitAnalysis: FitAnalysis | null = precomputedAnalysis ?? null;
 
+          const { SONNET } = await getModels();
+
           // Phase 1: Generate resume
           sendEvent('status', { message: 'Analyzing job description...' });
           console.log('[generate-documents] Starting resume generation');
 
           try {
             const resumeStream = await anthropic.messages.create({
-            model: MODELS.SONNET,
+            model: SONNET,
             max_tokens: 4000,
             system: `You are an expert resume writer with 15+ years of experience helping candidates land roles at top companies. Your job is to deeply analyze the candidate's background and the job description, then produce a tailored, ATS-optimized resume that gives them the best possible chance of getting an interview.
 
@@ -146,7 +148,7 @@ Output the resume in EXACTLY this format. Use • for bullet points. Separate ea
 
           try {
             const coverLetterStream = await anthropic.messages.create({
-            model: MODELS.SONNET,
+            model: SONNET,
             max_tokens: 2000,
             system: `You are an expert cover letter writer. Write a professional 3-4 paragraph cover letter tailored to the role. Never invent experience. Use the generated resume content as context.`,
             messages: [
