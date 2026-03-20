@@ -142,9 +142,8 @@ export default function Home() {
         body: JSON.stringify({ url: jobUrl.trim() }),
       });
       if (!res.ok) {
-        const msg = await res.text();
-        console.log('msg:', msg);
-        throw new Error(msg || `HTTP ${res.status}`);
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? `HTTP ${res.status}`);
       }
       const data = await res.json();
       setJobDescription(data.jobDescription);

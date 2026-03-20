@@ -3,8 +3,17 @@ export const runtime = 'nodejs';
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 
-// Sites that require login and can't be scraped
-const BLOCKED_HOSTS = ['linkedin.com', 'www.linkedin.com'];
+const TRUNCATE_AT = [
+  'Apply for this job',
+  'Submit application',
+  'Create a Job Alert',
+  'Equal Employment Opportunity',
+  'Voluntary Self-Identification',
+  'indicates a required field',
+  'Autofill with',
+  'First Name*',
+  'Upload resume',
+];
 
 function extractText(html: string): string {
   return html
@@ -111,10 +120,10 @@ export async function POST(req: NextRequest) {
     return new Response('URL must use http or https', { status: 400 });
   }
 
-  // Block sites that require login
-  if (BLOCKED_HOSTS.includes(parsed.hostname)) {
-    return new Response(
-      'LinkedIn requires you to be signed in — copy and paste the job description manually instead.',
+  // Block LinkedIn — requires login, can't be scraped
+  if (url.includes('linkedin.com/jobs')) {
+    return Response.json(
+      { error: 'LinkedIn blocks URL scraping — copy and paste the job description manually instead.', code: 'LINKEDIN_BLOCKED' },
       { status: 422 }
     );
   }
@@ -137,9 +146,18 @@ export async function POST(req: NextRequest) {
     return new Response(`Failed to fetch page: ${msg}`, { status: 500 });
   }
 
-  const jobDescription = extractText(html);
+  let jobDescription = extractText(html);
   if (!jobDescription || jobDescription.length < 100) {
     return new Response('Could not extract content from this page', { status: 422 });
+  }
+
+  // Truncate at application form noise
+  for (const marker of TRUNCATE_AT) {
+    const idx = jobDescription.toLowerCase().indexOf(marker.toLowerCase());
+    if (idx !== -1) {
+      jobDescription = jobDescription.slice(0, idx).trim();
+      break;
+    }
   }
 
   const company = detectCompany(html, url);
