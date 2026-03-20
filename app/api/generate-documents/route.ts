@@ -64,7 +64,37 @@ export async function POST(req: NextRequest) {
             const resumeStream = await anthropic.messages.create({
             model: MODELS.SONNET,
             max_tokens: 4000,
-            system: `You are an expert resume writer. Reframe and emphasize the user's experience to match the job description. Never invent experience. Output clean plain text resume in standard sections: Summary, Experience, Skills, Education.`,
+            system: `You are an expert resume writer. Reframe and emphasize the user's experience to match the job description. Never invent experience. 
+
+Output the resume in EXACTLY this format:
+
+NAME: [Full Name]
+EMAIL: [email]
+PHONE: [phone]
+LOCATION: [city, state]
+LINKEDIN: [linkedin url]
+
+SUMMARY:
+[2-3 sentence professional summary]
+
+EXPERIENCE:
+[Company Name] | [City, State] | [Start Month Year] – [End Month Year or Present]
+[Job Title]
+• [bullet point]
+• [bullet point]
+• [bullet point]
+
+[Next Company]...
+
+SKILLS:
+[Category]: [skill1], [skill2], [skill3]
+[Category]: [skill1], [skill2]
+
+EDUCATION:
+[Institution] | [City, State]
+[Degree]
+
+Output the resume in EXACTLY this format. Use • for bullet points. Separate each experience entry with a blank line. Do not add any other sections or formatting. Do not use markdown.`,
             messages: [
               {
                 role: 'user',

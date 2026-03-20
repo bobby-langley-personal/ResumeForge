@@ -21,19 +21,24 @@ interface ParsedResume {
     email: string;
     phone: string;
     location: string;
+    linkedin: string;
   };
   summary: string;
   experience: Array<{
     company: string;
     title: string;
     dates: string;
+    location: string;
     bulletPoints: string[];
   }>;
-  skills: string[];
+  skills: Array<{
+    category: string;
+    items: string[];
+  }>;
   education: Array<{
     institution: string;
+    location: string;
     degree: string;
-    dates: string;
   }>;
 }
 
@@ -128,6 +133,7 @@ function parseResumeText(resumeText: string): ParsedResume {
       email: '',
       phone: '',
       location: '',
+      linkedin: '',
     },
     summary: '',
     experience: [],
@@ -137,104 +143,125 @@ function parseResumeText(resumeText: string): ParsedResume {
 
   let currentSection = '';
   let currentExperience: any = null;
-  let currentEducation: any = null;
+  let summaryLines: string[] = [];
   
-  for (const line of lines) {
-    const lowerLine = line.toLowerCase();
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     
-    // Detect sections
-    if (lowerLine.includes('summary') || lowerLine.includes('objective')) {
+    // Parse header fields with explicit labels
+    if (line.startsWith('NAME:')) {
+      parsed.header.name = line.replace('NAME:', '').trim();
+      continue;
+    }
+    if (line.startsWith('EMAIL:')) {
+      parsed.header.email = line.replace('EMAIL:', '').trim();
+      continue;
+    }
+    if (line.startsWith('PHONE:')) {
+      parsed.header.phone = line.replace('PHONE:', '').trim();
+      continue;
+    }
+    if (line.startsWith('LOCATION:')) {
+      parsed.header.location = line.replace('LOCATION:', '').trim();
+      continue;
+    }
+    if (line.startsWith('LINKEDIN:')) {
+      parsed.header.linkedin = line.replace('LINKEDIN:', '').trim();
+      continue;
+    }
+    
+    // Detect section headers
+    if (line === 'SUMMARY:') {
       currentSection = 'summary';
       continue;
-    } else if (lowerLine.includes('experience') || lowerLine.includes('work history')) {
+    }
+    if (line === 'EXPERIENCE:') {
       currentSection = 'experience';
       continue;
-    } else if (lowerLine.includes('skills')) {
+    }
+    if (line === 'SKILLS:') {
       currentSection = 'skills';
       continue;
-    } else if (lowerLine.includes('education')) {
+    }
+    if (line === 'EDUCATION:') {
       currentSection = 'education';
       continue;
     }
     
-    // Extract header information (first few lines)
-    if (!parsed.header.name && !currentSection) {
-      parsed.header.name = line;
-      continue;
-    }
-    
-    if (!currentSection) {
-      // Try to extract contact info
-      if (line.includes('@')) {
-        parsed.header.email = line;
-      } else if (line.match(/\(\d{3}\)\s?\d{3}-\d{4}/) || line.match(/\d{3}[-.]?\d{3}[-.]?\d{4}/)) {
-        parsed.header.phone = line;
-      } else if (line.includes(',') && !line.includes('@')) {
-        parsed.header.location = line;
-      }
-      continue;
-    }
-    
-    // Process sections
+    // Process current section
     switch (currentSection) {
       case 'summary':
-        parsed.summary += (parsed.summary ? ' ' : '') + line;
+        summaryLines.push(line);
         break;
         
       case 'experience':
-        // Check if this looks like a new job entry (company name)
-        if (line.match(/^\w+.*\s+\d{4}|\w+.*\s+[-–]\s*\d{4}|^\w+.*\s+[-–]\s*Present/i)) {
+        // Check for company header line: "Company | Location | Dates"
+        if (line.includes(' | ') && (line.includes('–') || line.includes('Present'))) {
+          // Save previous experience if exists
           if (currentExperience) {
             parsed.experience.push(currentExperience);
           }
-          const parts = line.split(/\s+[-–]\s*/);
+          
+          const parts = line.split(' | ');
           currentExperience = {
-            company: parts[0].trim(),
+            company: parts[0]?.trim() || '',
+            location: parts[1]?.trim() || '',
+            dates: parts[2]?.trim() || '',
             title: '',
-            dates: parts.length > 1 ? parts[parts.length - 1].trim() : '',
             bulletPoints: [],
           };
-        } else if (currentExperience && line.startsWith('•') || line.startsWith('-') || line.startsWith('*')) {
-          currentExperience.bulletPoints.push(line.replace(/^[•\-*]\s*/, ''));
-        } else if (currentExperience && !currentExperience.title) {
+        } else if (currentExperience && line.startsWith('•')) {
+          // Bullet point
+          currentExperience.bulletPoints.push(line.replace('•', '').trim());
+        } else if (currentExperience && !currentExperience.title && line.trim() !== '') {
+          // Job title (first non-bullet line after company header)
           currentExperience.title = line;
         }
         break;
         
       case 'skills':
-        if (line.includes(',')) {
-          parsed.skills.push(...line.split(',').map(s => s.trim()));
-        } else {
-          parsed.skills.push(line);
+        // Parse "Category: skill1, skill2, skill3" format
+        if (line.includes(':')) {
+          const [category, skillsStr] = line.split(':', 2);
+          const skills = skillsStr.split(',').map(s => s.trim()).filter(s => s);
+          parsed.skills.push({
+            category: category.trim(),
+            items: skills,
+          });
         }
         break;
         
       case 'education':
-        if (line.match(/\d{4}/) || line.includes('University') || line.includes('College') || line.includes('Bachelor') || line.includes('Master') || line.includes('PhD')) {
-          if (currentEducation) {
-            parsed.education.push(currentEducation);
-          }
-          currentEducation = {
-            institution: '',
-            degree: line,
-            dates: '',
-          };
-          const dateMatch = line.match(/\d{4}[\s-]*\d{4}|\d{4}[\s-]*Present/i);
-          if (dateMatch) {
-            currentEducation.dates = dateMatch[0];
-            currentEducation.degree = line.replace(dateMatch[0], '').trim();
-          }
+        // Parse "Institution | Location" then "Degree" format
+        if (line.includes(' | ')) {
+          const [institution, location] = line.split(' | ', 2);
+          // Look ahead for degree on next line
+          const nextLine = lines[i + 1];
+          parsed.education.push({
+            institution: institution.trim(),
+            location: location.trim(),
+            degree: nextLine?.trim() || '',
+          });
+          // Skip the degree line since we consumed it
+          if (nextLine) i++;
+        } else if (parsed.education.length === 0) {
+          // Simple format without location
+          parsed.education.push({
+            institution: line,
+            location: '',
+            degree: '',
+          });
         }
         break;
     }
   }
   
-  // Add any remaining items
+  // Finalize parsing
+  parsed.summary = summaryLines.join(' ');
+  
+  // Add any remaining experience
   if (currentExperience) {
     parsed.experience.push(currentExperience);
-  }
-  if (currentEducation) {
-    parsed.education.push(currentEducation);
   }
   
   return parsed;
@@ -254,9 +281,15 @@ export default function ResumePDF({ resumeText, candidateName, company, jobTitle
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.name}>{parsed.header.name || candidateName}</Text>
-          {parsed.header.email && <Text style={styles.contact}>{parsed.header.email}</Text>}
-          {parsed.header.phone && <Text style={styles.contact}>{parsed.header.phone}</Text>}
-          {parsed.header.location && <Text style={styles.contact}>{parsed.header.location}</Text>}
+          {/* Contact info on one line separated by | */}
+          <Text style={styles.contact}>
+            {[
+              parsed.header.location,
+              parsed.header.phone, 
+              parsed.header.email,
+              parsed.header.linkedin || 'LinkedIn: Not provided'
+            ].filter(Boolean).join(' | ')}
+          </Text>
         </View>
 
         {/* Summary */}
@@ -277,7 +310,9 @@ export default function ResumePDF({ resumeText, candidateName, company, jobTitle
                   <Text style={styles.jobTitle}>{job.title}</Text>
                   <Text style={styles.jobDates}>{job.dates}</Text>
                 </View>
-                <Text style={styles.company}>{job.company}</Text>
+                <Text style={styles.company}>
+                  {job.company}{job.location ? ` | ${job.location}` : ''}
+                </Text>
                 {job.bulletPoints.map((bullet, bulletIndex) => (
                   <Text key={bulletIndex} style={styles.bulletPoint}>
                     • {bullet}
@@ -292,7 +327,11 @@ export default function ResumePDF({ resumeText, candidateName, company, jobTitle
         {parsed.skills.length > 0 && (
           <View>
             <Text style={styles.sectionTitle}>Skills</Text>
-            <Text style={styles.skillsList}>{parsed.skills.join(' • ')}</Text>
+            {parsed.skills.map((skillGroup, index) => (
+              <Text key={index} style={styles.skillsList}>
+                <Text style={styles.jobTitle}>{skillGroup.category}:</Text> {skillGroup.items.join(', ')}
+              </Text>
+            ))}
           </View>
         )}
 
@@ -302,11 +341,10 @@ export default function ResumePDF({ resumeText, candidateName, company, jobTitle
             <Text style={styles.sectionTitle}>Education</Text>
             {parsed.education.map((edu, index) => (
               <View key={index} style={styles.educationItem}>
-                <View style={styles.educationHeader}>
-                  <Text style={styles.degree}>{edu.degree}</Text>
-                  <Text style={styles.jobDates}>{edu.dates}</Text>
-                </View>
-                {edu.institution && <Text style={styles.institution}>{edu.institution}</Text>}
+                <Text style={styles.degree}>{edu.degree}</Text>
+                <Text style={styles.institution}>
+                  {edu.institution}{edu.location ? ` | ${edu.location}` : ''}
+                </Text>
               </View>
             ))}
           </View>
