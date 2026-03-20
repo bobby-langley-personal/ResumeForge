@@ -40,8 +40,32 @@ Current valid columns:
 - Assume a column exists because it seems logical — check this
   file first
 
+## API Routes
+
+| Route | Runtime | Purpose |
+|-------|---------|---------|
+| `POST /api/analyze-fit` | Node | Haiku fit analysis — returns JSON FitAnalysis |
+| `POST /api/generate-documents` | Edge | SSE stream — resume (+ optional cover letter) generation |
+| `POST /api/extract-resume` | Node | PDF/DOCX text extraction |
+| `POST /api/download-pdf/[type]` | Node | PDF download for resume or cover letter |
+
+### generate-documents request fields
+- `company`, `jobTitle`, `jobDescription`, `backgroundExperience` — required
+- `isFromUploadedFile` — boolean, affects resume prompt framing
+- `fitAnalysis` — pre-computed FitAnalysis from /api/analyze-fit (optional, skips re-analysis)
+- `includeCoverLetter` — boolean (default false), skips cover letter phase when false
+
+## Model Selection
+
+Never hardcode model IDs. Use `getModels()` from `@/lib/models` — fetches from Anthropic API, cached 1hr via Next.js fetch.
+
+## Branch Naming
+
+All feature/fix branches must follow `claude/issue-{number}-{YYYYMMDD}-{HHMM}` so Vercel skips deployment on these branches.
+
 ## Development Guidelines
 
 - Always read TYPES.md for current type definitions before making database changes
 - Use existing patterns and conventions from the codebase
 - Follow the architecture rules defined in the repository context
+- Use `gh issue comment` to post progress updates on GitHub issues while working

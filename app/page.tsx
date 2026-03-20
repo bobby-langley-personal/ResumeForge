@@ -106,6 +106,7 @@ export default function Home() {
   const [inputMethod, setInputMethod] = useState<'upload' | 'manual'>('upload');
   const [fitAnalysis, setFitAnalysis] = useState<FitAnalysis | null>(null);
   const [pendingFormData, setPendingFormData] = useState<FormData | null>(null);
+  const [includeCoverLetter, setIncludeCoverLetter] = useState(false);
   const [company, setCompany] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [jobDescription, setJobDescription] = useState('');
@@ -214,7 +215,7 @@ export default function Home() {
       const response = await fetch('/api/generate-documents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...pendingFormData, fitAnalysis }),
+        body: JSON.stringify({ ...pendingFormData, fitAnalysis, includeCoverLetter }),
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -306,6 +307,7 @@ export default function Home() {
     setCoverLetterContent('');
     setFitAnalysis(null);
     setPendingFormData(null);
+    setIncludeCoverLetter(false);
     setErrorMessage('');
     setApplicationId(null);
     setCompany('');
@@ -475,7 +477,7 @@ export default function Home() {
                         className="flex-1"
                         onClick={handleGenerateDocuments}
                       >
-                        Generate Resume &amp; Cover Letter
+                        {includeCoverLetter ? 'Generate Resume & Cover Letter' : 'Generate Resume'}
                       </Button>
                       <Button
                         variant="outline"
@@ -653,7 +655,19 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="text-center space-y-4 mb-8">
+                <div className="flex flex-col items-center space-y-4 mb-8">
+                  {/* Cover letter toggle */}
+                  <label className="flex items-center gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={includeCoverLetter}
+                      onChange={(e) => setIncludeCoverLetter(e.target.checked)}
+                      disabled={uiState === 'analyzing'}
+                      className="w-4 h-4 rounded border-border accent-primary"
+                    />
+                    <span className="text-sm text-muted-foreground">Also generate a cover letter</span>
+                  </label>
+
                   <Button
                     type="submit"
                     size="lg"
@@ -671,7 +685,7 @@ export default function Home() {
 
             {/* Live Preview Panels */}
             {(uiState === 'generating' || uiState === 'done') && (resumeContent || coverLetterContent) && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+              <div className={`grid grid-cols-1 ${includeCoverLetter ? 'lg:grid-cols-2' : ''} gap-8 mb-8`}>
                 {resumeContent && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -689,7 +703,7 @@ export default function Home() {
                   </div>
                 )}
 
-                {coverLetterContent && (
+                {includeCoverLetter && coverLetterContent && (
                   <div className="space-y-2">
                     <h3 className="text-lg font-semibold text-foreground">Cover Letter</h3>
                     <Textarea
@@ -714,6 +728,7 @@ export default function Home() {
                   >
                     Download Resume PDF
                   </Button>
+                  {includeCoverLetter && coverLetterContent && (
                   <Button
                     size="lg"
                     onClick={() => handleDownload('cover-letter')}
@@ -721,6 +736,7 @@ export default function Home() {
                   >
                     Download Cover Letter PDF
                   </Button>
+                  )}
                 </div>
                 <Button
                   variant="outline"

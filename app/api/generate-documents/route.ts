@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     console.log('[generate-documents] Auth check passed, userId:', userId);
 
     // Parse request body
-    const { company, jobTitle, jobDescription, backgroundExperience, isFromUploadedFile, fitAnalysis: precomputedAnalysis } = await req.json();
+    const { company, jobTitle, jobDescription, backgroundExperience, isFromUploadedFile, fitAnalysis: precomputedAnalysis, includeCoverLetter = false } = await req.json();
     console.log('[generate-documents] Parsed body:', { 
       company, 
       jobTitle, 
@@ -142,47 +142,45 @@ Output the resume in EXACTLY this format. Use • for bullet points. Separate ea
 
           sendEvent('resume_done');
 
-          // Phase 2: Generate cover letter
-          sendEvent('status', { message: 'Writing cover letter...' });
-          console.log('[generate-documents] Starting cover letter generation');
+          // Phase 2: Generate cover letter (optional)
+          if (includeCoverLetter) {
+            sendEvent('status', { message: 'Writing cover letter...' });
+            console.log('[generate-documents] Starting cover letter generation');
 
-          try {
-            const coverLetterStream = await anthropic.messages.create({
-            model: SONNET,
-            max_tokens: 2000,
-            system: `You are an expert cover letter writer. Write a professional 3-4 paragraph cover letter tailored to the role. Never invent experience. Use the generated resume content as context.`,
-            messages: [
-              {
-                role: 'user',
-                content: `Company: ${company}\nJob Title: ${jobTitle}\nJob Description: ${jobDescription}\n\nResume Content:\n${resumeText}\n\nPlease create a tailored cover letter.`
-              }
-            ],
-            stream: true
-            });
-            console.log('[generate-documents] Cover letter stream created successfully');
+            try {
+              const coverLetterStream = await anthropic.messages.create({
+                model: SONNET,
+                max_tokens: 2000,
+                system: `You are an expert cover letter writer. Write a professional 3-4 paragraph cover letter tailored to the role. Never invent experience. Use the generated resume content as context.`,
+                messages: [
+                  {
+                    role: 'user',
+                    content: `Company: ${company}\nJob Title: ${jobTitle}\nJob Description: ${jobDescription}\n\nResume Content:\n${resumeText}\n\nPlease create a tailored cover letter.`
+                  }
+                ],
+                stream: true
+              });
+              console.log('[generate-documents] Cover letter stream created successfully');
 
-            for await (const chunk of coverLetterStream) {
-              if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-                const text = chunk.delta.text;
-                coverLetterText += text;
-                sendEvent('cover_letter_chunk', { content: text });
+              for await (const chunk of coverLetterStream) {
+                if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+                  const text = chunk.delta.text;
+                  coverLetterText += text;
+                  sendEvent('cover_letter_chunk', { content: text });
+                }
               }
+              console.log('[generate-documents] Cover letter generation completed, length:', coverLetterText.length);
+
+            } catch (coverLetterError) {
+              console.error('[generate-documents] Cover letter generation failed:', coverLetterError);
+              sendEvent('error', {
+                message: `Cover letter generation failed: ${coverLetterError instanceof Error ? coverLetterError.message : 'Unknown error'}`
+              });
+              return;
             }
-            console.log('[generate-documents] Cover letter generation completed, length:', coverLetterText.length);
 
-          } catch (coverLetterError) {
-            console.error('[generate-documents] Cover letter generation failed:', coverLetterError);
-            console.error('[generate-documents] Cover letter error message:', 
-              coverLetterError instanceof Error ? coverLetterError.message : String(coverLetterError));
-            console.error('[generate-documents] Cover letter error stack:', 
-              coverLetterError instanceof Error ? coverLetterError.stack : 'no stack');
-            sendEvent('error', { 
-              message: `Cover letter generation failed: ${coverLetterError instanceof Error ? coverLetterError.message : 'Unknown error'}` 
-            });
-            return;
+            sendEvent('cover_letter_done');
           }
-
-          sendEvent('cover_letter_done');
 
           // Save to Supabase
           console.log('[generate-documents] Starting Supabase save operation');
