@@ -118,6 +118,7 @@ export default function Home() {
   const [jobUrl, setJobUrl] = useState('');
   const [isFetchingUrl, setIsFetchingUrl] = useState(false);
   const [urlError, setUrlError] = useState('');
+  const [urlImported, setUrlImported] = useState(false);
   const [manualExperience, setManualExperience] = useState('');
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -142,11 +143,14 @@ export default function Home() {
       });
       if (!res.ok) {
         const msg = await res.text();
+        console.log('msg:', msg);
         throw new Error(msg || `HTTP ${res.status}`);
       }
       const data = await res.json();
       setJobDescription(data.jobDescription);
       if (data.company && !company) setCompany(data.company);
+      if (data.jobTitle && !jobTitle) setJobTitle(data.jobTitle);
+      setUrlImported(true);
     } catch (err) {
       setUrlError(err instanceof Error ? err.message : 'Failed to fetch job posting');
     } finally {
@@ -345,6 +349,7 @@ export default function Home() {
     setJobDescription('');
     setJobUrl('');
     setUrlError('');
+    setUrlImported(false);
     setManualExperience('');
     setUploadedFileContent('');
     setUploadedFileName('');
@@ -598,7 +603,7 @@ export default function Home() {
                           className="bg-background flex-1"
                           disabled={uiState === 'analyzing' || isFetchingUrl}
                           value={jobUrl}
-                          onChange={(e) => { setJobUrl(e.target.value); setUrlError(''); }}
+                          onChange={(e) => { setJobUrl(e.target.value); setUrlError(''); setUrlImported(false); }}
                           onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleFetchUrl())}
                         />
                         <Button
@@ -616,7 +621,10 @@ export default function Home() {
                         </Button>
                       </div>
                       {urlError && <p className="text-xs text-destructive">{urlError}</p>}
-                      <p className="text-xs text-muted-foreground">Works best with public job postings. Some sites may block automated requests.</p>
+                      {urlImported
+                        ? <p className="text-xs text-green-600">Imported — always double-check auto-filled results for accuracy.</p>
+                        : <p className="text-xs text-muted-foreground">Works best with public job postings. Some sites may block automated requests.</p>
+                      }
                     </div>
 
                     <div className="space-y-2">

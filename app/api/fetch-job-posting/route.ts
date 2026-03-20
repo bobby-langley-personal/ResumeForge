@@ -3,6 +3,9 @@ export const runtime = 'nodejs';
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 
+// Sites that require login and can't be scraped
+const BLOCKED_HOSTS = ['linkedin.com', 'www.linkedin.com'];
+
 function extractText(html: string): string {
   return html
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
@@ -22,33 +25,62 @@ function extractText(html: string): string {
     .trim();
 }
 
-function detectCompany(html: string, url: string): string | undefined {
-  // Try og:site_name
-  const ogSite = html.match(/<meta[^>]+property=["']og:site_name["'][^>]+content=["']([^"']+)["']/i)?.[1]
-    ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:site_name["']/i)?.[1];
-  if (ogSite) return ogSite.trim();
+function getMetaContent(html: string, property: string): string | undefined {
+  return (
+    html.match(new RegExp(`<meta[^>]+property=["']${property}["'][^>]+content=["']([^"']+)["']`, 'i'))?.[1] ??
+    html.match(new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+property=["']${property}["']`, 'i'))?.[1]
+  )?.trim();
+}
 
-  // Try <title> — often "Job Title at Company | Board"
+function detectCompany(html: string, url: string): string | undefined {
+  // og:site_name is the most reliable signal
+  const ogSite = getMetaContent(html, 'og:site_name');
+  if (ogSite) return ogSite;
+
+  // Title pattern: "Job Title at Company | Board" or "Job Title - Company"
   const title = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1];
   if (title) {
-    const atMatch = title.match(/ at ([^|–—\-]+)/i)?.[1]?.trim();
+    const atMatch = title.match(/ at ([^|–—]+)/i)?.[1]?.trim();
     if (atMatch && atMatch.length < 60) return atMatch;
   }
 
-  // Try common job board URL patterns
+  // URL patterns for major job boards
   try {
     const { hostname } = new URL(url);
-    // greenhouse: boards.greenhouse.io/companyname
     const greenhouse = url.match(/greenhouse\.io\/([^/?#]+)/i)?.[1];
     if (greenhouse) return greenhouse.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-    // lever: jobs.lever.co/companyname
     const lever = url.match(/lever\.co\/([^/?#]+)/i)?.[1];
     if (lever) return lever.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-    // workday: companyname.wd1.myworkdayjobs.com
     const workday = hostname.match(/^([^.]+)\.wd\d+\.myworkdayjobs\.com/i)?.[1];
     if (workday) return workday.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   } catch {
-    // ignore URL parse errors
+    // ignore
+  }
+
+  return undefined;
+}
+
+function detectJobTitle(html: string): string | undefined {
+  // og:title is usually the most specific — often "Job Title at Company" or just "Job Title"
+  const ogTitle = getMetaContent(html, 'og:title');
+  if (ogTitle) {
+    // Strip " at Company" suffix and board name suffixes
+    const stripped = ogTitle
+      .replace(/ at [^|–—]+$/i, '')
+      .replace(/\s*[|·\-–—].*$/, '')
+      .trim();
+    if (stripped && stripped.length < 120) return stripped;
+  }
+
+  // Fall back to <title> tag with aggressive stripping
+  const title = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1];
+  if (title) {
+    const stripped = title
+      .replace(/ at [^|–—]+$/i, '')
+      .replace(/\s*[|·\-–—].*$/, '')
+      .replace(/\s*(job|jobs|careers?|apply|application)\s*$/i, '')
+      .trim();
+    if (stripped && stripped.length < 120) return stripped;
   }
 
   return undefined;
@@ -69,7 +101,6 @@ export async function POST(req: NextRequest) {
     return new Response('url is required', { status: 400 });
   }
 
-  // Validate URL
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -78,6 +109,14 @@ export async function POST(req: NextRequest) {
   }
   if (!['http:', 'https:'].includes(parsed.protocol)) {
     return new Response('URL must use http or https', { status: 400 });
+  }
+
+  // Block sites that require login
+  if (BLOCKED_HOSTS.includes(parsed.hostname)) {
+    return new Response(
+      'LinkedIn requires you to be signed in — copy and paste the job description manually instead.',
+      { status: 422 }
+    );
   }
 
   let html: string;
@@ -104,6 +143,7 @@ export async function POST(req: NextRequest) {
   }
 
   const company = detectCompany(html, url);
+  const jobTitle = detectJobTitle(html);
 
-  return Response.json({ jobDescription, company });
+  return Response.json({ jobDescription, company, jobTitle });
 }
