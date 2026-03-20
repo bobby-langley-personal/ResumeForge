@@ -35,7 +35,7 @@ export default async function ResumesPage() {
             </p>
           </div>
           <Link href="/dashboard">
-            <Button variant="outline">My Applications</Button>
+            <Button variant="outline">AI Resumes</Button>
           </Link>
         </div>
         <ResumeLibrary initialItems={(data ?? []) as unknown as ResumeItem[]} />

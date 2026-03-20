@@ -42,7 +42,7 @@ export default function ApplicationList({ initialItems }: Props) {
 
   const handleBulkDelete = async () => {
     if (selected.size === 0) return;
-    if (!confirm(`Delete ${selected.size} application${selected.size > 1 ? 's' : ''}?`)) return;
+    if (!confirm(`Delete ${selected.size} resume${selected.size > 1 ? 's' : ''}?`)) return;
     setDeleting(true);
     const res = await fetch('/api/applications', {
       method: 'DELETE',

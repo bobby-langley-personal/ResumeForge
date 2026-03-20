@@ -48,7 +48,7 @@ export default function Navbar() {
             </Link>
             <SignedIn>
               <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                My Applications
+                AI Resumes
               </Link>
               <Link href="/resumes" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 My Documents
