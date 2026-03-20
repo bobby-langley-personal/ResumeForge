@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { readSSEStream } from '@/lib/sse-reader';
 import { Upload, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { FitAnalysis } from '@/types/fit-analysis';
 
 type UIState = 'idle' | 'generating' | 'done' | 'error';
 
@@ -24,6 +25,7 @@ export default function Home() {
   const [statusMessage, setStatusMessage] = useState('');
   const [resumeContent, setResumeContent] = useState('');
   const [coverLetterContent, setCoverLetterContent] = useState('');
+  const [fitAnalysis, setFitAnalysis] = useState<FitAnalysis | null>(null);
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [uploadedFileContent, setUploadedFileContent] = useState('');
@@ -130,6 +132,13 @@ export default function Home() {
             case 'cover_letter_chunk':
               setCoverLetterContent(prev => prev + event.content);
               break;
+            case 'cover_letter_done':
+              setStatusMessage('Analyzing fit for role...');
+              break;
+            case 'analysis':
+              setFitAnalysis(event.data);
+              setStatusMessage('Generation complete!');
+              break;
             case 'done':
               setStatusMessage('Generation complete!');
               setUIState('done');
@@ -201,6 +210,7 @@ export default function Home() {
     setStatusMessage('');
     setResumeContent('');
     setCoverLetterContent('');
+    setFitAnalysis(null);
     setErrorMessage('');
     setApplicationId(null);
     setUploadedFileContent('');
@@ -523,6 +533,79 @@ export default function Home() {
                 >
                   Generate New Documents
                 </Button>
+              </div>
+            )}
+
+            {/* Fit Analysis Panel */}
+            {fitAnalysis && uiState === 'done' && (
+              <div className="mt-8 bg-background rounded-lg border shadow-sm">
+                <div className={`p-4 rounded-t-lg border-b ${
+                  fitAnalysis.overallFit === 'Strong Fit' ? 'bg-green-50 border-green-200' :
+                  fitAnalysis.overallFit === 'Good Fit' ? 'bg-yellow-50 border-yellow-200' :
+                  'bg-orange-50 border-orange-200'
+                }`}>
+                  <h3 className={`text-lg font-semibold ${
+                    fitAnalysis.overallFit === 'Strong Fit' ? 'text-green-800' :
+                    fitAnalysis.overallFit === 'Good Fit' ? 'text-yellow-800' :
+                    'text-orange-800'
+                  }`}>
+                    Fit Analysis - {fitAnalysis.overallFit}
+                  </h3>
+                </div>
+                
+                <div className="p-6 space-y-6">
+                  {/* Strengths Section */}
+                  <div>
+                    <h4 className="font-semibold text-green-700 mb-3 flex items-center">
+                      <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                      Where you're strong
+                    </h4>
+                    <ul className="space-y-2">
+                      {fitAnalysis.strengths.map((strength, index) => (
+                        <li key={index} className="text-sm text-muted-foreground flex items-start">
+                          <span className="text-green-500 mr-2 mt-1">•</span>
+                          {strength}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Gaps Section */}
+                  {fitAnalysis.gaps.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-amber-700 mb-3 flex items-center">
+                        <span className="w-2 h-2 bg-amber-500 rounded-full mr-2"></span>
+                        Gaps to be aware of
+                      </h4>
+                      <ul className="space-y-2">
+                        {fitAnalysis.gaps.map((gap, index) => (
+                          <li key={index} className="text-sm text-muted-foreground flex items-start">
+                            <span className="text-amber-500 mr-2 mt-1">•</span>
+                            {gap}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Suggestions Section */}
+                  {fitAnalysis.suggestions.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-blue-700 mb-3 flex items-center">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                        Specific suggestions
+                      </h4>
+                      <ul className="space-y-2">
+                        {fitAnalysis.suggestions.map((suggestion, index) => (
+                          <li key={index} className="text-sm text-muted-foreground flex items-start">
+                            <span className="text-blue-500 mr-2 mt-1">•</span>
+                            {suggestion}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
