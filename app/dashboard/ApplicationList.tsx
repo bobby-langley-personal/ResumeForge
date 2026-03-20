@@ -47,7 +47,7 @@ export default function ApplicationList({ initialItems }: Props) {
     const res = await fetch('/api/applications', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids: [...selected] }),
+      body: JSON.stringify({ ids: Array.from(selected) }),
     });
     if (res.ok) {
       setItems(prev => prev.filter(i => !selected.has(i.id)));
