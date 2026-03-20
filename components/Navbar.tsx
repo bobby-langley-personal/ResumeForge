@@ -3,6 +3,39 @@
 import Link from 'next/link';
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
+import { Sun, Moon } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+function ThemeToggle() {
+  const [dark, setDark] = useState(true);
+
+  useEffect(() => {
+    // Read current state from the DOM (set by the layout script)
+    setDark(document.documentElement.classList.contains('dark'));
+  }, []);
+
+  const toggle = () => {
+    const next = !dark;
+    setDark(next);
+    if (next) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
+
+  return (
+    <button
+      onClick={toggle}
+      className="p-2 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+      title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+    >
+      {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+    </button>
+  );
+}
 
 export default function Navbar() {
   return (
@@ -15,15 +48,16 @@ export default function Navbar() {
             </Link>
             <SignedIn>
               <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Dashboard
+                AI Resumes
               </Link>
               <Link href="/resumes" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Library
+                My Documents
               </Link>
             </SignedIn>
           </div>
 
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
             <SignedOut>
               <SignInButton>
                 <Button variant="outline">Sign In</Button>

@@ -7,7 +7,7 @@ import ResumeLibrary from './ResumeLibrary';
 import { Button } from '@/components/ui/button';
 import { ResumeItem } from '@/types/resume';
 
-export const metadata = { title: 'My Library — ResumeForge' };
+export const metadata = { title: 'My Documents — ResumeForge' };
 
 export default async function ResumesPage() {
   const { userId } = await auth();
@@ -29,13 +29,13 @@ export default async function ResumesPage() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">My Library</h2>
+            <h2 className="text-2xl font-bold text-foreground">My Documents</h2>
             <p className="text-sm text-muted-foreground mt-1">
               Saved resumes, cover letter examples, and other context artifacts
             </p>
           </div>
           <Link href="/dashboard">
-            <Button variant="outline">Dashboard</Button>
+            <Button variant="outline">AI Resumes</Button>
           </Link>
         </div>
         <ResumeLibrary initialItems={(data ?? []) as unknown as ResumeItem[]} />

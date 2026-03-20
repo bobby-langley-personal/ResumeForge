@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     console.log('[generate-documents] Auth check passed, userId:', userId);
 
     // Parse request body
-    const { company, jobTitle, jobDescription, backgroundExperience, isFromUploadedFile, fitAnalysis: precomputedAnalysis, includeCoverLetter = false, additionalContext = [] } = await req.json();
+    const { company, jobTitle, jobDescription, backgroundExperience, isFromUploadedFile, fitAnalysis: precomputedAnalysis, includeCoverLetter = false, additionalContext = [], jobUrl } = await req.json();
     console.log('[generate-documents] Parsed body:', { 
       company, 
       jobTitle, 
@@ -193,6 +193,7 @@ Output the resume in EXACTLY this format. Use • for bullet points. Separate ea
               job_title: jobTitle,
               company,
               job_description: jobDescription,
+              job_url: jobUrl || null,
               resume_content: resumeText,
               cover_letter_content: coverLetterText,
               fit_analysis: fitAnalysis as any,

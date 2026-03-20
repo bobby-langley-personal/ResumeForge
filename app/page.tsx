@@ -115,6 +115,10 @@ export default function Home() {
   const [company, setCompany] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [jobDescription, setJobDescription] = useState('');
+  const [jobUrl, setJobUrl] = useState('');
+  const [isFetchingUrl, setIsFetchingUrl] = useState(false);
+  const [urlError, setUrlError] = useState('');
+  const [urlImported, setUrlImported] = useState(false);
   const [manualExperience, setManualExperience] = useState('');
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -125,6 +129,32 @@ export default function Home() {
     setJobTitle('Technical Support Specialist');
     setJobDescription(DEV_JD);
     setManualExperience(DEV_RESUME);
+  };
+
+  const handleFetchUrl = async () => {
+    if (!jobUrl.trim()) return;
+    setIsFetchingUrl(true);
+    setUrlError('');
+    try {
+      const res = await fetch('/api/fetch-job-posting', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: jobUrl.trim() }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      setJobDescription(data.jobDescription);
+      if (data.company && !company) setCompany(data.company);
+      if (data.jobTitle && !jobTitle) setJobTitle(data.jobTitle);
+      setUrlImported(true);
+    } catch (err) {
+      setUrlError(err instanceof Error ? err.message : 'Failed to fetch job posting');
+    } finally {
+      setIsFetchingUrl(false);
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -176,7 +206,7 @@ export default function Home() {
     };
 
     if (!data.company || !data.jobTitle || !data.jobDescription || !data.backgroundExperience) {
-      setErrorMessage('Please fill in all fields and provide your background (upload a file, paste text, or load from library)');
+      setErrorMessage('Please fill in all fields and provide your background (upload a file, paste text, or load from My Documents)');
       setUIState('error');
       return;
     }
@@ -189,7 +219,7 @@ export default function Home() {
       const response = await fetch('/api/analyze-fit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, additionalContext: additionalContext.map(i => ({ title: i.title, type: i.item_type, text: i.content.text })) }),
+        body: JSON.stringify({ ...data, jobUrl: jobUrl.trim() || undefined, additionalContext: additionalContext.map(i => ({ title: i.title, type: i.item_type, text: i.content.text })) }),
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -216,7 +246,7 @@ export default function Home() {
       const response = await fetch('/api/generate-documents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...pendingFormData, fitAnalysis, includeCoverLetter, additionalContext: additionalContext.map(i => ({ title: i.title, type: i.item_type, text: i.content.text })) }),
+        body: JSON.stringify({ ...pendingFormData, fitAnalysis, includeCoverLetter, jobUrl: jobUrl.trim() || undefined, additionalContext: additionalContext.map(i => ({ title: i.title, type: i.item_type, text: i.content.text })) }),
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -316,6 +346,9 @@ export default function Home() {
     setCompany('');
     setJobTitle('');
     setJobDescription('');
+    setJobUrl('');
+    setUrlError('');
+    setUrlImported(false);
     setManualExperience('');
     setUploadedFileContent('');
     setUploadedFileName('');
@@ -350,9 +383,10 @@ export default function Home() {
           <div className="max-w-6xl mx-auto">
             {/* Header */}
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-foreground mb-4">Generate Your Documents</h2>
+              <h2 className="text-3xl font-bold text-foreground mb-4">Land The Interview</h2>
               <p className="text-lg text-muted-foreground">
-                Paste a job description and your background to get started
+                Paste a job description, upload your resume, and 
+get an AI-tailored, ATS-optimized resume and cover letter in seconds.
               </p>
             </div>
 
@@ -557,6 +591,40 @@ export default function Home() {
                         value={jobTitle}
                         onChange={(e) => setJobTitle(e.target.value)}
                       />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="jobUrl">Job Posting URL <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="jobUrl"
+                          type="url"
+                          placeholder="https://jobs.example.com/posting/123"
+                          className="bg-background flex-1"
+                          disabled={uiState === 'analyzing' || isFetchingUrl}
+                          value={jobUrl}
+                          onChange={(e) => { setJobUrl(e.target.value); setUrlError(''); setUrlImported(false); }}
+                          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleFetchUrl())}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleFetchUrl}
+                          disabled={!jobUrl.trim() || uiState === 'analyzing' || isFetchingUrl}
+                        >
+                          {isFetchingUrl ? (
+                            <span className="flex items-center gap-1.5">
+                              <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-muted-foreground/30 border-t-foreground" />
+                              Importing…
+                            </span>
+                          ) : 'Import'}
+                        </Button>
+                      </div>
+                      {urlError && <p className="text-xs text-destructive">{urlError}</p>}
+                      {urlImported
+                        ? <p className="text-xs text-green-600">Imported — always double-check auto-filled results for accuracy.</p>
+                        : <p className="text-xs text-muted-foreground">Works best with public job postings. Some sites may block automated requests.</p>
+                      }
                     </div>
 
                     <div className="space-y-2">

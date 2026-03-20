@@ -7,7 +7,7 @@ import ApplicationList from './ApplicationList';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, FileSearch } from 'lucide-react';
 
-export const metadata = { title: 'Dashboard — ResumeForge' };
+export const metadata = { title: 'AI Resumes — ResumeForge' };
 
 export default async function DashboardPage() {
   const { userId } = await auth();
@@ -27,11 +27,11 @@ export default async function DashboardPage() {
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-bold text-foreground">My Applications</h2>
+          <h2 className="text-2xl font-bold text-foreground">AI Resumes</h2>
           <Link href="/">
             <Button>
               <PlusCircle className="w-4 h-4 mr-2" />
-              New Application
+              Tailor New Resume
             </Button>
           </Link>
         </div>
@@ -39,11 +39,11 @@ export default async function DashboardPage() {
         {(applications ?? []).length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
             <FileSearch className="w-12 h-12 text-muted-foreground" />
-            <h3 className="text-lg font-semibold text-foreground">No applications yet</h3>
+            <h3 className="text-lg font-semibold text-foreground">No tailored resumes yet</h3>
             <p className="text-sm text-muted-foreground max-w-xs">
               Generate your first tailored resume to see it here.
             </p>
-            <Link href="/"><Button>Generate Your First Resume</Button></Link>
+            <Link href="/"><Button>Tailor Your First Resume</Button></Link>
           </div>
         ) : (
           <ApplicationList initialItems={(applications ?? []) as ApplicationItem[]} />
