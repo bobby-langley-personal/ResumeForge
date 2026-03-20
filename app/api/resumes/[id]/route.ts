@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
 
 async function getOwned(userId: string, id: string) {
-  const supabase = await supabaseServer();
+  const supabase = supabaseServer();
   const { data, error } = await supabase
     .from('resumes')
     .select('id, user_id')

@@ -28,10 +28,12 @@ export async function POST(req: NextRequest) {
 
     const response = await anthropic.messages.create({
       model: HAIKU,
-      max_tokens: 1500,
+      max_tokens: 2500,
       system: `You are a brutally honest but constructive career advisor.
 Analyze how well the candidate's background matches the job description. Be specific — name actual skills, tools, and experiences that match or are missing. Do not be generic.
 Adapt your analysis based on the role type (technical, management, sales, customer success, research).
+
+Also include a "plannedImprovements" array with 3-5 specific, concrete changes that will be made to the generated resume compared to the candidate's original — e.g. reframing a job title, surfacing a buried metric, adding missing keywords, restructuring bullets, cutting irrelevant experience. Name real content from their background.
 
 Output valid JSON only, no markdown fences:
 {
@@ -39,6 +41,7 @@ Output valid JSON only, no markdown fences:
   "strengths": ["string", "string", "string"],
   "gaps": ["string", "string", "string"],
   "suggestions": ["string", "string", "string"],
+  "plannedImprovements": ["string", "string", "string"],
   "roleType": "technical" | "management" | "sales" | "customer_success" | "research" | "other"
 }`,
       messages: [

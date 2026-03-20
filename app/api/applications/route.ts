@@ -12,7 +12,7 @@ export async function DELETE(req: NextRequest) {
     return new Response('ids array required', { status: 400 });
   }
 
-  const supabase = await supabaseServer();
+  const supabase = supabaseServer();
   const { error } = await supabase
     .from('applications')
     .delete()

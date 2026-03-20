@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'applicationId is required' }, { status: 400 })
     }
 
-    const supabase = await supabaseServer()
+    const supabase = supabaseServer()
 
     const { data: application, error } = await supabase
       .from('applications')

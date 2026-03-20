@@ -60,7 +60,7 @@ export async function POST(req: Request) {
 
     const full_name = [first_name, last_name].filter(Boolean).join(' ') || null;
 
-    const supabase = await supabaseServer();
+    const supabase = supabaseServer();
     
     const { error } = await supabase
       .from('users')

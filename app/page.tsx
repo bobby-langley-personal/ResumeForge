@@ -478,6 +478,20 @@ export default function Home() {
                           ))}
                         </ul>
                       </div>
+
+                      {fitAnalysis.plannedImprovements?.length > 0 && (
+                        <div>
+                          <h3 className="text-sm font-semibold text-orange-600 mb-2">Planned Improvements</h3>
+                          <ul className="space-y-1">
+                            {fitAnalysis.plannedImprovements.map((p, i) => (
+                              <li key={i} className="text-sm text-muted-foreground flex gap-2">
+                                <span className="text-orange-500 mt-0.5">✦</span>
+                                <span>{p}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
 
                     {/* Actions */}

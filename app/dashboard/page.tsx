@@ -13,7 +13,7 @@ export default async function DashboardPage() {
   const { userId } = await auth();
   if (!userId) redirect('/sign-in');
 
-  const supabase = await supabaseServer();
+  const supabase = supabaseServer();
   const { data: applications, error } = await supabase
     .from('applications')
     .select('id, company, job_title, cover_letter_content, created_at')

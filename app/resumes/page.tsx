@@ -13,7 +13,7 @@ export default async function ResumesPage() {
   const { userId } = await auth();
   if (!userId) redirect('/sign-in');
 
-  const supabase = await supabaseServer();
+  const supabase = supabaseServer();
   const { data, error } = await supabase
     .from('resumes')
     .select('id, user_id, title, content, item_type, is_default, created_at, updated_at')

@@ -185,7 +185,7 @@ Output the resume in EXACTLY this format. Use • for bullet points. Separate ea
 
           // Save to Supabase
           console.log('[generate-documents] Starting Supabase save operation');
-          const supabase = await supabaseServer();
+          const supabase = supabaseServer();
           const { data: application, error } = await supabase
             .from('applications')
             .insert({
