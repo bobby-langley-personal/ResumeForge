@@ -7,7 +7,7 @@ import ApplicationList from './ApplicationList';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, FileSearch } from 'lucide-react';
 
-export const metadata = { title: 'Dashboard — ResumeForge' };
+export const metadata = { title: 'My Applications — ResumeForge' };
 
 export default async function DashboardPage() {
   const { userId } = await auth();

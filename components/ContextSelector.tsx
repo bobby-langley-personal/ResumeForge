@@ -62,7 +62,7 @@ export default function ContextSelector({ onLoadBackground, onAdditionalContextC
     <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
       <div className="flex items-center gap-2 text-sm font-medium text-foreground">
         <BookOpen className="w-4 h-4" />
-        Load from Library
+        Load from My Documents
       </div>
 
       {/* Primary background selector */}
