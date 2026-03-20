@@ -112,7 +112,6 @@ export default function Home() {
   const [pendingFormData, setPendingFormData] = useState<FormData | null>(null);
   const [additionalContext, setAdditionalContext] = useState<ResumeItem[]>([]);
   const [includeCoverLetter, setIncludeCoverLetter] = useState(false);
-  const [resetKey, setResetKey] = useState(0);
   const [company, setCompany] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [jobDescription, setJobDescription] = useState('');
@@ -322,7 +321,6 @@ export default function Home() {
     setUploadedFileName('');
     setIsPreviewExpanded(false);
     setInputMethod('upload');
-    setResetKey(k => k + 1);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
