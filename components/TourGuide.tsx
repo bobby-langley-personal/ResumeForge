@@ -82,6 +82,16 @@ export function startTour() {
           align: 'center',
         },
       },
+      {
+        element: '#tour-my-documents',
+        popover: {
+          title: 'First — upload your resume here',
+          description:
+            'Save your resume (and any other documents) to My Documents. Your default resume auto-loads every time you come back, so you never have to paste it again.',
+          side: 'bottom',
+          align: 'start',
+        },
+      },
     ],
   });
 

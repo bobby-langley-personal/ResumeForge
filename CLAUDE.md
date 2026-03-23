@@ -182,7 +182,8 @@ should only target unnecessary whitespace — never content.
 - Tour auto-starts 800ms after mount to allow the page to fully render
 - `TourButton` in `Navbar.tsx` — appears only after tour has been completed once; clicking replays the tour by calling `startTour()`
 - Step 2 (Job Search) is **backlogged** — the job search feature is not yet implemented; tour skips from Welcome directly to Job Details
-- Tour targets use `id` attributes: `tour-heading`, `tour-job-details`, `tour-background`, `tour-context`, `tour-questions`, `tour-generate`
+- Tour targets use `id` attributes: `tour-heading`, `tour-job-details`, `tour-background`, `tour-context`, `tour-questions`, `tour-generate`, `tour-my-documents`
+- `ContextSelector` shows a dashed empty-state callout with a link to `/resumes` when the user has no library documents; the callout also carries `id="tour-context"` so the tour step targets it regardless of whether documents exist
 - Dark theme CSS override in `app/globals.css` under `.resumeforge-tour` class
 
 ## Branch Naming

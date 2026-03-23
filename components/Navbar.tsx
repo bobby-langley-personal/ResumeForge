@@ -79,7 +79,7 @@ export default function Navbar() {
                 <span className="hidden sm:inline">AI Resumes</span>
                 <span className="sm:hidden">Resumes</span>
               </Link>
-              <Link href="/resumes" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Link id="tour-my-documents" href="/resumes" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <span className="hidden sm:inline">My Documents</span>
                 <span className="sm:hidden">Docs</span>
               </Link>

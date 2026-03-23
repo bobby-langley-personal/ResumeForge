@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { ResumeItem, ITEM_TYPE_LABELS } from '@/types/resume';
-import { BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
+import { BookOpen, ChevronDown, ChevronUp, FolderOpen } from 'lucide-react';
 
 interface Props {
   onLoadBackground: (text: string) => void;
@@ -54,12 +55,27 @@ export default function ContextSelector({ onLoadBackground, onAdditionalContextC
     onAdditionalContextChange(items.filter(i => next.has(i.id)));
   };
 
-  if (!loaded || items.length === 0) return null;
+  if (!loaded) return null;
+
+  if (items.length === 0) {
+    return (
+      <div id="tour-context" className="flex items-start gap-3 p-3 rounded-lg border border-dashed border-border bg-muted/20 text-sm">
+        <FolderOpen className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+        <p className="text-muted-foreground leading-snug">
+          Save your resume to{' '}
+          <Link href="/resumes" className="text-primary hover:underline font-medium">
+            My Documents
+          </Link>{' '}
+          and it will auto-load here every time.
+        </p>
+      </div>
+    );
+  }
 
   const extras = items.filter(i => i.id !== selectedId);
 
   return (
-    <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
+    <div id="tour-context" className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
       <div className="flex items-center gap-2 text-sm font-medium text-foreground">
         <BookOpen className="w-4 h-4" />
         Load from My Documents
