@@ -86,6 +86,17 @@ Exported from `app/dashboard/page.tsx`:
 }
 ```
 
+### `ResumePDFProps`
+```typescript
+{
+  resumeText: string
+  candidateName: string
+  company: string
+  jobTitle: string
+  compact?: boolean   // applies 15% reduction to all margin/padding values
+}
+```
+
 ### `ApplicationQuestion`
 ```typescript
 {
