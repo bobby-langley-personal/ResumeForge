@@ -142,6 +142,12 @@ const { SONNET, HAIKU } = await getModels();
 - `ApplicationCard` shows a `MessageSquare` icon if `question_answers` exist — opens a full-screen modal with Q&A list, word count per answer, and copy buttons
 - `ApplicationCard` has Eye icon preview buttons alongside each download button — fetches application content via `GET /api/applications/[id]` on first click, caches for subsequent previews
 
+## PDF Page Overflow Policy
+2-page resumes are acceptable and normal for candidates with 
+4+ years of experience. The PDF template should never truncate 
+content to force single-page output. Spacing optimizations 
+should only target unnecessary whitespace — never content.
+
 ## PDF Preview
 
 - `components/PDFPreviewModal.tsx` — `'use client'` component, uses `BlobProvider` from `@react-pdf/renderer` to generate a blob URL and display it in an `<iframe>`
