@@ -21,7 +21,7 @@ const styles = StyleSheet.create({
     padding: 72, // 1 inch = 72 points
     fontFamily: 'Helvetica',
     fontSize: 12,
-    lineHeight: 1.5,
+    lineHeight: 1.4,
   },
   date: {
     textAlign: 'right',

@@ -13,6 +13,7 @@ interface ResumePDFProps {
   candidateName: string;
   company: string;
   jobTitle: string;
+  compact?: boolean;
 }
 
 interface ParsedResume {
@@ -42,87 +43,92 @@ interface ParsedResume {
   }>;
 }
 
-const styles = StyleSheet.create({
-  page: {
-    flexDirection: 'column',
-    backgroundColor: '#ffffff',
-    padding: 54, // 0.75 inches = 54 points
-    fontFamily: 'Helvetica',
-    fontSize: 10,
-    lineHeight: 1.4,
-  },
-  header: {
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  name: {
-    fontSize: 20,
-    fontFamily: 'Helvetica-Bold',
-    marginBottom: 8,
-  },
-  contact: {
-    fontSize: 10,
-    marginBottom: 2,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontFamily: 'Helvetica-Bold',
-    marginTop: 20,
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    borderBottomWidth: 1,
-    borderBottomColor: '#000000',
-    paddingBottom: 2,
-  },
-  text: {
-    fontSize: 10,
-    marginBottom: 8,
-    textAlign: 'justify',
-  },
-  experienceItem: {
-    marginBottom: 12,
-  },
-  jobHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  jobTitle: {
-    fontSize: 11,
-    fontFamily: 'Helvetica-Bold',
-  },
-  jobDates: {
-    fontSize: 10,
-    fontStyle: 'italic',
-  },
-  company: {
-    fontSize: 10,
-    marginBottom: 4,
-  },
-  bulletPoint: {
-    fontSize: 10,
-    marginBottom: 2,
-    marginLeft: 12,
-  },
-  skillsList: {
-    fontSize: 10,
-    marginBottom: 8,
-  },
-  educationItem: {
-    marginBottom: 8,
-  },
-  educationHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  degree: {
-    fontSize: 11,
-    fontFamily: 'Helvetica-Bold',
-  },
-  institution: {
-    fontSize: 10,
-  },
-});
+function makeStyles(compact: boolean) {
+  const s = compact ? 0.85 : 1; // 15% reduction when compact
+  const r = (v: number) => Math.round(v * s);
+
+  return StyleSheet.create({
+    page: {
+      flexDirection: 'column',
+      backgroundColor: '#ffffff',
+      padding: 54, // 0.75 inches = 54 points — keep margins unchanged
+      fontFamily: 'Helvetica',
+      fontSize: 10,
+      lineHeight: 1.3,
+    },
+    header: {
+      marginBottom: r(16),
+      textAlign: 'center',
+    },
+    name: {
+      fontSize: 20,
+      fontFamily: 'Helvetica-Bold',
+      marginBottom: 8,
+    },
+    contact: {
+      fontSize: 10,
+      marginBottom: 2,
+    },
+    sectionTitle: {
+      fontSize: 12,
+      fontFamily: 'Helvetica-Bold',
+      marginTop: r(14),
+      marginBottom: r(5),
+      textTransform: 'uppercase',
+      borderBottomWidth: 1,
+      borderBottomColor: '#000000',
+      paddingBottom: 2,
+    },
+    text: {
+      fontSize: 10,
+      marginBottom: r(5),
+      textAlign: 'justify',
+    },
+    experienceItem: {
+      marginBottom: r(8),
+    },
+    jobHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: r(3),
+    },
+    jobTitle: {
+      fontSize: 11,
+      fontFamily: 'Helvetica-Bold',
+    },
+    jobDates: {
+      fontSize: 10,
+      fontStyle: 'italic',
+    },
+    company: {
+      fontSize: 10,
+      marginBottom: r(3),
+    },
+    bulletPoint: {
+      fontSize: 10,
+      marginBottom: 2,
+      marginLeft: 12,
+    },
+    skillsList: {
+      fontSize: 10,
+      marginBottom: r(5),
+    },
+    educationItem: {
+      marginBottom: r(5),
+    },
+    educationHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    degree: {
+      fontSize: 11,
+      fontFamily: 'Helvetica-Bold',
+    },
+    institution: {
+      fontSize: 10,
+    },
+  });
+}
 
 function parseResumeText(resumeText: string): ParsedResume {
   const lines = resumeText.split('\n').map(line => line.trim()).filter(line => line);
@@ -267,7 +273,8 @@ function parseResumeText(resumeText: string): ParsedResume {
   return parsed;
 }
 
-export default function ResumePDF({ resumeText, candidateName, company, jobTitle }: ResumePDFProps) {
+export default function ResumePDF({ resumeText, candidateName, company, jobTitle, compact = false }: ResumePDFProps) {
+  const styles = makeStyles(compact);
   const parsed = parseResumeText(resumeText);
   
   // Use provided candidateName if header parsing failed
