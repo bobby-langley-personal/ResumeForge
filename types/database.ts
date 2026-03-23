@@ -74,6 +74,42 @@ export interface Database {
           }
         ]
       }
+      feedback: {
+        Row: {
+          id: string
+          type: 'general' | 'bug'
+          message: string
+          is_anonymous: boolean
+          user_id: string | null
+          user_name: string | null
+          steps_to_reproduce: string | null
+          what_happened: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          type: 'general' | 'bug'
+          message: string
+          is_anonymous?: boolean
+          user_id?: string | null
+          user_name?: string | null
+          steps_to_reproduce?: string | null
+          what_happened?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          type?: 'general' | 'bug'
+          message?: string
+          is_anonymous?: boolean
+          user_id?: string | null
+          user_name?: string | null
+          steps_to_reproduce?: string | null
+          what_happened?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       applications: {
         Row: {
           id: string

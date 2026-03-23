@@ -144,3 +144,23 @@ Exported from `app/dashboard/page.tsx`:
 - `HAIKU`: `claude-haiku-4-5-20251001` (used for fit analysis)
 
 > Never hardcode these. Use `getModels()` which fetches from the Anthropic API with a 1-hour in-memory cache and hardcoded fallback.
+
+---
+
+## Feedback Types
+
+### `FeedbackType`
+`'general' | 'bug'`
+
+### `FeedbackRequest`
+```typescript
+{
+  type: FeedbackType
+  message: string          // min 10 chars
+  isAnonymous: boolean
+  userName?: string        // only if isAnonymous is false
+  userId?: string          // only if isAnonymous is false
+  stepsToReproduce?: string  // bug reports only
+  whatHappened?: string      // bug reports only
+}
+```

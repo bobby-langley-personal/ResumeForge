@@ -9,13 +9,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { readSSEStream } from '@/lib/sse-reader';
-import { Upload, FileText, ChevronDown, ChevronUp, X, Loader2, Eye } from 'lucide-react';
+import { Upload, FileText, ChevronDown, ChevronUp, X, Loader2, Eye, MessageSquare } from 'lucide-react';
 import { FitAnalysis } from '@/types/fit-analysis';
 import { ResumeItem } from '@/types/resume';
 import ContextSelector from '@/components/ContextSelector';
 import TourGuide from '@/components/TourGuide';
 
 const PDFPreviewModal = dynamic(() => import('@/components/PDFPreviewModal'), { ssr: false });
+const FeedbackModal = dynamic(() => import('@/components/FeedbackModal'), { ssr: false });
 
 type UIState = 'idle' | 'analyzing' | 'review' | 'generating' | 'done' | 'error';
 
@@ -134,6 +135,8 @@ export default function Home() {
   const [answersExpanded, setAnswersExpanded] = useState(true);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [previewType, setPreviewType] = useState<'resume' | 'cover-letter' | null>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackDismissed, setFeedbackDismissed] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -414,6 +417,7 @@ export default function Home() {
     setAnswersExpanded(true);
     setCopiedIdx(null);
     setPreviewType(null);
+    setFeedbackDismissed(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -1025,6 +1029,31 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                 </Button>
               </div>
             )}
+
+            {/* Post-generation feedback prompt */}
+            {uiState === 'done' && !feedbackDismissed && (
+              <div className="flex items-center justify-between gap-4 px-4 py-3 mt-2 rounded-lg border border-border bg-muted/30 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 shrink-0" />
+                  <span>How did we do?</span>
+                  <button
+                    onClick={() => setFeedbackOpen(true)}
+                    className="text-primary hover:underline"
+                  >
+                    Give feedback
+                  </button>
+                </div>
+                <button
+                  onClick={() => setFeedbackDismissed(true)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Dismiss"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {feedbackOpen && <FeedbackModal onClose={() => setFeedbackOpen(false)} />}
 
             {/* PDF Preview Modal (home page) */}
             {previewType === 'resume' && resumeContent && (

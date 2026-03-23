@@ -68,6 +68,7 @@ Current valid columns:
 | `POST /api/download-pdf/[type]` | Node | PDF generation and download |
 | `GET /api/resumes` | Node | List My Documents (default first, then created_at desc) |
 | `POST /api/resumes` | Node | Save new document to library |
+| `POST /api/feedback` | Node | Save feedback to Supabase + send email via Resend; no auth required; rate-limited 3/IP/hour |
 | `GET /api/applications/[id]` | Node | Fetch application content + candidateName for PDF preview |
 | `DELETE /api/applications` | Node | Bulk delete by `ids` array |
 | `DELETE /api/applications/[id]` | Node | Delete single resume record |
@@ -198,3 +199,12 @@ All feature/fix branches: `claude/issue-{number}-{YYYYMMDD}-{HHMM}` — Vercel s
 - Run `npx tsc --noEmit` before committing — all PRs must be type-clean
 - Use `gh issue comment` to post progress updates on GitHub issues
 - Dev mode: `[Dev] Fill Test Data` button on home page pre-fills sample job + resume data
+
+## Feedback
+
+- `components/FeedbackModal.tsx` — modal with identity toggle (anonymous vs named), type toggle (general/bug), bug-only extra fields, 10-char minimum, success state + 3s auto-close
+- `components/Footer.tsx` — persistent footer on all pages with "Built by Bobby Langley" + Feedback button; dynamically imports `FeedbackModal`
+- `POST /api/feedback` — saves to `feedback` Supabase table; sends email via Resend if `RESEND_API_KEY` + `FEEDBACK_EMAIL` are set; email send failure is non-fatal
+- `app/page.tsx` — inline "How did we do?" prompt after generation, dismissable with × (session-only, resets on next generation)
+- Required env vars: `RESEND_API_KEY`, `FEEDBACK_EMAIL`
+- Migration: `supabase/migrations/008_add_feedback.sql`
