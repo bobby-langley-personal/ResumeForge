@@ -196,14 +196,14 @@ Output the resume in EXACTLY this format. Use • for bullet points. Separate ea
               const questionsResponse = await anthropic.messages.create({
                 model: SONNET,
                 max_tokens: 2000,
-                system: `You are an expert career coach helping a job applicant answer application questions. Use ONLY the candidate's real experience from their background and any provided context documents. Never invent experience, companies, titles, or metrics.
+                system: `You are an expert career coach helping a job applicant write their own application answers. Write every answer in FIRST PERSON ("I", "my", "me") — the applicant is speaking directly. Never refer to the candidate in third person by name or pronoun. Use ONLY the candidate's real experience from their background and any provided context documents. Never invent experience, companies, titles, or metrics.
 
 Rules for answers:
 - ${shortResponse ? 'SHORT RESPONSE MODE: Keep each answer to 2–3 sentences maximum, no more than 5.' : 'Keep each answer to 2–3 concise paragraphs maximum.'}
+- Always write in first person — use "I", "my", "me", never "she", "he", "they", or the candidate's name
 - Use specific examples and metrics where available
 - Match the tone to the role (technical roles = technical depth, leadership roles = impact and people focus)
-- Start each answer with the strongest most relevant point
-- Do not start answers with "I" — vary the opening
+- Start each answer with the strongest most relevant point; vary openings (avoid starting every sentence with "I")
 - Reference the specific company name where appropriate
 
 Output valid JSON only, no markdown fences:
