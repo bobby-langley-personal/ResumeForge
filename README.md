@@ -57,6 +57,14 @@ Saves every generated resume to Supabase:
 ### 6. PDF Downloads & Preview
 Generated documents can be downloaded as formatted PDFs directly from the dashboard or immediately after generation. An Eye icon next to each download button opens a preview modal — rendered client-side using `@react-pdf/renderer`'s `BlobProvider` in an iframe — so you can review formatting before saving.
 
+### 7. First-Time Onboarding Tour
+A guided walkthrough for new users powered by `driver.js`:
+- Auto-starts 800ms after first sign-in (tracked via `localStorage`)
+- 6 steps: Welcome → Job Details → Your Background → Context Documents → Application Questions → Generate
+- Dismissable at any step; completing or dismissing sets the `resumeforge_tour_completed` flag
+- "? Tour" replay button appears in the navbar after the tour has been seen at least once
+- Styled to match the app's dark theme via custom CSS overrides in `globals.css`
+
 ---
 
 ## Tech Stack

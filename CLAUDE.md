@@ -169,6 +169,16 @@ const { SONNET, HAIKU } = await getModels();
 
 ---
 
+## Onboarding Tour (`driver.js`)
+
+- `components/TourGuide.tsx` — `'use client'` component; auto-starts the tour for first-time users; exports `startTour()` for replay
+- localStorage key: `resumeforge_tour_completed` — `'true'` means tour has been seen; absence or any other value triggers auto-start
+- Tour auto-starts 800ms after mount to allow the page to fully render
+- `TourButton` in `Navbar.tsx` — appears only after tour has been completed once; clicking replays the tour by calling `startTour()`
+- Step 2 (Job Search) is **backlogged** — the job search feature is not yet implemented; tour skips from Welcome directly to Job Details
+- Tour targets use `id` attributes: `tour-heading`, `tour-job-details`, `tour-background`, `tour-context`, `tour-questions`, `tour-generate`
+- Dark theme CSS override in `app/globals.css` under `.resumeforge-tour` class
+
 ## Branch Naming
 
 All feature/fix branches: `claude/issue-{number}-{YYYYMMDD}-{HHMM}` — Vercel skips deployment on non-main branches.

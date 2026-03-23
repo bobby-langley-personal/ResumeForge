@@ -5,6 +5,9 @@ import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { Sun, Moon } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { startTour } from '@/components/TourGuide';
+
+const TOUR_KEY = 'resumeforge_tour_completed';
 
 function ThemeToggle() {
   const [dark, setDark] = useState(true);
@@ -37,6 +40,31 @@ function ThemeToggle() {
   );
 }
 
+function TourButton() {
+  const [shown, setShown] = useState(false);
+
+  useEffect(() => {
+    setShown(localStorage.getItem(TOUR_KEY) === 'true');
+  }, []);
+
+  if (!shown) return null;
+
+  const handleClick = () => {
+    localStorage.removeItem(TOUR_KEY);
+    startTour();
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded"
+      title="Replay the onboarding tour"
+    >
+      ? Tour
+    </button>
+  );
+}
+
 export default function Navbar() {
   return (
     <nav className="border-b border-border">
@@ -59,6 +87,9 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-2">
+            <SignedIn>
+              <TourButton />
+            </SignedIn>
             <ThemeToggle />
             <SignedOut>
               <SignInButton>
