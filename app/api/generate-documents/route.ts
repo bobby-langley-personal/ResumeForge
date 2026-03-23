@@ -4,7 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 import { Anthropic } from '@anthropic-ai/sdk';
 import { getModels } from '@/lib/models';
-import { buildContextBlock } from '@/lib/pipeline-utils';
+import { buildContextBlock, parseStageJSON } from '@/lib/pipeline-utils';
 import { supabaseServer } from '@/lib/supabase';
 import { FitAnalysis } from '@/types/fit-analysis';
 
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     console.log('[generate-documents] Auth check passed, userId:', userId);
 
     // Parse request body
-    const { company, jobTitle, jobDescription, backgroundExperience, isFromUploadedFile, fitAnalysis: precomputedAnalysis, includeCoverLetter = false, additionalContext = [], jobUrl } = await req.json();
+    const { company, jobTitle, jobDescription, backgroundExperience, isFromUploadedFile, fitAnalysis: precomputedAnalysis, includeCoverLetter = false, additionalContext = [], jobUrl, questions = [], shortResponse = false } = await req.json();
     console.log('[generate-documents] Parsed body:', { 
       company, 
       jobTitle, 
@@ -183,6 +183,56 @@ Output the resume in EXACTLY this format. Use • for bullet points. Separate ea
             sendEvent('cover_letter_done');
           }
 
+          // Phase 3: Answer application questions (optional)
+          const filteredQuestions = (questions as string[]).filter((q: string) => q.trim().length > 0);
+          let questionAnswers: { question: string; answer: string }[] = [];
+
+          if (filteredQuestions.length > 0) {
+            sendEvent('status', { message: 'Answering application questions...' });
+            console.log('[generate-documents] Starting questions generation, count:', filteredQuestions.length);
+
+            try {
+              const questionsPrompt = filteredQuestions.map((q: string, i: number) => `Question ${i + 1}: ${q}`).join('\n\n');
+              const questionsResponse = await anthropic.messages.create({
+                model: SONNET,
+                max_tokens: 2000,
+                system: `You are an expert career coach helping a job applicant answer application questions. Use ONLY the candidate's real experience from their background and any provided context documents. Never invent experience, companies, titles, or metrics.
+
+Rules for answers:
+- ${shortResponse ? 'SHORT RESPONSE MODE: Keep each answer to 2–3 sentences maximum, no more than 5.' : 'Keep each answer to 2–3 concise paragraphs maximum.'}
+- Use specific examples and metrics where available
+- Match the tone to the role (technical roles = technical depth, leadership roles = impact and people focus)
+- Start each answer with the strongest most relevant point
+- Do not start answers with "I" — vary the opening
+- Reference the specific company name where appropriate
+
+Output valid JSON only, no markdown fences:
+{"answers": [{"question": "original question text", "answer": "your generated answer"}]}`,
+                messages: [
+                  {
+                    role: 'user',
+                    content: `Company: ${company}\nJob Title: ${jobTitle}\nJob Description: ${jobDescription}\n\nMy Background:\n${backgroundExperience}${buildContextBlock(additionalContext)}\n\nGenerated Resume:\n${resumeText}\n\nPlease answer these application questions:\n\n${questionsPrompt}`,
+                  },
+                ],
+              });
+
+              const questionsText = questionsResponse.content[0].type === 'text' ? questionsResponse.content[0].text : '{}';
+              try {
+                const parsed = parseStageJSON<{ answers: { question: string; answer: string }[] }>(questionsText);
+                questionAnswers = parsed.answers ?? [];
+                console.log('[generate-documents] Questions answered:', questionAnswers.length);
+              } catch (parseErr) {
+                console.error('[generate-documents] Questions JSON parse failed:', parseErr);
+              }
+
+              sendEvent('questions_done', { answers: questionAnswers });
+            } catch (questionsError) {
+              console.error('[generate-documents] Questions generation failed:', questionsError);
+              // Non-fatal: continue to save without answers
+              sendEvent('questions_done', { answers: [] });
+            }
+          }
+
           // Save to Supabase
           console.log('[generate-documents] Starting Supabase save operation');
           const supabase = supabaseServer();
@@ -197,6 +247,8 @@ Output the resume in EXACTLY this format. Use • for bullet points. Separate ea
               resume_content: resumeText,
               cover_letter_content: coverLetterText,
               fit_analysis: fitAnalysis as any,
+              questions: filteredQuestions.length > 0 ? filteredQuestions as any : null,
+              question_answers: questionAnswers.length > 0 ? questionAnswers as any : null,
               status: 'applied',
             })
             .select('id')

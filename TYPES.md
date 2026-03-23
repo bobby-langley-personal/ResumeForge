@@ -64,6 +64,8 @@ Display labels map: `{ resume: 'Resume', cover_letter: 'Cover Letter', portfolio
 | `cover_letter_content` | string \| null | Generated cover letter text |
 | `status` | ApplicationStatus | Not shown in UI, kept in DB |
 | `fit_analysis` | Json \| null | Stored `FitAnalysis` object |
+| `questions` | Json \| null | `string[]` — pasted application questions |
+| `question_answers` | Json \| null | `ApplicationQuestion[]` — AI-generated answers |
 | `created_at` | string | ISO timestamp |
 | `updated_at` | string | ISO timestamp |
 
@@ -80,6 +82,14 @@ Exported from `app/dashboard/page.tsx`:
   job_title: string
   cover_letter_content: string | null
   created_at: string
+}
+```
+
+### `ApplicationQuestion`
+```typescript
+{
+  question: string   // original question text
+  answer: string     // AI-generated answer
 }
 ```
 

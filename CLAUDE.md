@@ -76,6 +76,11 @@ Current valid columns:
 - `fitAnalysis` — pre-computed FitAnalysis (skips re-analysis)
 - `includeCoverLetter` — boolean (default false)
 - `additionalContext` — array of `{ title, type, text }` from My Documents
+- `questions` — optional `string[]` of application questions (max 5)
+- `shortResponse` — boolean, if true answers are 2-3 sentences instead of paragraphs
+
+### generate-documents SSE events (in order)
+`status` → `resume_chunk` → `resume_done` → [`cover_letter_chunk` → `cover_letter_done`] → [`questions_done`] → `done`
 
 ### fetch-job-posting behavior
 - Blocks `linkedin.com/jobs` URLs — returns `{ error, code: 'LINKEDIN_BLOCKED' }` with status 422

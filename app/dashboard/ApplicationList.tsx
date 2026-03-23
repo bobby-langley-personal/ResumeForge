@@ -91,6 +91,7 @@ export default function ApplicationList({ initialItems }: Props) {
             jobTitle={app.job_title}
             createdAt={app.created_at}
             hasCoverLetter={!!app.cover_letter_content}
+            questionAnswers={app.question_answers ?? null}
             selected={selected.has(app.id)}
             onToggleSelect={toggleSelect}
             onDelete={handleDelete}
