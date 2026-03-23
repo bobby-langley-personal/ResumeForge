@@ -89,7 +89,7 @@ Current valid columns:
 - Blocks `linkedin.com/jobs` URLs — returns `{ error, code: 'LINKEDIN_BLOCKED' }` with status 422
 - Strips `<head>`, scripts, styles, nav, header, footer from HTML before text extraction
 - Seeks to job title position in extracted text to skip nav/menu noise rendered as `<div>` elements
-- Truncates at the **earliest-occurring** application form marker in the document
+- Truncates at the **earliest-occurring** application form marker in the document (e.g. "Apply for this job", "Equal Employment Opportunity", "Legal first name", etc.)
 - Backstop: removes trailing noise by finding the last substantive line (>25 chars)
 - Detects company: `og:site_name` → title "at Company" pattern → Greenhouse/Lever/Workday URL patterns
 - Detects job title: `og:title` (stripped) → `<title>` tag fallback

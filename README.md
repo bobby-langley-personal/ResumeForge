@@ -18,13 +18,24 @@ After reviewing the fit analysis, the user approves generation. Claude Sonnet st
 - A fully tailored resume formatted for the specific role and company
 - An optional cover letter (toggled before submission)
 - Both stream live to the page as they generate
+- If application questions are provided, a third phase generates written answers grounded in the resume and background — displayed with word counts and copy buttons
+
+### 2a. Application Questions
+Users can add up to 5 open-ended application questions before generating:
+- Questions can be entered manually or auto-populated from URL import
+- Toggle between short responses (2–3 sentences) and full paragraphs
+- AI-generated answers are shown after generation with word count and one-click copy
+- Answers are saved and viewable from the AI Resumes dashboard via a modal
 
 ### 3. Job URL Auto-Import
 Users can paste a job posting URL instead of copying text manually:
-- Server-side page fetch with HTML stripping (scripts, nav, footer, forms)
+- Server-side page fetch with HTML stripping (scripts, nav, footer, forms, `<head>`)
+- Seeks to where the job title appears in text to skip nav/menu noise in `<div>` elements
+- Truncates at the earliest-occurring application form marker in the document
+- Backstop cleanup removes short trailing lines
 - Auto-detects company name from `og:site_name`, title patterns, and job board URLs (Greenhouse, Lever, Workday)
 - Auto-detects job title from `og:title`
-- Truncates at application form noise ("Apply for this job", "Equal Employment Opportunity", etc.)
+- Auto-extracts open-ended application questions from the form section (skips demographic/identity fields) — these pre-populate the Application Questions panel
 - LinkedIn URLs are blocked with a helpful inline message
 
 ### 4. My Documents (Resume Library)
@@ -39,11 +50,12 @@ A personal library of saved context artifacts:
 Saves every generated resume to Supabase:
 - Card view with company, job title, and date
 - Download resume or cover letter as PDF
+- If the record has application question answers, a chat icon opens a modal showing each Q&A with word count and copy button
 - Multi-select checkboxes for bulk delete
 - Single-card trash icon for individual delete
 
-### 6. PDF Downloads
-Generated documents can be downloaded as formatted PDFs directly from the dashboard or immediately after generation.
+### 6. PDF Downloads & Preview
+Generated documents can be downloaded as formatted PDFs directly from the dashboard or immediately after generation. An Eye icon next to each download button opens a preview modal — rendered client-side using `@react-pdf/renderer`'s `BlobProvider` in an iframe — so you can review formatting before saving.
 
 ### 7. First-Time Onboarding Tour
 A guided walkthrough for new users powered by `driver.js`:
@@ -97,8 +109,9 @@ app/
     loading.tsx             # Skeleton UI
   api/
     analyze-fit/            # POST — Haiku fit analysis, returns FitAnalysis JSON
-    generate-documents/     # POST — Sonnet streaming SSE (Edge runtime)
-    fetch-job-posting/      # POST — URL scrape, HTML extraction, company/title detection
+    generate-documents/     # POST — Sonnet streaming SSE (Edge runtime) + optional question answers
+    fetch-job-posting/      # POST — URL scrape, HTML extraction, company/title/question detection
+    parse-job-details/      # POST — Haiku extraction of company + job title from pasted JD text
     extract-resume/         # POST — PDF/DOCX text extraction
     download-pdf/[type]/    # POST — PDF generation and download
     resumes/                # GET/POST/DELETE — library CRUD
@@ -108,6 +121,7 @@ app/
 components/
   Navbar.tsx                # Nav with theme toggle, signed-in links
   ContextSelector.tsx       # Library picker — primary background + additional context
+  PDFPreviewModal.tsx       # PDF preview modal — BlobProvider iframe, dynamically imported (ssr: false)
 
 lib/
   supabase.ts               # Singleton Supabase client (service role)
