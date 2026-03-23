@@ -131,31 +131,46 @@ export default function Home() {
     setManualExperience(DEV_RESUME);
   };
 
+  const cleanTitle = (title: string): string =>
+    title
+      .replace(/^(?:current opening|job title|position|opening|role|title)\s*[:\-]\s*/i, '')
+      .replace(/\b(remote|hybrid|onsite|on-site|full[- ]?time|part[- ]?time|contract|temp(orary)?)\b/gi, '')
+      .replace(/[,·|]\s*(united states|usa?|canada|uk|hybrid|remote).*$/i, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+
   const parseJobDescription = (text: string): { company?: string; jobTitle?: string } => {
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
     if (lines.length === 0) return {};
-    const head = lines.slice(0, 6).join('\n');
+    // Skip metadata-only lines like "Location:", "Full-time", URLs
+    const contentLines = lines.filter(l =>
+      !/^(location|type|salary|compensation|posted|date|apply|url|http)/i.test(l) &&
+      !/^full[- ]?time|part[- ]?time$/i.test(l)
+    );
+    const head = lines.slice(0, 10).join('\n');
 
     // "Job Application for [Title] at [Company]" — Greenhouse
     const gh = head.match(/job application for (.+?) at ([^\n]+)/i);
-    if (gh) return { jobTitle: gh[1].trim(), company: gh[2].trim() };
+    if (gh) return { jobTitle: cleanTitle(gh[1]), company: gh[2].trim() };
 
     // "[Company] hiring [Title] in [Location]" — LinkedIn
-    const li = head.match(/^(.+?) hiring (.+?) in /i);
-    if (li) return { company: li[1].trim(), jobTitle: li[2].trim() };
+    const li = head.match(/(.+?) hiring (.+?) in /i);
+    if (li) return { company: li[1].trim(), jobTitle: cleanTitle(li[2]) };
 
-    // "[Title] at [Company]" on first line
-    const at = lines[0].match(/^(.+?) at ([^|·\-]+)$/i);
+    // "[Title] at [Company]" on first content line
+    const at = contentLines[0]?.match(/^(.+?) at ([^|·\-\n]+)$/i);
     if (at && at[1].length < 100 && at[2].length < 60)
-      return { jobTitle: at[1].trim(), company: at[2].trim() };
+      return { jobTitle: cleanTitle(at[1]), company: at[2].trim() };
 
-    // "[Company] is seeking / hiring / looking for"
-    const seek = head.match(/^(.{2,60}?) (?:is seeking|is hiring|is looking for|seeks)\b/i);
     const result: { company?: string; jobTitle?: string } = {};
+
+    // "[Company] is seeking / hiring / looking for" — multiline search
+    const seek = head.match(/^(.{2,60}?) (?:is seeking|is hiring|is looking for|seeks)\b/im);
     if (seek) result.company = seek[1].trim();
 
-    // First short line → job title
-    if (lines[0].length < 100) result.jobTitle = lines[0];
+    // First content line → job title, after stripping label prefixes
+    if (contentLines[0] && contentLines[0].length < 120)
+      result.jobTitle = cleanTitle(contentLines[0]);
 
     return result;
   };
