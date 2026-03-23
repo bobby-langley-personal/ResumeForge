@@ -1,18 +1,21 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { SignedIn, SignedOut, SignInButton } from '@clerk/nextjs';
+import { SignedIn, SignedOut, SignInButton, useUser } from '@clerk/nextjs';
+import dynamic from 'next/dynamic';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { readSSEStream } from '@/lib/sse-reader';
-import { Upload, FileText, ChevronDown, ChevronUp, X, Loader2 } from 'lucide-react';
+import { Upload, FileText, ChevronDown, ChevronUp, X, Loader2, Eye } from 'lucide-react';
 import { FitAnalysis } from '@/types/fit-analysis';
 import { ResumeItem } from '@/types/resume';
 import ContextSelector from '@/components/ContextSelector';
 import TourGuide from '@/components/TourGuide';
+
+const PDFPreviewModal = dynamic(() => import('@/components/PDFPreviewModal'), { ssr: false });
 
 type UIState = 'idle' | 'analyzing' | 'review' | 'generating' | 'done' | 'error';
 
@@ -97,6 +100,8 @@ const FIT_COLORS: Record<string, string> = {
 };
 
 export default function Home() {
+  const { user } = useUser();
+  const candidateName = user?.fullName ?? user?.firstName ?? '';
   const [uiState, setUIState] = useState<UIState>('idle');
   const [resetKey, setResetKey] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');
@@ -128,6 +133,7 @@ export default function Home() {
   const [questionAnswers, setQuestionAnswers] = useState<{ question: string; answer: string }[]>([]);
   const [answersExpanded, setAnswersExpanded] = useState(true);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [previewType, setPreviewType] = useState<'resume' | 'cover-letter' | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -407,6 +413,7 @@ export default function Home() {
     setQuestionAnswers([]);
     setAnswersExpanded(true);
     setCopiedIdx(null);
+    setPreviewType(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -441,6 +448,9 @@ export default function Home() {
               <p className="text-lg text-muted-foreground">
                 Paste a job description, upload your resume, and 
 get an AI-tailored, ATS-optimized resume and cover letter in seconds.
+              </p>
+              <p className="text-md text-muted-foreground">
+                *Note: For the best experience, use this on a PC browser.
               </p>
             </div>
 
@@ -965,25 +975,45 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
               </div>
             )}
 
-            {/* Download Buttons */}
+            {/* Download + Preview Buttons */}
             {uiState === 'done' && (
               <div className="text-center space-y-4">
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button
-                    size="lg"
-                    onClick={() => handleDownload('resume')}
-                    className="px-8"
-                  >
-                    Download Resume PDF
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      size="lg"
+                      onClick={() => handleDownload('resume')}
+                      className="px-8"
+                    >
+                      Download Resume PDF
+                    </Button>
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      onClick={() => setPreviewType('resume')}
+                      title="Preview Resume"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                  </div>
                   {includeCoverLetter && coverLetterContent && (
-                  <Button
-                    size="lg"
-                    onClick={() => handleDownload('cover-letter')}
-                    className="px-8"
-                  >
-                    Download Cover Letter PDF
-                  </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="lg"
+                        onClick={() => handleDownload('cover-letter')}
+                        className="px-8"
+                      >
+                        Download Cover Letter PDF
+                      </Button>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        onClick={() => setPreviewType('cover-letter')}
+                        title="Preview Cover Letter"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </div>
                   )}
                 </div>
                 <Button
@@ -994,6 +1024,28 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                   Generate New Documents
                 </Button>
               </div>
+            )}
+
+            {/* PDF Preview Modal (home page) */}
+            {previewType === 'resume' && resumeContent && (
+              <PDFPreviewModal
+                type="resume"
+                resumeText={resumeContent}
+                candidateName={candidateName}
+                company={company}
+                jobTitle={jobTitle}
+                onClose={() => setPreviewType(null)}
+              />
+            )}
+            {previewType === 'cover-letter' && coverLetterContent && (
+              <PDFPreviewModal
+                type="cover-letter"
+                coverLetterText={coverLetterContent}
+                candidateName={candidateName}
+                company={company}
+                jobTitle={jobTitle}
+                onClose={() => setPreviewType(null)}
+              />
             )}
 
             {/* Application Answers Panel */}

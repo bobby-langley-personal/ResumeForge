@@ -81,6 +81,7 @@ Exported from `app/dashboard/page.tsx`:
   company: string
   job_title: string
   cover_letter_content: string | null
+  question_answers: { question: string; answer: string }[] | null
   created_at: string
 }
 ```

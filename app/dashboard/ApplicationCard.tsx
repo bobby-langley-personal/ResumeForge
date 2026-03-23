@@ -1,8 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
-import { FileText, Download, Trash2, MessageSquare, X } from 'lucide-react';
+import { FileText, Download, Trash2, MessageSquare, X, Eye } from 'lucide-react';
+
+const PDFPreviewModal = dynamic(() => import('@/components/PDFPreviewModal'), { ssr: false });
 
 interface ApplicationCardProps {
   id: string;
@@ -26,6 +29,15 @@ export default function ApplicationCard({
   const [error, setError] = useState('');
   const [showAnswers, setShowAnswers] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [previewType, setPreviewType] = useState<'resume' | 'cover-letter' | null>(null);
+  const [previewData, setPreviewData] = useState<{
+    resumeContent: string | null;
+    coverLetterContent: string | null;
+    candidateName: string;
+    company: string;
+    jobTitle: string;
+  } | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
 
   const copyAnswer = (text: string, idx: number) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -37,6 +49,26 @@ export default function ApplicationCard({
   const formattedDate = new Date(createdAt).toLocaleDateString('en-US', {
     month: 'long', day: 'numeric', year: 'numeric',
   });
+
+  const handlePreview = async (type: 'resume' | 'cover-letter') => {
+    setError('');
+    if (previewData) {
+      setPreviewType(type);
+      return;
+    }
+    setLoadingPreview(true);
+    try {
+      const res = await fetch(`/api/applications/${id}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setPreviewData(data);
+      setPreviewType(type);
+    } catch {
+      setError('Preview failed. Please try again.');
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
 
   const handleDownload = async (type: 'resume' | 'cover-letter') => {
     setDownloading(type);
@@ -139,17 +171,50 @@ export default function ApplicationCard({
       )}
 
       <div className="flex flex-col gap-2 mt-auto">
-        <Button size="sm" onClick={() => handleDownload('resume')} disabled={downloading !== null} className="w-full">
-          <Download className="w-3.5 h-3.5 mr-2" />
-          {downloading === 'resume' ? 'Downloading…' : 'Download Resume'}
-        </Button>
-        {hasCoverLetter && (
-          <Button size="sm" variant="outline" onClick={() => handleDownload('cover-letter')} disabled={downloading !== null} className="w-full">
+        <div className="flex gap-2">
+          <Button size="sm" onClick={() => handleDownload('resume')} disabled={downloading !== null || loadingPreview} className="flex-1">
             <Download className="w-3.5 h-3.5 mr-2" />
-            {downloading === 'cover-letter' ? 'Downloading…' : 'Download Cover Letter'}
+            {downloading === 'resume' ? 'Downloading…' : 'Resume'}
           </Button>
+          <Button size="sm" variant="outline" onClick={() => handlePreview('resume')} disabled={downloading !== null || loadingPreview} className="px-2.5" title="Preview Resume">
+            <Eye className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+        {hasCoverLetter && (
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => handleDownload('cover-letter')} disabled={downloading !== null || loadingPreview} className="flex-1">
+              <Download className="w-3.5 h-3.5 mr-2" />
+              {downloading === 'cover-letter' ? 'Downloading…' : 'Cover Letter'}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => handlePreview('cover-letter')} disabled={downloading !== null || loadingPreview} className="px-2.5" title="Preview Cover Letter">
+              <Eye className="w-3.5 h-3.5" />
+            </Button>
+          </div>
         )}
       </div>
+
+      {/* PDF Preview Modal */}
+      {previewType && previewData && (
+        previewType === 'resume' && previewData.resumeContent ? (
+          <PDFPreviewModal
+            type="resume"
+            resumeText={previewData.resumeContent}
+            candidateName={previewData.candidateName}
+            company={previewData.company}
+            jobTitle={previewData.jobTitle}
+            onClose={() => setPreviewType(null)}
+          />
+        ) : previewType === 'cover-letter' && previewData.coverLetterContent ? (
+          <PDFPreviewModal
+            type="cover-letter"
+            coverLetterText={previewData.coverLetterContent}
+            candidateName={previewData.candidateName}
+            company={previewData.company}
+            jobTitle={previewData.jobTitle}
+            onClose={() => setPreviewType(null)}
+          />
+        ) : null
+      )}
     </div>
   );
 }
