@@ -121,6 +121,12 @@ export default function Home() {
   const [urlImported, setUrlImported] = useState(false);
   const [isParsingJD, setIsParsingJD] = useState(false);
   const [manualExperience, setManualExperience] = useState('');
+  const [questions, setQuestions] = useState<string[]>(['']);
+  const [shortResponse, setShortResponse] = useState(false);
+  const [questionsExpanded, setQuestionsExpanded] = useState(false);
+  const [questionAnswers, setQuestionAnswers] = useState<{ question: string; answer: string }[]>([]);
+  const [answersExpanded, setAnswersExpanded] = useState(true);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -130,6 +136,16 @@ export default function Home() {
     setJobTitle('Technical Support Specialist');
     setJobDescription(DEV_JD);
     setManualExperience(DEV_RESUME);
+  };
+
+  const addQuestion = () => setQuestions(qs => qs.length < 5 ? [...qs, ''] : qs);
+  const removeQuestion = (i: number) => setQuestions(qs => qs.length === 1 ? [''] : qs.filter((_, idx) => idx !== i));
+  const updateQuestion = (i: number, val: string) => setQuestions(qs => qs.map((q, idx) => idx === i ? val : q));
+  const copyAnswer = (text: string, idx: number) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedIdx(idx);
+      setTimeout(() => setCopiedIdx(null), 2000);
+    });
   };
 
   const handleJDPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
@@ -168,6 +184,10 @@ export default function Home() {
       setJobDescription(data.jobDescription);
       if (data.company && !company) setCompany(data.company);
       if (data.jobTitle && !jobTitle) setJobTitle(data.jobTitle);
+      if (data.detectedQuestions?.length > 0) {
+        setQuestions(data.detectedQuestions.slice(0, 5));
+        setQuestionsExpanded(true);
+      }
       setUrlImported(true);
     } catch (err) {
       setUrlError(err instanceof Error ? err.message : 'Failed to fetch job posting');
@@ -260,12 +280,13 @@ export default function Home() {
     setStatusMessage('Starting generation...');
     setResumeContent('');
     setCoverLetterContent('');
+    setQuestionAnswers([]);
 
     try {
       const response = await fetch('/api/generate-documents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...pendingFormData, fitAnalysis, includeCoverLetter, jobUrl: jobUrl.trim() || undefined, additionalContext: additionalContext.map(i => ({ title: i.title, type: i.item_type, text: i.content.text })) }),
+        body: JSON.stringify({ ...pendingFormData, fitAnalysis, includeCoverLetter, jobUrl: jobUrl.trim() || undefined, additionalContext: additionalContext.map(i => ({ title: i.title, type: i.item_type, text: i.content.text })), questions: questions.filter(q => q.trim()), shortResponse }),
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -282,12 +303,18 @@ export default function Home() {
               setResumeContent(prev => prev + event.content);
               break;
             case 'resume_done':
-              setStatusMessage('Writing cover letter...');
+              if (includeCoverLetter) setStatusMessage('Writing cover letter...');
+              else if (questions.some(q => q.trim())) setStatusMessage('Answering questions...');
+              else setStatusMessage('Saving...');
               break;
             case 'cover_letter_chunk':
               setCoverLetterContent(prev => prev + event.content);
               break;
             case 'cover_letter_done':
+              setStatusMessage(questions.some(q => q.trim()) ? 'Answering questions...' : 'Saving...');
+              break;
+            case 'questions_done':
+              setQuestionAnswers(event.answers ?? []);
               setStatusMessage('Saving...');
               break;
             case 'done':
@@ -373,6 +400,12 @@ export default function Home() {
     setUploadedFileName('');
     setIsPreviewExpanded(false);
     setInputMethod('upload');
+    setQuestions(['']);
+    setShortResponse(false);
+    setQuestionsExpanded(false);
+    setQuestionAnswers([]);
+    setAnswersExpanded(true);
+    setCopiedIdx(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -428,10 +461,12 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
             {(uiState === 'analyzing' || uiState === 'generating') && (
               <div className="mb-6 p-5 bg-blue-50 border border-blue-200 rounded-lg space-y-4">
                 {(() => {
+                  const hasQs = questions.some(q => q.trim());
                   const steps = [
                     { label: 'Analyzing fit', done: uiState === 'generating' },
-                    { label: 'Generating resume', done: uiState === 'generating' && (statusMessage.toLowerCase().includes('cover') || statusMessage.toLowerCase().includes('saving') || statusMessage.toLowerCase().includes('complete')) },
-                    ...(includeCoverLetter ? [{ label: 'Writing cover letter', done: statusMessage.toLowerCase().includes('saving') || statusMessage.toLowerCase().includes('complete') }] : []),
+                    { label: 'Generating resume', done: uiState === 'generating' && (statusMessage.toLowerCase().includes('cover') || statusMessage.toLowerCase().includes('answering') || statusMessage.toLowerCase().includes('saving') || statusMessage.toLowerCase().includes('complete')) },
+                    ...(includeCoverLetter ? [{ label: 'Writing cover letter', done: statusMessage.toLowerCase().includes('answering') || statusMessage.toLowerCase().includes('saving') || statusMessage.toLowerCase().includes('complete') }] : []),
+                    ...(hasQs ? [{ label: 'Answering questions', done: statusMessage.toLowerCase().includes('saving') || statusMessage.toLowerCase().includes('complete') }] : []),
                     { label: 'Saving', done: statusMessage.toLowerCase().includes('complete') },
                   ];
                   const doneCount = steps.filter(s => s.done).length;
@@ -675,6 +710,79 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                         }
                       </div>
                     </details>
+
+                    {/* Application Questions */}
+                    <div className="border border-border rounded-xl overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setQuestionsExpanded(e => !e)}
+                        disabled={uiState === 'analyzing'}
+                        className="w-full flex items-center justify-between px-5 py-3.5 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+                      >
+                        <span>
+                          {questionsExpanded ? '−' : '+'} Application Questions
+                          {!questionsExpanded && questions.some(q => q.trim()) && (
+                            <span className="ml-1.5 text-muted-foreground font-normal">
+                              ({questions.filter(q => q.trim()).length} added)
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-xs text-muted-foreground font-normal">optional</span>
+                      </button>
+
+                      {questionsExpanded && (
+                        <div className="px-5 pb-5 pt-1 space-y-4 border-t border-border">
+                          <p className="text-xs text-muted-foreground pt-2">
+                            Paste application questions and get AI-generated answers grounded in your real experience and context documents.
+                          </p>
+
+                          <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={shortResponse}
+                              onChange={(e) => setShortResponse(e.target.checked)}
+                              disabled={uiState === 'analyzing'}
+                              className="w-4 h-4 rounded border-border accent-primary"
+                            />
+                            <span className="text-sm text-muted-foreground">Short response (2–3 sentences)</span>
+                          </label>
+
+                          {questions.map((q, i) => (
+                            <div key={i} className="space-y-1.5">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-muted-foreground">Question {i + 1}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => removeQuestion(i)}
+                                  disabled={uiState === 'analyzing'}
+                                  className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                                >
+                                  {questions.length === 1 ? 'Clear' : 'Remove'}
+                                </button>
+                              </div>
+                              <Textarea
+                                placeholder="Paste question here..."
+                                className="min-h-[72px] bg-background text-sm resize-none"
+                                disabled={uiState === 'analyzing'}
+                                value={q}
+                                onChange={(e) => updateQuestion(i, e.target.value)}
+                              />
+                            </div>
+                          ))}
+
+                          {questions.length < 5 && (
+                            <button
+                              type="button"
+                              onClick={addQuestion}
+                              disabled={uiState === 'analyzing'}
+                              className="text-sm text-primary hover:underline"
+                            >
+                              + Add another question
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Right Column - Your Background */}
@@ -792,7 +900,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                   </div>
                 </div>
 
-                <div className="flex flex-col items-center space-y-4 mb-8">
+                <div className="flex flex-col items-center space-y-4 mb-6">
                   {/* Cover letter toggle */}
                   <label className="flex items-center gap-3 cursor-pointer select-none">
                     <input
@@ -817,6 +925,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                     We&apos;ll analyze your fit before generating your documents
                   </p>
                 </div>
+
               </form>
             )}
 
@@ -882,6 +991,43 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                 >
                   Generate New Documents
                 </Button>
+              </div>
+            )}
+
+            {/* Application Answers Panel */}
+            {uiState === 'done' && questionAnswers.length > 0 && (
+              <div className="mt-8 border border-border rounded-xl overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setAnswersExpanded(e => !e)}
+                  className="w-full flex items-center justify-between px-5 py-3.5 text-sm font-semibold text-foreground hover:bg-muted/50 transition-colors"
+                >
+                  <span>Application Answers ({questionAnswers.length})</span>
+                  <span className="text-muted-foreground">{answersExpanded ? '▲' : '▼'}</span>
+                </button>
+
+                {answersExpanded && (
+                  <div className="divide-y divide-border border-t border-border">
+                    {questionAnswers.map((qa, i) => (
+                      <div key={i} className="px-5 py-4 space-y-2">
+                        <div className="flex items-start justify-between gap-4">
+                          <p className="text-sm font-medium text-foreground">{qa.question}</p>
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            {qa.answer.trim().split(/\s+/).filter(Boolean).length} words
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{qa.answer}</p>
+                        <button
+                          type="button"
+                          onClick={() => copyAnswer(qa.answer, i)}
+                          className="text-xs text-primary hover:underline"
+                        >
+                          {copiedIdx === i ? 'Copied!' : 'Copy Answer'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

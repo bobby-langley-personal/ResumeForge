@@ -78,42 +78,51 @@ export interface Database {
         Row: {
           id: string
           user_id: string
-          resume_id: string | null
+          source_resume_id: string | null
           job_title: string
           company: string
           job_description: string
+          job_url: string | null
           resume_content: string | null
           cover_letter_content: string | null
           status: 'applied' | 'interviewing' | 'offered' | 'rejected' | 'withdrawn'
-          application_date: string
+          fit_analysis: unknown | null
+          questions: unknown | null
+          question_answers: unknown | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           user_id: string
-          resume_id?: string | null
+          source_resume_id?: string | null
           job_title: string
           company: string
           job_description: string
+          job_url?: string | null
           resume_content?: string | null
           cover_letter_content?: string | null
           status?: 'applied' | 'interviewing' | 'offered' | 'rejected' | 'withdrawn'
-          application_date?: string
+          fit_analysis?: unknown | null
+          questions?: unknown | null
+          question_answers?: unknown | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           user_id?: string
-          resume_id?: string | null
+          source_resume_id?: string | null
           job_title?: string
           company?: string
           job_description?: string
+          job_url?: string | null
           resume_content?: string | null
           cover_letter_content?: string | null
           status?: 'applied' | 'interviewing' | 'offered' | 'rejected' | 'withdrawn'
-          application_date?: string
+          fit_analysis?: unknown | null
+          questions?: unknown | null
+          question_answers?: unknown | null
           created_at?: string
           updated_at?: string
         }

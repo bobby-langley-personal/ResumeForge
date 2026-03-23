@@ -2,6 +2,9 @@ export const runtime = 'nodejs';
 
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
+import { Anthropic } from '@anthropic-ai/sdk';
+import { getModels } from '@/lib/models';
+import { parseStageJSON } from '@/lib/pipeline-utils';
 
 const TRUNCATE_AT = [
   'Apply for this job',
@@ -19,6 +22,10 @@ const TRUNCATE_AT = [
   'Upload Resume',
   'Please enter your',
   'Cover letter\n',
+  // Universal EEO closing line — appears at the end of most job postings, right before the form
+  'is an equal opportunity employer',
+  'is an Equal Opportunity Employer',
+  'equal opportunity and affirmative action employer',
 ];
 
 function extractText(html: string): string {
@@ -173,19 +180,32 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Truncate at application form noise
-  for (const marker of TRUNCATE_AT) {
-    const idx = jobDescription.toLowerCase().indexOf(marker.toLowerCase());
-    if (idx !== -1) {
-      console.log(`[fetch-job-posting] Truncated at marker: "${marker}" (idx ${idx})`);
-      jobDescription = jobDescription.slice(0, idx).trim();
-      break;
+  // Truncate at application form noise — find the EARLIEST matching marker in the document
+  // (not the first marker in list order, which could match late in the document)
+  let formSection = '';
+  let truncated = false;
+  {
+    let earliestIdx = -1;
+    let earliestMarker = '';
+    for (const marker of TRUNCATE_AT) {
+      const idx = jobDescription.toLowerCase().indexOf(marker.toLowerCase());
+      if (idx !== -1 && (earliestIdx === -1 || idx < earliestIdx)) {
+        earliestIdx = idx;
+        earliestMarker = marker;
+      }
     }
+    if (earliestIdx !== -1) {
+      console.log(`[fetch-job-posting] Truncated at marker: "${earliestMarker}" (idx ${earliestIdx})`);
+      formSection = jobDescription.slice(earliestIdx, earliestIdx + 4000);
+      jobDescription = jobDescription.slice(0, earliestIdx).trim();
+      truncated = true;
+    }
+  }
+  if (!truncated) {
+    console.log('[fetch-job-posting] No TRUNCATE_AT marker matched. Last 200 chars:', jobDescription.slice(-200));
   }
 
   // Backstop: remove trailing noise by finding the last substantive line (>25 chars).
-  // Form fields and whitespace-only lines are always short — this catches sites where
-  // TRUNCATE_AT markers don't match the exact text.
   {
     const lines = jobDescription.split('\n');
     let lastSubstantial = -1;
@@ -193,10 +213,50 @@ export async function POST(req: NextRequest) {
       if (lines[i].trim().length > 25) lastSubstantial = i;
     }
     if (lastSubstantial !== -1 && lastSubstantial < lines.length - 4) {
+      if (!formSection) formSection = lines.slice(lastSubstantial + 1).join('\n').slice(0, 4000);
       jobDescription = lines.slice(0, lastSubstantial + 1).join('\n').trim();
     }
   }
 
-  console.log('[fetch-job-posting] Final length:', jobDescription.length);
-  return Response.json({ jobDescription, company, jobTitle });
+  // Extract open-ended application questions from the form section using Haiku.
+  // Skips identity/demographic/compliance fields — only written-response questions.
+  let detectedQuestions: string[] = [];
+  if (formSection.trim().length > 50 && process.env.ANTHROPIC_API_KEY) {
+    try {
+      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+      const { HAIKU } = await getModels();
+      const response = await anthropic.messages.create({
+        model: HAIKU,
+        max_tokens: 400,
+        system: `Extract open-ended written-response questions from job application form text.
+
+INCLUDE questions that require a thoughtful written answer, e.g.:
+- "Why do you want to work at [Company]?"
+- "Describe a time you resolved a complex technical issue"
+- "What are your motivations for this role?"
+
+EXCLUDE:
+- Personal info fields (name, email, phone, address, LinkedIn URL)
+- Document uploads (resume, cover letter)
+- Yes/No or dropdown fields (work authorization, sponsorship, GPA, graduation year)
+- Demographic/identity fields (race, gender, disability, veteran status)
+- Logistical questions (timezone, relocation, salary expectations)
+
+Output JSON only, no markdown fences: {"questions": ["...", "..."]}
+If none qualify, return {"questions": []}`,
+        messages: [{ role: 'user', content: formSection }],
+      });
+      const text = response.content[0].type === 'text' ? response.content[0].text : '{}';
+      const parsed = parseStageJSON<{ questions: unknown[] }>(text);
+      detectedQuestions = (Array.isArray(parsed.questions) ? parsed.questions : [])
+        .filter((q: unknown) => typeof q === 'string' && (q as string).trim().length > 0)
+        .slice(0, 5) as string[];
+      console.log('[fetch-job-posting] Detected questions:', detectedQuestions.length);
+    } catch (err) {
+      console.warn('[fetch-job-posting] Question extraction failed:', err instanceof Error ? err.message : err);
+    }
+  }
+
+  console.log('[fetch-job-posting] Final JD length:', jobDescription.length);
+  return Response.json({ jobDescription, company, jobTitle, detectedQuestions });
 }
