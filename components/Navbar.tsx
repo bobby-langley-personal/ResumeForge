@@ -1,11 +1,14 @@
 'use client';
 
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { Sun, Moon, Menu, X, MessageSquare } from 'lucide-react';
 import { startTour } from '@/components/TourGuide';
+
+const FeedbackModal = dynamic(() => import('@/components/FeedbackModal'), { ssr: false });
 
 const TOUR_KEY = 'resumeforge_tour_completed';
 
@@ -13,6 +16,7 @@ export default function Navbar() {
   const [dark, setDark] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [tourShown, setTourShown] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -168,20 +172,19 @@ export default function Navbar() {
 
               <div className="border-t border-border my-1" />
 
-              <a
-                href="https://github.com/bobby-langley-personal/ResumeForge/issues"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={close}
+              <button
+                onClick={() => { close(); setFeedbackOpen(true); }}
                 className="flex items-center justify-between w-full px-2 py-3 text-sm text-foreground hover:text-primary transition-colors"
               >
                 <span>Feedback</span>
                 <MessageSquare className="w-4 h-4" />
-              </a>
+              </button>
             </SignedIn>
           </div>
         </div>
       )}
+
+      {feedbackOpen && <FeedbackModal onClose={() => setFeedbackOpen(false)} />}
     </nav>
   );
 }
