@@ -12,6 +12,7 @@ import { Upload, FileText, ChevronDown, ChevronUp, X, Loader2 } from 'lucide-rea
 import { FitAnalysis } from '@/types/fit-analysis';
 import { ResumeItem } from '@/types/resume';
 import ContextSelector from '@/components/ContextSelector';
+import TourGuide from '@/components/TourGuide';
 
 type UIState = 'idle' | 'analyzing' | 'review' | 'generating' | 'done' | 'error';
 
@@ -432,9 +433,10 @@ export default function Home() {
         </SignedOut>
 
         <SignedIn>
+          <TourGuide />
           <div className="max-w-6xl mx-auto">
             {/* Header */}
-            <div className="text-center mb-12">
+            <div id="tour-heading" className="text-center mb-12">
               <h2 className="text-3xl font-bold text-foreground mb-4">Get To Work</h2>
               <p className="text-lg text-muted-foreground">
                 Paste a job description, upload your resume, and 
@@ -585,7 +587,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                     </div>
 
                     {/* Actions */}
-                    <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                    <div id="tour-generate" className="flex flex-col sm:flex-row gap-3 pt-2">
                       <Button
                         size="lg"
                         className="flex-1"
@@ -618,7 +620,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                 )}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                   {/* Left Column - Job Details */}
-                  <div className="space-y-6">
+                  <div id="tour-job-details" className="space-y-6">
                     <h3 className="text-xl font-semibold text-foreground mb-4">Job Details</h3>
 
                     <div className="space-y-2">
@@ -712,7 +714,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                     </details>
 
                     {/* Application Questions */}
-                    <div className="border border-border rounded-xl overflow-hidden">
+                    <div id="tour-questions" className="border border-border rounded-xl overflow-hidden">
                       <button
                         type="button"
                         onClick={() => setQuestionsExpanded(e => !e)}
@@ -786,9 +788,10 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                   </div>
 
                   {/* Right Column - Your Background */}
-                  <div className="space-y-6">
+                  <div id="tour-background" className="space-y-6">
                     <h3 className="text-xl font-semibold text-foreground mb-4">Your Background</h3>
 
+                    <div id="tour-context">
                     <ContextSelector
                       key={resetKey}
                       onLoadBackground={text => { setInputMethod('manual'); setManualExperience(text); }}
@@ -796,7 +799,9 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                       disabled={uiState === 'analyzing'}
                     />
 
-                    <div className="flex space-x-4 mb-6">
+                    </div>
+
+                    <div id="tour-experience" className="flex space-x-4 mb-6">
                       <Button
                         type="button"
                         variant={inputMethod === 'upload' ? 'default' : 'outline'}

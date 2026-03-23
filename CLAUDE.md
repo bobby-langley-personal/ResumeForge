@@ -35,6 +35,8 @@ Current valid columns:
 - `cover_letter_content` (string | null) - Generated cover letter text
 - `status` (ApplicationStatus) - Enum (kept in DB, not exposed in UI)
 - `fit_analysis` (Json | null) - Stored FitAnalysis object
+- `questions` (Json | null) - `string[]` of application questions entered by user
+- `question_answers` (Json | null) - `ApplicationQuestion[]` of AI-generated answers
 - `created_at` (string) - Auto-populated by Postgres default
 - `updated_at` (string) - Auto-updated by Postgres
 
@@ -66,6 +68,7 @@ Current valid columns:
 | `POST /api/download-pdf/[type]` | Node | PDF generation and download |
 | `GET /api/resumes` | Node | List My Documents (default first, then created_at desc) |
 | `POST /api/resumes` | Node | Save new document to library |
+| `GET /api/applications/[id]` | Node | Fetch application content + candidateName for PDF preview |
 | `DELETE /api/applications` | Node | Bulk delete by `ids` array |
 | `DELETE /api/applications/[id]` | Node | Delete single resume record |
 
@@ -84,11 +87,14 @@ Current valid columns:
 
 ### fetch-job-posting behavior
 - Blocks `linkedin.com/jobs` URLs — returns `{ error, code: 'LINKEDIN_BLOCKED' }` with status 422
-- Strips scripts, styles, nav, header, footer from HTML
-- Truncates at application form markers ("Apply for this job", "Equal Employment Opportunity", etc.)
+- Strips `<head>`, scripts, styles, nav, header, footer from HTML before text extraction
+- Seeks to job title position in extracted text to skip nav/menu noise rendered as `<div>` elements
+- Truncates at the **earliest-occurring** application form marker in the document
+- Backstop: removes trailing noise by finding the last substantive line (>25 chars)
 - Detects company: `og:site_name` → title "at Company" pattern → Greenhouse/Lever/Workday URL patterns
 - Detects job title: `og:title` (stripped) → `<title>` tag fallback
-- Returns `{ jobDescription, company?, jobTitle? }`
+- Extracts open-ended application questions from the form section using Haiku (skips identity/demographic/compliance fields)
+- Returns `{ jobDescription, company?, jobTitle?, detectedQuestions: string[] }`
 
 ### analyze-fit response shape (FitAnalysis)
 - `strengths`, `gaps`, `suggestions` — `FitPoint[]` where `FitPoint = { point: string, source?: string }`
@@ -133,6 +139,15 @@ const { SONNET, HAIKU } = await getModels();
 - `ApplicationItem` type exported from `app/dashboard/page.tsx`, imported by `ApplicationList`
 - Multi-select bulk delete via checkboxes; single delete via trash icon on each card
 - Data fetched server-side in `DashboardPage`, passed to `ApplicationList` as `initialItems`
+- `ApplicationCard` shows a `MessageSquare` icon if `question_answers` exist — opens a full-screen modal with Q&A list, word count per answer, and copy buttons
+- `ApplicationCard` has Eye icon preview buttons alongside each download button — fetches application content via `GET /api/applications/[id]` on first click, caches for subsequent previews
+
+## PDF Preview
+
+- `components/PDFPreviewModal.tsx` — `'use client'` component, uses `BlobProvider` from `@react-pdf/renderer` to generate a blob URL and display it in an `<iframe>`
+- Always imported via `dynamic(() => import('@/components/PDFPreviewModal'), { ssr: false })` to avoid SSR issues with `@react-pdf/renderer`
+- Home page: preview buttons next to download buttons; uses `useUser()` from Clerk for `candidateName`
+- Dashboard: preview buttons on each card; content fetched lazily via `GET /api/applications/[id]`
 
 ---
 
@@ -153,6 +168,16 @@ const { SONNET, HAIKU } = await getModels();
 - Toggle button (Sun/Moon icon) lives in `Navbar.tsx` → `ThemeToggle` component
 
 ---
+
+## Onboarding Tour (`driver.js`)
+
+- `components/TourGuide.tsx` — `'use client'` component; auto-starts the tour for first-time users; exports `startTour()` for replay
+- localStorage key: `resumeforge_tour_completed` — `'true'` means tour has been seen; absence or any other value triggers auto-start
+- Tour auto-starts 800ms after mount to allow the page to fully render
+- `TourButton` in `Navbar.tsx` — appears only after tour has been completed once; clicking replays the tour by calling `startTour()`
+- Step 2 (Job Search) is **backlogged** — the job search feature is not yet implemented; tour skips from Welcome directly to Job Details
+- Tour targets use `id` attributes: `tour-heading`, `tour-job-details`, `tour-background`, `tour-context`, `tour-questions`, `tour-generate`
+- Dark theme CSS override in `app/globals.css` under `.resumeforge-tour` class
 
 ## Branch Naming
 
