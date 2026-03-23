@@ -791,15 +791,12 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                   <div id="tour-background" className="space-y-6">
                     <h3 className="text-xl font-semibold text-foreground mb-4">Your Background</h3>
 
-                    <div id="tour-context">
                     <ContextSelector
                       key={resetKey}
                       onLoadBackground={text => { setInputMethod('manual'); setManualExperience(text); }}
                       onAdditionalContextChange={setAdditionalContext}
                       disabled={uiState === 'analyzing'}
                     />
-
-                    </div>
 
                     <div id="tour-experience" className="flex space-x-4 mb-6">
                       <Button
