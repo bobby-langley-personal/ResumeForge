@@ -131,6 +131,42 @@ export default function Home() {
     setManualExperience(DEV_RESUME);
   };
 
+  const parseJobDescription = (text: string): { company?: string; jobTitle?: string } => {
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length === 0) return {};
+    const head = lines.slice(0, 6).join('\n');
+
+    // "Job Application for [Title] at [Company]" — Greenhouse
+    const gh = head.match(/job application for (.+?) at ([^\n]+)/i);
+    if (gh) return { jobTitle: gh[1].trim(), company: gh[2].trim() };
+
+    // "[Company] hiring [Title] in [Location]" — LinkedIn
+    const li = head.match(/^(.+?) hiring (.+?) in /i);
+    if (li) return { company: li[1].trim(), jobTitle: li[2].trim() };
+
+    // "[Title] at [Company]" on first line
+    const at = lines[0].match(/^(.+?) at ([^|·\-]+)$/i);
+    if (at && at[1].length < 100 && at[2].length < 60)
+      return { jobTitle: at[1].trim(), company: at[2].trim() };
+
+    // "[Company] is seeking / hiring / looking for"
+    const seek = head.match(/^(.{2,60}?) (?:is seeking|is hiring|is looking for|seeks)\b/i);
+    const result: { company?: string; jobTitle?: string } = {};
+    if (seek) result.company = seek[1].trim();
+
+    // First short line → job title
+    if (lines[0].length < 100) result.jobTitle = lines[0];
+
+    return result;
+  };
+
+  const handleJDBlur = (text: string) => {
+    if (!text.trim()) return;
+    const { company: detectedCompany, jobTitle: detectedTitle } = parseJobDescription(text);
+    if (detectedCompany && !company) setCompany(detectedCompany);
+    if (detectedTitle && !jobTitle) setJobTitle(detectedTitle);
+  };
+
   const handleFetchUrl = async () => {
     if (!jobUrl.trim()) return;
     setIsFetchingUrl(true);
@@ -594,40 +630,6 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="jobUrl">Job Posting URL <span className="text-muted-foreground font-normal">(optional)</span></Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="jobUrl"
-                          type="url"
-                          placeholder="https://jobs.example.com/posting/123"
-                          className="bg-background flex-1"
-                          disabled={uiState === 'analyzing' || isFetchingUrl}
-                          value={jobUrl}
-                          onChange={(e) => { setJobUrl(e.target.value); setUrlError(''); setUrlImported(false); }}
-                          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleFetchUrl())}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={handleFetchUrl}
-                          disabled={!jobUrl.trim() || uiState === 'analyzing' || isFetchingUrl}
-                        >
-                          {isFetchingUrl ? (
-                            <span className="flex items-center gap-1.5">
-                              <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-muted-foreground/30 border-t-foreground" />
-                              Importing…
-                            </span>
-                          ) : 'Import'}
-                        </Button>
-                      </div>
-                      {urlError && <p className="text-xs text-destructive">{urlError}</p>}
-                      {urlImported
-                        ? <p className="text-xs text-green-600">Imported — always double-check auto-filled results for accuracy.</p>
-                        : <p className="text-xs text-muted-foreground">Works best with public job postings. Some sites may block automated requests.</p>
-                      }
-                    </div>
-
-                    <div className="space-y-2">
                       <Label htmlFor="jobDescription">Job Description</Label>
                       <Textarea
                         id="jobDescription"
@@ -637,8 +639,49 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                         required
                         value={jobDescription}
                         onChange={(e) => setJobDescription(e.target.value)}
+                        onBlur={(e) => handleJDBlur(e.target.value)}
                       />
+                      <p className="text-xs text-muted-foreground">Company and job title will auto-fill from the pasted text — double-check before submitting.</p>
                     </div>
+
+                    <details className="group">
+                      <summary className="text-xs text-muted-foreground hover:text-foreground cursor-pointer list-none flex items-center gap-1 select-none">
+                        <span className="group-open:rotate-90 transition-transform inline-block">›</span>
+                        Import from URL instead
+                      </summary>
+                      <div className="mt-3 space-y-2">
+                        <div className="flex gap-2">
+                          <Input
+                            id="jobUrl"
+                            type="url"
+                            placeholder="https://jobs.example.com/posting/123"
+                            className="bg-background flex-1"
+                            disabled={uiState === 'analyzing' || isFetchingUrl}
+                            value={jobUrl}
+                            onChange={(e) => { setJobUrl(e.target.value); setUrlError(''); setUrlImported(false); }}
+                            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleFetchUrl())}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleFetchUrl}
+                            disabled={!jobUrl.trim() || uiState === 'analyzing' || isFetchingUrl}
+                          >
+                            {isFetchingUrl ? (
+                              <span className="flex items-center gap-1.5">
+                                <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-muted-foreground/30 border-t-foreground" />
+                                Importing…
+                              </span>
+                            ) : 'Import'}
+                          </Button>
+                        </div>
+                        {urlError && <p className="text-xs text-destructive">{urlError}</p>}
+                        {urlImported
+                          ? <p className="text-xs text-green-600">Imported — always double-check auto-filled results for accuracy.</p>
+                          : <p className="text-xs text-muted-foreground">Works best with public job postings. Some sites may block automated requests.</p>
+                        }
+                      </div>
+                    </details>
                   </div>
 
                   {/* Right Column - Your Background */}
