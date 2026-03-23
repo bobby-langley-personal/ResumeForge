@@ -71,6 +71,7 @@ Current valid columns:
 | `GET /api/applications/[id]` | Node | Fetch application content + candidateName for PDF preview |
 | `DELETE /api/applications` | Node | Bulk delete by `ids` array |
 | `DELETE /api/applications/[id]` | Node | Delete single resume record |
+| `POST /api/interview/generate` | Node | Sonnet non-streaming call — builds experience doc from interview transcript; returns `{ document: string }` |
 
 ### generate-documents request fields
 - `company`, `jobTitle`, `jobDescription`, `backgroundExperience` — required
@@ -198,3 +199,14 @@ All feature/fix branches: `claude/issue-{number}-{YYYYMMDD}-{HHMM}` — Vercel s
 - Run `npx tsc --noEmit` before committing — all PRs must be type-clean
 - Use `gh issue comment` to post progress updates on GitHub issues
 - Dev mode: `[Dev] Fill Test Data` button on home page pre-fills sample job + resume data
+
+## AI Experience Interview (`/interview`)
+
+- `app/interview/page.tsx` — server wrapper (auth guard), renders `InterviewClient`
+- `app/interview/InterviewClient.tsx` — full client state machine with 6 steps: `intro → role-setup → interview → complete → generating → output`
+- Up to 5+ roles; each role has 8 fixed questions in a scrollable chat UI
+- "Skip role" skips to next role (or complete if last)
+- On complete, calls `POST /api/interview/generate` with full transcript → renders doc in preview pane
+- "Save to My Documents" → `POST /api/resumes` with `item_type: 'other'`, redirects to `/resumes`
+- "Copy to clipboard" copies raw text
+- Linked from My Documents page header; also add link from TipsPanel "Expanded Work History" tip once issue #69 is merged
