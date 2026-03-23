@@ -89,19 +89,24 @@ export default function FeedbackModal({ onClose }: FeedbackModalProps) {
             {isSignedIn && displayName && (
               <div className="space-y-1.5">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Submit as</p>
-                <div className="flex gap-4">
-                  {(['Anonymous', displayName] as const).map((label, i) => (
-                    <label key={label} className="flex items-center gap-2 cursor-pointer text-sm">
-                      <input
-                        type="radio"
-                        name="identity"
-                        checked={i === 0 ? isAnonymous : !isAnonymous}
-                        onChange={() => setIsAnonymous(i === 0)}
-                        className="accent-primary"
-                      />
-                      {label}
-                    </label>
-                  ))}
+                <div className="flex gap-2">
+                  {(['Anonymous', displayName] as const).map((label, i) => {
+                    const selected = i === 0 ? isAnonymous : !isAnonymous;
+                    return (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() => setIsAnonymous(i === 0)}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                          selected
+                            ? 'bg-foreground text-background border-foreground'
+                            : 'bg-transparent text-muted-foreground border-border hover:border-foreground hover:text-foreground'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -109,18 +114,20 @@ export default function FeedbackModal({ onClose }: FeedbackModalProps) {
             {/* Type toggle */}
             <div className="space-y-1.5">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Type</p>
-              <div className="flex gap-4">
+              <div className="flex gap-2">
                 {(['general', 'bug'] as FeedbackType[]).map(t => (
-                  <label key={t} className="flex items-center gap-2 cursor-pointer text-sm">
-                    <input
-                      type="radio"
-                      name="type"
-                      checked={type === t}
-                      onChange={() => setType(t)}
-                      className="accent-primary"
-                    />
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setType(t)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                      type === t
+                        ? 'bg-foreground text-background border-foreground'
+                        : 'bg-transparent text-muted-foreground border-border hover:border-foreground hover:text-foreground'
+                    }`}
+                  >
                     {t === 'general' ? 'General feedback' : 'Bug report'}
-                  </label>
+                  </button>
                 ))}
               </div>
             </div>
