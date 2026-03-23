@@ -6,17 +6,24 @@ import { NextRequest } from 'next/server';
 const TRUNCATE_AT = [
   'Apply for this job',
   'Submit application',
+  'Submit Your Application',
   'Create a Job Alert',
   'Equal Employment Opportunity',
   'Voluntary Self-Identification',
   'indicates a required field',
   'Autofill with',
   'First Name*',
+  'Legal first name',
+  'Resume/CV',
   'Upload resume',
+  'Upload Resume',
+  'Please enter your',
+  'Cover letter\n',
 ];
 
 function extractText(html: string): string {
   return html
+    .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '')   // strip <head> so <title> doesn't appear in output
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
     .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
@@ -24,11 +31,12 @@ function extractText(html: string): string {
     .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, '')
     .replace(/<\/(p|div|li|h[1-6]|br)>/gi, '\n')
     .replace(/<[^>]+>/g, '')
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n)))       // &#038; &#8211; etc.
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&nbsp;/g, ' ')
-    .replace(/&#39;/g, "'")
     .replace(/&quot;/g, '"')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -151,17 +159,44 @@ export async function POST(req: NextRequest) {
     return new Response('Could not extract content from this page', { status: 422 });
   }
 
+  // Detect from HTML metadata first so we can use the title to find content start
+  const company = detectCompany(html, url);
+  const jobTitle = detectJobTitle(html);
+
+  // Skip past nav/menu noise at the top by seeking to where the job title appears in the text.
+  // Many sites render nav as <div> elements (not <nav>) so tag-stripping alone misses them.
+  if (jobTitle) {
+    const needle = jobTitle.slice(0, 25).toLowerCase();
+    const titleIdx = jobDescription.toLowerCase().indexOf(needle);
+    if (titleIdx > 200) {
+      jobDescription = jobDescription.slice(titleIdx).trim();
+    }
+  }
+
   // Truncate at application form noise
   for (const marker of TRUNCATE_AT) {
     const idx = jobDescription.toLowerCase().indexOf(marker.toLowerCase());
     if (idx !== -1) {
+      console.log(`[fetch-job-posting] Truncated at marker: "${marker}" (idx ${idx})`);
       jobDescription = jobDescription.slice(0, idx).trim();
       break;
     }
   }
 
-  const company = detectCompany(html, url);
-  const jobTitle = detectJobTitle(html);
+  // Backstop: remove trailing noise by finding the last substantive line (>25 chars).
+  // Form fields and whitespace-only lines are always short — this catches sites where
+  // TRUNCATE_AT markers don't match the exact text.
+  {
+    const lines = jobDescription.split('\n');
+    let lastSubstantial = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].trim().length > 25) lastSubstantial = i;
+    }
+    if (lastSubstantial !== -1 && lastSubstantial < lines.length - 4) {
+      jobDescription = lines.slice(0, lastSubstantial + 1).join('\n').trim();
+    }
+  }
 
+  console.log('[fetch-job-posting] Final length:', jobDescription.length);
   return Response.json({ jobDescription, company, jobTitle });
 }

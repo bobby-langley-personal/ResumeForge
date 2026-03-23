@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { readSSEStream } from '@/lib/sse-reader';
-import { Upload, FileText, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Upload, FileText, ChevronDown, ChevronUp, X, Loader2 } from 'lucide-react';
 import { FitAnalysis } from '@/types/fit-analysis';
 import { ResumeItem } from '@/types/resume';
 import ContextSelector from '@/components/ContextSelector';
@@ -119,6 +119,7 @@ export default function Home() {
   const [isFetchingUrl, setIsFetchingUrl] = useState(false);
   const [urlError, setUrlError] = useState('');
   const [urlImported, setUrlImported] = useState(false);
+  const [isParsingJD, setIsParsingJD] = useState(false);
   const [manualExperience, setManualExperience] = useState('');
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -131,55 +132,22 @@ export default function Home() {
     setManualExperience(DEV_RESUME);
   };
 
-  const cleanTitle = (title: string): string =>
-    title
-      .replace(/^(?:current opening|job title|position|opening|role|title)\s*[:\-]\s*/i, '')
-      .replace(/\b(remote|hybrid|onsite|on-site|full[- ]?time|part[- ]?time|contract|temp(orary)?)\b/gi, '')
-      .replace(/[,·|]\s*(united states|usa?|canada|uk|hybrid|remote).*$/i, '')
-      .replace(/\s{2,}/g, ' ')
-      .trim();
-
-  const parseJobDescription = (text: string): { company?: string; jobTitle?: string } => {
-    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-    if (lines.length === 0) return {};
-    // Skip metadata-only lines like "Location:", "Full-time", URLs
-    const contentLines = lines.filter(l =>
-      !/^(location|type|salary|compensation|posted|date|apply|url|http)/i.test(l) &&
-      !/^full[- ]?time|part[- ]?time$/i.test(l)
-    );
-    const head = lines.slice(0, 10).join('\n');
-
-    // "Job Application for [Title] at [Company]" — Greenhouse
-    const gh = head.match(/job application for (.+?) at ([^\n]+)/i);
-    if (gh) return { jobTitle: cleanTitle(gh[1]), company: gh[2].trim() };
-
-    // "[Company] hiring [Title] in [Location]" — LinkedIn
-    const li = head.match(/(.+?) hiring (.+?) in /i);
-    if (li) return { company: li[1].trim(), jobTitle: cleanTitle(li[2]) };
-
-    // "[Title] at [Company]" on first content line
-    const at = contentLines[0]?.match(/^(.+?) at ([^|·\-\n]+)$/i);
-    if (at && at[1].length < 100 && at[2].length < 60)
-      return { jobTitle: cleanTitle(at[1]), company: at[2].trim() };
-
-    const result: { company?: string; jobTitle?: string } = {};
-
-    // "[Company] is seeking / hiring / looking for" — multiline search
-    const seek = head.match(/^(.{2,60}?) (?:is seeking|is hiring|is looking for|seeks)\b/im);
-    if (seek) result.company = seek[1].trim();
-
-    // First content line → job title, after stripping label prefixes
-    if (contentLines[0] && contentLines[0].length < 120)
-      result.jobTitle = cleanTitle(contentLines[0]);
-
-    return result;
-  };
-
-  const handleJDBlur = (text: string) => {
-    if (!text.trim()) return;
-    const { company: detectedCompany, jobTitle: detectedTitle } = parseJobDescription(text);
-    if (detectedCompany && !company) setCompany(detectedCompany);
-    if (detectedTitle && !jobTitle) setJobTitle(detectedTitle);
+  const handleJDPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const pastedText = e.clipboardData.getData('text');
+    if (!pastedText.trim()) return;
+    setIsParsingJD(true);
+    fetch('/api/parse-job-details', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jobDescription: pastedText }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { company?: string | null; jobTitle?: string | null } | null) => {
+        if (data?.company) setCompany(data.company);
+        if (data?.jobTitle) setJobTitle(data.jobTitle);
+      })
+      .catch(() => { /* silently ignore — user can fill manually */ })
+      .finally(() => setIsParsingJD(false));
   };
 
   const handleFetchUrl = async () => {
@@ -620,28 +588,38 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
 
                     <div className="space-y-2">
                       <Label htmlFor="company">Company Name</Label>
-                      <Input
-                        id="company"
-                        placeholder="Enter company name"
-                        className="bg-background"
-                        disabled={uiState === 'analyzing'}
-                        required
-                        value={company}
-                        onChange={(e) => setCompany(e.target.value)}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="company"
+                          placeholder="Enter company name"
+                          className="bg-background"
+                          disabled={uiState === 'analyzing'}
+                          required
+                          value={company}
+                          onChange={(e) => setCompany(e.target.value)}
+                        />
+                        {isParsingJD && (
+                          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                        )}
+                      </div>
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="jobTitle">Job Title</Label>
-                      <Input
-                        id="jobTitle"
-                        placeholder="Enter job title"
-                        className="bg-background"
-                        disabled={uiState === 'analyzing'}
-                        required
-                        value={jobTitle}
-                        onChange={(e) => setJobTitle(e.target.value)}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="jobTitle"
+                          placeholder="Enter job title"
+                          className="bg-background"
+                          disabled={uiState === 'analyzing'}
+                          required
+                          value={jobTitle}
+                          onChange={(e) => setJobTitle(e.target.value)}
+                        />
+                        {isParsingJD && (
+                          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                        )}
+                      </div>
                     </div>
 
                     <div className="space-y-2">
@@ -654,7 +632,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                         required
                         value={jobDescription}
                         onChange={(e) => setJobDescription(e.target.value)}
-                        onBlur={(e) => handleJDBlur(e.target.value)}
+                        onPaste={handleJDPaste}
                       />
                       <p className="text-xs text-muted-foreground">Company and job title will auto-fill from the pasted text — double-check before submitting.</p>
                     </div>
