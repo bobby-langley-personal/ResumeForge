@@ -61,6 +61,7 @@ Current valid columns:
 | `POST /api/analyze-fit` | Node | Haiku fit analysis — returns JSON FitAnalysis |
 | `POST /api/generate-documents` | Edge | SSE stream — resume (+ optional cover letter) |
 | `POST /api/fetch-job-posting` | Node | URL scrape — HTML extraction, company/title detection |
+| `POST /api/parse-job-details` | Node | Haiku extraction of company + job title from pasted JD text |
 | `POST /api/extract-resume` | Node | PDF/DOCX text extraction |
 | `POST /api/download-pdf/[type]` | Node | PDF generation and download |
 | `GET /api/resumes` | Node | List My Documents (default first, then created_at desc) |
