@@ -139,29 +139,79 @@ Exported from `app/dashboard/page.tsx`:
 
 ## Interview Types (`app/interview/`)
 
-### `InterviewAnswer`
+### `ChatMessage`
+```typescript
+{ role: 'user' | 'assistant'; content: string }
+```
+
+### `InterviewSystemContext`
 ```typescript
 {
-  question: string   // the question text
-  answer: string     // the user's response
+  currentRole: { company: string; title: string }
+  companyResearch?: string
+  existingDocuments?: string
+  rolesRemaining: number
 }
 ```
 
-### `InterviewRole`
+### `InterviewChatRequest`
+```typescript
+{
+  message: string
+  history: ChatMessage[]
+  systemContext: InterviewSystemContext
+}
+```
+
+### `InterviewTranscript`
 ```typescript
 {
   company: string
   title: string
   startDate: string
   endDate: string
-  answers: InterviewAnswer[]
+  history: ChatMessage[]
 }
 ```
 
 ### `InterviewGenerateRequest`
 ```typescript
 {
-  roles: InterviewRole[]
+  transcript: InterviewTranscript[]
+}
+```
+
+---
+
+## Table: `interview_sessions`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | string | UUID, primary key |
+| `user_id` | string | Clerk user ID |
+| `status` | `'draft' \| 'complete'` | `'draft'` while in progress |
+| `completed_roles` | Json | `CompletedRole[]` — roles finished so far |
+| `draft_state` | Json \| null | Full `InterviewDraft` snapshot for resuming |
+| `created_at` | string | ISO timestamp |
+| `updated_at` | string | ISO timestamp (auto-updated by trigger) |
+
+### `InterviewDraft`
+```typescript
+{
+  totalRoles: number
+  currentRoleIndex: number
+  completedRoles: CompletedRole[]
+  company: string
+  jobTitle: string
+  startDate: string
+  endDate: string
+  researchSummary: string
+  history: ChatMessage[]
+  displayMessages: DisplayMessage[]
+  choices: string[]
+  useExistingDocs: boolean
+  existingDocsContext: string
+  resumeStep: 'role-setup' | 'interview'
 }
 ```
 
