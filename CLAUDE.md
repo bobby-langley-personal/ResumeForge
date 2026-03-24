@@ -175,7 +175,7 @@ The PDF parser (`lib/pdf/ResumePDF.tsx`) detects:
 
 These rules are baked into the generation prompt and must be preserved whenever the prompt is edited:
 
-- **Max 6 bullets per role** — most recent/primary role up to 6; older roles 4–5. Never exceed 6. Combine related accomplishments into one high-impact bullet rather than listing them separately.
+- **Bullet count by role seniority** — most recent/primary role 6–8; supporting roles 4–6; early career/less relevant roles 3–4. Every bullet must earn its place — don't pad to hit the max. Combine closely related work into one stronger bullet. Hard ceiling: 8.
 - **Max 180 chars per bullet** — if it runs long, split into two bullets rather than wrapping to a third line
 - **No repeated action verbs** — never use the same opening verb more than once within a single role's bullets. Scan all bullets for that role before writing. Synonyms: Built → Engineered, Developed, Created, Designed, Shipped, Delivered, Launched, Implemented, Deployed, Authored; Led → Managed, Directed, Oversaw, Guided, Mentored, Headed; Improved → Reduced, Increased, Accelerated, Optimized, Streamlined, Elevated, Boosted
 - **No hedging on leadership** — words like "Informally", "Somewhat", "Partially", "Helped with", "Assisted in leading" undermine the candidate. If they led, they led. Reframe confidently: "Informally led a team" → "Managed a team of 2 engineers"; "Helped lead" → "Co-led" or just "Led"
