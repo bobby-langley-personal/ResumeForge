@@ -106,6 +106,7 @@ export default function InterviewClient() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [draftSession, setDraftSession] = useState<SessionRow | null>(null);
   const [existingDocs, setExistingDocs] = useState<ExistingDoc[]>([]);
+  const [selectedDocIds, setSelectedDocIds] = useState<Set<string>>(new Set());
   const [useExistingDocs, setUseExistingDocs] = useState(false);
   const [existingDocsContext, setExistingDocsContext] = useState('');
 
@@ -158,6 +159,7 @@ export default function InterviewClient() {
     ]).then(([docs, sessionResp]) => {
       const validDocs: ExistingDoc[] = docs ?? [];
       setExistingDocs(validDocs);
+      setSelectedDocIds(new Set(validDocs.map((d: ExistingDoc) => d.id)));
 
       // Kick off role extraction in the background if docs exist
       if (validDocs.length > 0) {
@@ -277,15 +279,24 @@ export default function InterviewClient() {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
-  const handleUseExistingDocs = (use: boolean) => {
-    if (use) {
-      const context = existingDocs
+  const handleUseExistingDocs = () => {
+    const selected = existingDocs.filter(d => selectedDocIds.has(d.id));
+    if (selected.length > 0) {
+      const context = selected
         .map(d => `--- ${d.title} ---\n${d.content.text.slice(0, 2000)}`)
         .join('\n\n');
       setExistingDocsContext(context);
       setUseExistingDocs(true);
     }
     setStep('intro');
+  };
+
+  const toggleDocSelection = (id: string) => {
+    setSelectedDocIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) { next.delete(id); } else { next.add(id); }
+      return next;
+    });
   };
 
   const beginInterview = () => {
@@ -613,21 +624,43 @@ export default function InterviewClient() {
           </p>
         </div>
 
-        <div className="bg-card border border-border rounded-xl p-4 space-y-2">
-          {existingDocs.map(doc => (
-            <div key={doc.id} className="flex items-center gap-2 text-sm text-foreground">
-              <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              {doc.title}
-            </div>
-          ))}
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          {existingDocs.map((doc, i) => {
+            const selected = selectedDocIds.has(doc.id);
+            return (
+              <button
+                key={doc.id}
+                onClick={() => toggleDocSelection(doc.id)}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-sm text-left transition-colors ${
+                  i > 0 ? 'border-t border-border' : ''
+                } ${selected ? 'bg-muted/50' : 'hover:bg-muted/30'}`}
+              >
+                <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                  selected ? 'bg-foreground border-foreground' : 'border-muted-foreground'
+                }`}>
+                  {selected && (
+                    <svg className="w-2.5 h-2.5 text-background" viewBox="0 0 10 8" fill="none">
+                      <path d="M1 4l3 3 5-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                </span>
+                <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <span className={selected ? 'text-foreground' : 'text-muted-foreground'}>{doc.title}</span>
+              </button>
+            );
+          })}
         </div>
 
         <div className="flex gap-3">
-          <Button onClick={() => handleUseExistingDocs(true)} className="flex-1">
-            Yes, use my documents
+          <Button
+            onClick={handleUseExistingDocs}
+            disabled={selectedDocIds.size === 0}
+            className="flex-1"
+          >
+            Use selected ({selectedDocIds.size})
           </Button>
-          <Button variant="outline" onClick={() => handleUseExistingDocs(false)} className="flex-1">
-            Start from scratch
+          <Button variant="outline" onClick={() => setStep('intro')} className="flex-1">
+            Skip
           </Button>
         </div>
       </div>
