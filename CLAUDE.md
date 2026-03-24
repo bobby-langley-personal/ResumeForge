@@ -198,7 +198,7 @@ should only target unnecessary whitespace — never content.
 ## My Documents / ContextSelector
 
 - `ContextSelector` auto-loads the default item as primary background on mount
-- Pre-selects up to 3 most recent non-default items as additional context; accordion auto-expands
+- Pre-selects all non-default items as additional context; accordion auto-expands
 - `key={resetKey}` on `<ContextSelector>` in `app/page.tsx` — incrementing remounts and re-fetches
 - Additional context items appear in both analyze-fit and generate-documents prompts with source attribution
 
