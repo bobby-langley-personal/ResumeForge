@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
-import { Sun, Moon, Menu, X, MessageSquare, Compass } from 'lucide-react';
+import { Sun, Moon, Menu, X, MessageSquare, Compass, PlusCircle, Sparkles, FolderOpen } from 'lucide-react';
 import { startTour } from '@/components/TourGuide';
 
 const FeedbackModal = dynamic(() => import('@/components/FeedbackModal'), { ssr: false });
@@ -70,46 +70,88 @@ export default function Navbar() {
             <h1 className="text-2xl font-bold text-foreground">ResumeForge</h1>
           </Link>
 
-          {/* Desktop nav links */}
-          <div className="hidden md:flex items-center gap-8">
+          {/* Right side */}
+          <div className="flex items-center gap-2">
             <SignedIn>
-              <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                AI Resumes
-              </Link>
-              <Link id="tour-my-documents" href="/resumes" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                My Documents
-              </Link>
-            </SignedIn>
-          </div>
-
-          {/* Desktop right side */}
-          <div className="hidden md:flex items-center gap-2">
-            <SignedIn>
-              {tourShown && (
+              {/* Hamburger + dropdown anchored to this button */}
+              <div className="relative">
                 <button
-                  onClick={handleTour}
+                  onClick={() => setMenuOpen(v => !v)}
                   className="p-2 rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                  title="Replay the onboarding tour"
+                  aria-label={menuOpen ? 'Close menu' : 'Open menu'}
                 >
-                  <Compass className="w-4 h-4" />
+                  {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                 </button>
-              )}
-              <button
-                onClick={() => setFeedbackOpen(true)}
-                className="p-2 rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                title="Send feedback"
-              >
-                <MessageSquare className="w-4 h-4" />
-              </button>
+
+                {menuOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-52 bg-background border border-border rounded-lg shadow-lg py-1 z-50">
+                    <Link
+                      href="/"
+                      onClick={close}
+                      className="flex items-center justify-between w-full px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                    >
+                      <span>Tailor New Resume</span>
+                      <PlusCircle className="w-4 h-4" />
+                    </Link>
+                    <Link
+                      href="/dashboard"
+                      onClick={close}
+                      className="flex items-center justify-between w-full px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                    >
+                      <span>AI Resumes</span>
+                      <Sparkles className="w-4 h-4" />
+                    </Link>
+                    <Link
+                      id="tour-my-documents"
+                      href="/resumes"
+                      onClick={close}
+                      className="flex items-center justify-between w-full px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                    >
+                      <span>My Documents</span>
+                      <FolderOpen className="w-4 h-4" />
+                    </Link>
+
+                    <div className="border-t border-border my-1" />
+
+                    {tourShown && (
+                      <button
+                        onClick={handleTour}
+                        className="flex items-center justify-between w-full px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                      >
+                        <span>Take the Tour</span>
+                        <Compass className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => { toggleTheme(); close(); }}
+                      className="flex items-center justify-between w-full px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                    >
+                      <span>{dark ? 'Light Mode' : 'Dark Mode'}</span>
+                      {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    </button>
+
+                    <div className="border-t border-border my-1" />
+
+                    <button
+                      onClick={() => { close(); setFeedbackOpen(true); }}
+                      className="flex items-center justify-between w-full px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                    >
+                      <span>Feedback</span>
+                      <MessageSquare className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
             </SignedIn>
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-md text-muted-foreground hover:text-foreground transition-colors"
-              title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
+
             <SignedOut>
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
               <SignInButton>
                 <Button variant="outline">Sign In</Button>
               </SignInButton>
@@ -118,80 +160,9 @@ export default function Navbar() {
               <UserButton appearance={userButtonAppearance} />
             </SignedIn>
           </div>
-
-          {/* Mobile right side — hamburger + avatar */}
-          <div className="flex md:hidden items-center gap-2">
-            <SignedOut>
-              <SignInButton>
-                <Button variant="outline" size="sm">Sign In</Button>
-              </SignInButton>
-            </SignedOut>
-            <SignedIn>
-              <button
-                onClick={() => setMenuOpen(v => !v)}
-                className="p-2 rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-              >
-                {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
-              <UserButton appearance={userButtonAppearance} />
-            </SignedIn>
-          </div>
         </div>
       </div>
 
-      {/* Mobile dropdown */}
-      {menuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 z-50 bg-background border-b border-border shadow-lg">
-          <div className="max-w-7xl mx-auto px-4 py-2">
-            <SignedIn>
-              <Link
-                href="/dashboard"
-                onClick={close}
-                className="flex items-center w-full px-2 py-3 text-sm text-foreground hover:text-primary transition-colors"
-              >
-                AI Resumes
-              </Link>
-              <Link
-                href="/resumes"
-                onClick={close}
-                className="flex items-center w-full px-2 py-3 text-sm text-foreground hover:text-primary transition-colors"
-              >
-                My Documents
-              </Link>
-
-              <div className="border-t border-border my-1" />
-
-              {tourShown && (
-                <button
-                  onClick={handleTour}
-                  className="flex items-center gap-2 w-full px-2 py-3 text-sm text-foreground hover:text-primary transition-colors"
-                >
-                  <Compass className="w-4 h-4" />
-                  Take the Tour
-                </button>
-              )}
-              <button
-                onClick={() => { toggleTheme(); close(); }}
-                className="flex items-center justify-between w-full px-2 py-3 text-sm text-foreground hover:text-primary transition-colors"
-              >
-                <span>{dark ? 'Light Mode' : 'Dark Mode'}</span>
-                {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              </button>
-
-              <div className="border-t border-border my-1" />
-
-              <button
-                onClick={() => { close(); setFeedbackOpen(true); }}
-                className="flex items-center justify-between w-full px-2 py-3 text-sm text-foreground hover:text-primary transition-colors"
-              >
-                <span>Feedback</span>
-                <MessageSquare className="w-4 h-4" />
-              </button>
-            </SignedIn>
-          </div>
-        </div>
-      )}
     </nav>
     {feedbackOpen && <FeedbackModal onClose={() => setFeedbackOpen(false)} />}
     </>

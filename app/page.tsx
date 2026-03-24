@@ -470,54 +470,6 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
               </div>
             )}
 
-            {/* Progress Indicator */}
-            {(uiState === 'analyzing' || uiState === 'generating') && (
-              <div className="mb-6 p-5 bg-blue-50 border border-blue-200 rounded-lg space-y-4">
-                {(() => {
-                  const hasQs = questions.some(q => q.trim());
-                  const steps = [
-                    { label: 'Analyzing fit', done: uiState === 'generating' },
-                    { label: 'Generating resume', done: uiState === 'generating' && (statusMessage.toLowerCase().includes('cover') || statusMessage.toLowerCase().includes('answering') || statusMessage.toLowerCase().includes('saving') || statusMessage.toLowerCase().includes('complete')) },
-                    ...(includeCoverLetter ? [{ label: 'Writing cover letter', done: statusMessage.toLowerCase().includes('answering') || statusMessage.toLowerCase().includes('saving') || statusMessage.toLowerCase().includes('complete') }] : []),
-                    ...(hasQs ? [{ label: 'Answering questions', done: statusMessage.toLowerCase().includes('saving') || statusMessage.toLowerCase().includes('complete') }] : []),
-                    { label: 'Saving', done: statusMessage.toLowerCase().includes('complete') },
-                  ];
-                  const doneCount = steps.filter(s => s.done).length;
-                  const pct = Math.round((doneCount / steps.length) * 100);
-                  const activeLabel = uiState === 'analyzing' ? 'Analyzing your fit for this role…' : (statusMessage || 'Working…');
-                  const currentStep = Math.min(doneCount, steps.length - 1);
-
-                  return (
-                    <>
-                      <div className="flex items-center gap-3">
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-300 border-t-blue-600 shrink-0" />
-                        <p className="text-sm font-medium text-blue-900">{activeLabel}</p>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-xs text-blue-700">
-                          <span>Step {doneCount + 1} of {steps.length}</span>
-                          <span>{pct}%</span>
-                        </div>
-                        <div className="h-1.5 bg-blue-200 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-blue-600 rounded-full transition-all duration-700 ease-out"
-                            style={{ width: `${Math.max(pct, uiState === 'analyzing' ? 8 : 20)}%` }}
-                          />
-                        </div>
-                        <div className="flex gap-4 mt-1 flex-wrap">
-                          {steps.map((s, i) => (
-                            <span key={i} className={`text-xs flex items-center gap-1 ${s.done ? 'text-blue-600' : i === currentStep ? 'text-blue-900 font-semibold' : 'text-blue-400'}`}>
-                              {s.done ? '✓' : i === currentStep ? '›' : '·'} {s.label}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            )}
-
             {/* Fit Analysis Modal */}
             {uiState === 'review' && fitAnalysis && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -948,9 +900,68 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                   <p className="text-sm text-muted-foreground">
                     We&apos;ll analyze your fit before generating your documents
                   </p>
+
+                  {/* Progress Indicator — analyzing phase */}
+                  {uiState === 'analyzing' && (
+                    <div className="w-full max-w-lg p-5 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-300 border-t-blue-600 shrink-0" />
+                        <p className="text-sm font-medium text-blue-900">Analyzing your fit for this role…</p>
+                      </div>
+                      <div className="h-1.5 bg-blue-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-600 rounded-full transition-all duration-700 ease-out" style={{ width: '15%' }} />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
               </form>
+            )}
+
+            {/* Progress Indicator — generating phase */}
+            {uiState === 'generating' && (
+              <div className="mb-6 p-5 bg-blue-50 border border-blue-200 rounded-lg space-y-4">
+                {(() => {
+                  const hasQs = questions.some(q => q.trim());
+                  const steps = [
+                    { label: 'Generating resume', done: statusMessage.toLowerCase().includes('cover') || statusMessage.toLowerCase().includes('answering') || statusMessage.toLowerCase().includes('saving') || statusMessage.toLowerCase().includes('complete') },
+                    ...(includeCoverLetter ? [{ label: 'Writing cover letter', done: statusMessage.toLowerCase().includes('answering') || statusMessage.toLowerCase().includes('saving') || statusMessage.toLowerCase().includes('complete') }] : []),
+                    ...(hasQs ? [{ label: 'Answering questions', done: statusMessage.toLowerCase().includes('saving') || statusMessage.toLowerCase().includes('complete') }] : []),
+                    { label: 'Saving', done: statusMessage.toLowerCase().includes('complete') },
+                  ];
+                  const doneCount = steps.filter(s => s.done).length;
+                  const pct = Math.round((doneCount / steps.length) * 100);
+                  const currentStep = Math.min(doneCount, steps.length - 1);
+
+                  return (
+                    <>
+                      <div className="flex items-center gap-3">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-300 border-t-blue-600 shrink-0" />
+                        <p className="text-sm font-medium text-blue-900">{statusMessage || 'Working…'}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-xs text-blue-700">
+                          <span>Step {doneCount + 1} of {steps.length}</span>
+                          <span>{pct}%</span>
+                        </div>
+                        <div className="h-1.5 bg-blue-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-blue-600 rounded-full transition-all duration-700 ease-out"
+                            style={{ width: `${Math.max(pct, 20)}%` }}
+                          />
+                        </div>
+                        <div className="flex gap-4 mt-1 flex-wrap">
+                          {steps.map((s, i) => (
+                            <span key={i} className={`text-xs flex items-center gap-1 ${s.done ? 'text-blue-600' : i === currentStep ? 'text-blue-900 font-semibold' : 'text-blue-400'}`}>
+                              {s.done ? '✓' : i === currentStep ? '›' : '·'} {s.label}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
             )}
 
             {/* Live Preview Panels */}
@@ -1033,7 +1044,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                   onClick={resetForm}
                   className="mt-4"
                 >
-                  Generate New Documents
+                  Start Fresh
                 </Button>
               </div>
             )}

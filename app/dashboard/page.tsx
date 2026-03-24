@@ -5,7 +5,7 @@ import { supabaseServer } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import ApplicationList from './ApplicationList';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, FileSearch } from 'lucide-react';
+import { FileSearch } from 'lucide-react';
 
 export const metadata = { title: 'AI Resumes — ResumeForge' };
 
@@ -26,14 +26,8 @@ export default async function DashboardPage() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="flex items-center justify-between mb-8">
+        <div className="mb-8">
           <h2 className="text-2xl font-bold text-foreground">AI Resumes</h2>
-          <Link href="/">
-            <Button>
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Tailor New Resume
-            </Button>
-          </Link>
         </div>
 
         {(applications ?? []).length === 0 ? (
