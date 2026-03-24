@@ -107,6 +107,7 @@ export default function InterviewClient() {
   const [totalRoles, setTotalRoles] = useState(0);
   const [completedRoles, setCompletedRoles] = useState<CompletedRole[]>([]);
   const [currentRoleIndex, setCurrentRoleIndex] = useState(0);
+  const [suggestedRoles, setSuggestedRoles] = useState<{ company: string; title: string; startDate: string; endDate: string }[]>([]);
 
   // Role setup
   const [company, setCompany] = useState('');
@@ -138,18 +139,30 @@ export default function InterviewClient() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [displayMessages, thinking]);
 
-  // Preload existing docs on mount; check for saved draft
+  // Preload existing docs on mount; extract roles and check for saved draft in parallel
   useEffect(() => {
     fetch('/api/resumes')
       .then(r => r.json())
       .then((docs: ExistingDoc[]) => {
         setExistingDocs(docs ?? []);
+
+        // Kick off role extraction in the background if docs exist
+        if (docs?.length > 0) {
+          fetch('/api/interview/extract-roles', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              documents: docs.map((d: ExistingDoc) => ({ title: d.title, text: d.content.text })),
+            }),
+          })
+            .then(r => r.json())
+            .then(data => { if (data.roles?.length) setSuggestedRoles(data.roles); })
+            .catch(() => { /* non-fatal */ });
+        }
+
         try {
           const raw = localStorage.getItem(DRAFT_KEY);
-          if (raw) {
-            setStep('draft-prompt');
-            return;
-          }
+          if (raw) { setStep('draft-prompt'); return; }
         } catch { /* ignore */ }
         setStep(docs?.length > 0 ? 'doc-prompt' : 'intro');
       })
@@ -230,10 +243,11 @@ export default function InterviewClient() {
   };
 
   const startRoleSetup = (index: number) => {
-    setCompany('');
-    setJobTitle('');
-    setStartDate('');
-    setEndDate('');
+    const suggested = suggestedRoles[index];
+    setCompany(suggested?.company ?? '');
+    setJobTitle(suggested?.title ?? '');
+    setStartDate(suggested?.startDate ?? '');
+    setEndDate(suggested?.endDate ?? '');
     setResearchSummary('');
     setResearchConfirmed(false);
     setClarification('');
@@ -556,6 +570,9 @@ export default function InterviewClient() {
             Role {currentRoleIndex + 1} of {totalRoles}
           </p>
           <h2 className="text-xl font-bold text-foreground">Tell us about this role</h2>
+          {suggestedRoles[currentRoleIndex] && (
+            <p className="text-xs text-muted-foreground">Fields pre-filled from your documents — edit anything that's wrong.</p>
+          )}
         </div>
 
         <div className="space-y-4">
