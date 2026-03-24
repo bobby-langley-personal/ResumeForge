@@ -183,6 +183,40 @@ Exported from `app/dashboard/page.tsx`:
 
 ---
 
+## Table: `interview_sessions`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | string | UUID, primary key |
+| `user_id` | string | Clerk user ID |
+| `status` | `'draft' \| 'complete'` | `'draft'` while in progress |
+| `completed_roles` | Json | `CompletedRole[]` — roles finished so far |
+| `draft_state` | Json \| null | Full `InterviewDraft` snapshot for resuming |
+| `created_at` | string | ISO timestamp |
+| `updated_at` | string | ISO timestamp (auto-updated by trigger) |
+
+### `InterviewDraft`
+```typescript
+{
+  totalRoles: number
+  currentRoleIndex: number
+  completedRoles: CompletedRole[]
+  company: string
+  jobTitle: string
+  startDate: string
+  endDate: string
+  researchSummary: string
+  history: ChatMessage[]
+  displayMessages: DisplayMessage[]
+  choices: string[]
+  useExistingDocs: boolean
+  existingDocsContext: string
+  resumeStep: 'role-setup' | 'interview'
+}
+```
+
+---
+
 ## Model Types (`lib/models.ts`)
 
 ### Current model IDs

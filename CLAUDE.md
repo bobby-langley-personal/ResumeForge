@@ -72,6 +72,10 @@ Current valid columns:
 | `DELETE /api/applications` | Node | Bulk delete by `ids` array |
 | `DELETE /api/applications/[id]` | Node | Delete single resume record |
 | `POST /api/interview/generate` | Node | Sonnet non-streaming call — builds experience doc from interview transcript; returns `{ document: string }` |
+| `GET /api/interview/sessions` | Node | Fetch most recent `draft` session for current user; returns `{ session }` (null if none) |
+| `POST /api/interview/sessions` | Node | Create a new draft session; returns `{ id }` |
+| `PATCH /api/interview/sessions/[id]` | Node | Update session state (`completed_roles`, `draft_state`, `status`) |
+| `DELETE /api/interview/sessions/[id]` | Node | Delete session (on discard or after saving to My Documents) |
 
 ### generate-documents request fields
 - `company`, `jobTitle`, `jobDescription`, `backgroundExperience` — required
@@ -203,15 +207,16 @@ All feature/fix branches: `claude/issue-{number}-{YYYYMMDD}-{HHMM}` — Vercel s
 ## AI Experience Interview (`/interview`)
 
 - `app/interview/page.tsx` — server wrapper (auth guard), renders `InterviewClient`
-- `app/interview/InterviewClient.tsx` — full client state machine with steps: `preloading → doc-prompt → intro → role-setup → researching → research-confirm → interview → complete → generating → output`
-- **Pre-population:** on mount fetches `/api/resumes`; if docs found, shows prompt to use them as AI context
+- `app/interview/InterviewClient.tsx` — full client state machine with steps: `preloading → draft-prompt? → doc-prompt? → intro → role-setup → researching → research-confirm → interview → complete → generating → output`
+- **Pre-population:** on mount fetches `/api/resumes` + `/api/interview/sessions` in parallel; if docs found, shows prompt to use them as AI context; if a draft session exists, shows resume prompt instead
 - **Company research:** after role setup, calls `POST /api/interview/research` (Haiku) for a company + role summary; user confirms or clarifies before interview starts
 - **Adaptive chat:** each turn calls `POST /api/interview/chat` (Sonnet) with full history + system context; Claude decides what to ask next
 - **Thinking indicator:** animated dots between user message and AI response
 - **CHOICES: parsing:** Claude ends messages with `CHOICES: A | B | C`; UI renders as quick-reply pill buttons; "Move to next role" choice triggers role completion
 - "Skip role" also available at any time
+- **Session persistence:** draft auto-saved to `interview_sessions` table after each role completes + on "Save & exit"; deleted on discard or after saving to My Documents; enables cross-device resume (mobile ↔ browser)
 - On complete, calls `POST /api/interview/generate` with full chat history per role → renders doc in preview pane
-- "Save to My Documents" → `POST /api/resumes` with `item_type: 'other'`, redirects to `/resumes`
+- "Save to My Documents" → `POST /api/resumes` with `item_type: 'other'`, then deletes session, redirects to `/resumes`
 - "Copy to clipboard" copies raw text
 - Linked from My Documents page header; also add link from TipsPanel "Expanded Work History" tip once issue #69 is merged
 
