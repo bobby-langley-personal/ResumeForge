@@ -74,6 +74,36 @@ export interface Database {
           }
         ]
       }
+      interview_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          status: 'draft' | 'complete'
+          completed_roles: Json
+          draft_state: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          status?: 'draft' | 'complete'
+          completed_roles?: Json
+          draft_state?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          status?: 'draft' | 'complete'
+          completed_roles?: Json
+          draft_state?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       applications: {
         Row: {
           id: string

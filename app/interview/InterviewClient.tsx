@@ -46,7 +46,6 @@ type Step =
   | 'output';
 
 interface InterviewDraft {
-  savedAt: string;
   totalRoles: number;
   currentRoleIndex: number;
   completedRoles: CompletedRole[];
@@ -63,7 +62,11 @@ interface InterviewDraft {
   resumeStep: 'role-setup' | 'interview';
 }
 
-const DRAFT_KEY = 'resumeforge_interview_draft';
+interface SessionRow {
+  id: string;
+  completed_roles: CompletedRole[];
+  draft_state: InterviewDraft | null;
+}
 
 const ROLE_COUNT_OPTIONS = [1, 2, 3, 4, 5];
 
@@ -100,6 +103,8 @@ export default function InterviewClient() {
   const router = useRouter();
 
   const [step, setStep] = useState<Step>('preloading');
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [draftSession, setDraftSession] = useState<SessionRow | null>(null);
   const [existingDocs, setExistingDocs] = useState<ExistingDoc[]>([]);
   const [useExistingDocs, setUseExistingDocs] = useState(false);
   const [existingDocsContext, setExistingDocsContext] = useState('');
@@ -145,51 +150,56 @@ export default function InterviewClient() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [displayMessages, thinking]);
 
-  // Preload existing docs on mount; extract roles and check for saved draft in parallel
+  // Preload existing docs + check for saved Supabase session in parallel on mount
   useEffect(() => {
-    fetch('/api/resumes')
-      .then(r => r.json())
-      .then((docs: ExistingDoc[]) => {
-        setExistingDocs(docs ?? []);
+    Promise.all([
+      fetch('/api/resumes').then(r => r.json()).catch(() => []),
+      fetch('/api/interview/sessions').then(r => r.json()).catch(() => ({ session: null })),
+    ]).then(([docs, sessionResp]) => {
+      const validDocs: ExistingDoc[] = docs ?? [];
+      setExistingDocs(validDocs);
 
-        // Kick off role extraction in the background if docs exist
-        if (docs?.length > 0) {
-          setExtracting(true);
-          fetch('/api/interview/extract-roles', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              documents: docs.map((d: ExistingDoc) => ({ title: d.title, text: d.content.text })),
-            }),
+      // Kick off role extraction in the background if docs exist
+      if (validDocs.length > 0) {
+        setExtracting(true);
+        fetch('/api/interview/extract-roles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            documents: validDocs.map((d: ExistingDoc) => ({ title: d.title, text: d.content.text })),
+          }),
+        })
+          .then(r => r.json())
+          .then(data => {
+            if (data.roles?.length) {
+              setSuggestedRoles(data.roles);
+              setSelectedSuggested(data.roles.map(() => true));
+            }
           })
-            .then(r => r.json())
-            .then(data => {
-              if (data.roles?.length) {
-                setSuggestedRoles(data.roles);
-                setSelectedSuggested(data.roles.map(() => true));
-              }
-            })
-            .catch(() => { /* non-fatal */ })
-            .finally(() => setExtracting(false));
-        }
+          .catch(() => { /* non-fatal */ })
+          .finally(() => setExtracting(false));
+      }
 
-        try {
-          const raw = localStorage.getItem(DRAFT_KEY);
-          if (raw) { setStep('draft-prompt'); return; }
-        } catch { /* ignore */ }
-        setStep(docs?.length > 0 ? 'doc-prompt' : 'intro');
-      })
-      .catch(() => setStep('intro'));
+      const session: SessionRow | null = sessionResp.session ?? null;
+      if (session) {
+        setSessionId(session.id);
+        setDraftSession(session);
+        setStep('draft-prompt');
+        return;
+      }
+
+      setStep(validDocs.length > 0 ? 'doc-prompt' : 'intro');
+    });
   }, []);
 
   // ── Draft helpers ──────────────────────────────────────────────────────────
 
-  const saveDraft = () => {
-    const draft: InterviewDraft = {
-      savedAt: new Date().toISOString(),
+  const buildDraftPayload = (overrideRoles?: CompletedRole[]) => {
+    const roles = overrideRoles ?? completedRoles;
+    const draftState: InterviewDraft = {
       totalRoles,
       currentRoleIndex,
-      completedRoles,
+      completedRoles: roles,
       company,
       jobTitle,
       startDate,
@@ -202,43 +212,66 @@ export default function InterviewClient() {
       existingDocsContext,
       resumeStep: step === 'interview' ? 'interview' : 'role-setup',
     };
+    return { completed_roles: roles, draft_state: draftState };
+  };
+
+  const persistSession = async (overrideRoles?: CompletedRole[]) => {
+    const payload = buildDraftPayload(overrideRoles);
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-    } catch { /* ignore */ }
+      if (sessionId) {
+        await fetch(`/api/interview/sessions/${sessionId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        const res = await fetch('/api/interview/sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        setSessionId(data.id);
+      }
+    } catch { /* non-fatal */ }
+  };
+
+  const saveDraft = async () => {
+    await persistSession();
     router.push('/resumes');
   };
 
-  const clearDraft = () => {
-    try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+  const clearSession = async () => {
+    if (!sessionId) return;
+    try {
+      await fetch(`/api/interview/sessions/${sessionId}`, { method: 'DELETE' });
+    } catch { /* non-fatal */ }
+    setSessionId(null);
+    setDraftSession(null);
   };
 
   const restoreDraft = () => {
-    try {
-      const raw = localStorage.getItem(DRAFT_KEY);
-      if (!raw) { setStep('intro'); return; }
-      const draft: InterviewDraft = JSON.parse(raw);
-      setTotalRoles(draft.totalRoles);
-      setCurrentRoleIndex(draft.currentRoleIndex);
-      setCompletedRoles(draft.completedRoles);
-      setCompany(draft.company);
-      setJobTitle(draft.jobTitle);
-      setStartDate(draft.startDate);
-      setEndDate(draft.endDate);
-      setResearchSummary(draft.researchSummary);
-      setHistory(draft.history);
-      setDisplayMessages(draft.displayMessages);
-      setChoices(draft.choices);
-      setUseExistingDocs(draft.useExistingDocs);
-      setExistingDocsContext(draft.existingDocsContext);
-      setStep(draft.resumeStep);
-    } catch {
-      clearDraft();
-      setStep('intro');
-    }
+    const session = draftSession;
+    if (!session?.draft_state) { setStep('intro'); return; }
+    const draft = session.draft_state;
+    setTotalRoles(draft.totalRoles);
+    setCurrentRoleIndex(draft.currentRoleIndex);
+    setCompletedRoles(draft.completedRoles);
+    setCompany(draft.company);
+    setJobTitle(draft.jobTitle);
+    setStartDate(draft.startDate);
+    setEndDate(draft.endDate);
+    setResearchSummary(draft.researchSummary);
+    setHistory(draft.history);
+    setDisplayMessages(draft.displayMessages);
+    setChoices(draft.choices);
+    setUseExistingDocs(draft.useExistingDocs);
+    setExistingDocsContext(draft.existingDocsContext);
+    setStep(draft.resumeStep);
   };
 
-  const discardDraft = () => {
-    clearDraft();
+  const discardDraft = async () => {
+    await clearSession();
     setStep(existingDocs.length > 0 ? 'doc-prompt' : 'intro');
   };
 
@@ -397,15 +430,17 @@ export default function InterviewClient() {
     };
 
     if (revisitingIndex >= 0) {
-      // Updating an existing role, return to complete screen
-      setCompletedRoles(prev => prev.map((r, i) => i === revisitingIndex ? role : r));
+      const updated = completedRoles.map((r, i) => i === revisitingIndex ? role : r);
+      setCompletedRoles(updated);
       setRevisitingIndex(-1);
       setStep('complete');
+      persistSession(updated); // auto-save in background
       return;
     }
 
     const updated = [...completedRoles, role];
     setCompletedRoles(updated);
+    persistSession(updated); // auto-save in background
 
     if (currentRoleIndex + 1 < totalRoles) {
       startRoleSetup(currentRoleIndex + 1, suggestedRoles);
@@ -478,7 +513,7 @@ export default function InterviewClient() {
         }),
       });
       if (!res.ok) throw new Error(await res.text());
-      clearDraft();
+      await clearSession();
       router.push('/resumes');
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Save failed');
@@ -528,11 +563,8 @@ export default function InterviewClient() {
   }
 
   if (step === 'draft-prompt') {
-    let draft: InterviewDraft | null = null;
-    try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? ''); } catch { /* ignore */ }
-    const savedDate = draft?.savedAt
-      ? new Date(draft.savedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
-      : null;
+    const draft = draftSession?.draft_state ?? null;
+    const completedInDraft = draftSession?.completed_roles ?? [];
 
     return (
       <div className="max-w-lg mx-auto space-y-6 py-8">
@@ -540,24 +572,21 @@ export default function InterviewClient() {
           <div className="text-3xl">💾</div>
           <h2 className="text-xl font-bold text-foreground">Resume your interview?</h2>
           <p className="text-sm text-muted-foreground">
-            You have a saved interview in progress
-            {savedDate ? ` from ${savedDate}` : ''}.
+            You have a saved interview in progress.
           </p>
         </div>
 
-        {draft && (
-          <div className="bg-card border border-border rounded-xl p-4 space-y-1.5 text-sm">
-            <p className="text-foreground font-medium">
-              {draft.completedRoles.length} role{draft.completedRoles.length !== 1 ? 's' : ''} completed
-              {draft.company ? ` · currently on ${draft.company}` : ''}
+        <div className="bg-card border border-border rounded-xl p-4 space-y-1.5 text-sm">
+          <p className="text-foreground font-medium">
+            {completedInDraft.length} role{completedInDraft.length !== 1 ? 's' : ''} completed
+            {draft?.company ? ` · currently on ${draft.company}` : ''}
+          </p>
+          {completedInDraft.length > 0 && (
+            <p className="text-muted-foreground text-xs">
+              {completedInDraft.map(r => `${r.title} @ ${r.company}`).join(', ')}
             </p>
-            {draft.completedRoles.length > 0 && (
-              <p className="text-muted-foreground text-xs">
-                {draft.completedRoles.map(r => `${r.title} @ ${r.company}`).join(', ')}
-              </p>
-            )}
-          </div>
-        )}
+          )}
+        </div>
 
         <div className="flex gap-3">
           <Button onClick={restoreDraft} className="flex-1">
