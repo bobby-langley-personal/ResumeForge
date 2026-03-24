@@ -65,6 +65,17 @@ A guided walkthrough for new users powered by `driver.js`:
 - "? Tour" replay button appears in the navbar after the tour has been seen at least once
 - Styled to match the app's dark theme via custom CSS overrides in `globals.css`
 
+### 8. AI Experience Interview (`/interview`)
+An AI-guided career interview that builds a detailed experience document from the user's work history:
+- **Role checklist** — extracts companies, titles, and date ranges from existing My Documents library via Haiku; user selects which roles to cover (most recent first) and can add custom roles not in their documents
+- **Company research** — after each role is set up, Haiku generates a 3–5 sentence company + role summary; user confirms accuracy or clarifies before the interview starts
+- **Adaptive AI conversation** — each turn calls Claude Sonnet with the full chat history and system context; Claude decides what to ask next rather than following a fixed script
+- **Quick-reply choices** — Claude ends messages with `CHOICES: A | B | C`; UI parses and renders these as pill buttons; "Move to next role" triggers role completion
+- **Role revisit** — complete screen shows each finished role with a button to go back and continue the conversation
+- **Cross-device draft persistence** — draft auto-saves to Supabase `interview_sessions` table after each role completes and on "Save & exit"; user can resume on any device (mobile or desktop)
+- **Output** — generates a detailed, formatted experience document via Sonnet; user names and saves it to My Documents or copies to clipboard
+- Accessible from the My Documents page header ("Build experience doc →" with Beta badge)
+
 ---
 
 ## Tech Stack
@@ -97,16 +108,19 @@ A guided walkthrough for new users powered by `driver.js`:
 app/
   page.tsx                  # Home — job input form, fit analysis modal, generation flow
   layout.tsx                # Root layout with Clerk provider and theme script
-  globals.css               # CSS variables for light/dark themes
+  globals.css               # CSS variables for light/dark themes + driver.js tour overrides
   dashboard/
     page.tsx                # AI Resumes dashboard (server component)
     ApplicationList.tsx     # Client component — multi-select, delete
-    ApplicationCard.tsx     # Individual resume card with download
+    ApplicationCard.tsx     # Individual resume card with download + Q&A modal
     loading.tsx             # Skeleton UI for Suspense boundary
   resumes/
     page.tsx                # My Documents library page (server component)
     ResumeLibrary.tsx       # Client component — upload, edit, set default
     loading.tsx             # Skeleton UI
+  interview/
+    page.tsx                # Server wrapper — auth guard, renders InterviewClient
+    InterviewClient.tsx     # Full adaptive interview state machine (10 steps)
   api/
     analyze-fit/            # POST — Haiku fit analysis, returns FitAnalysis JSON
     generate-documents/     # POST — Sonnet streaming SSE (Edge runtime) + optional question answers
@@ -114,14 +128,22 @@ app/
     parse-job-details/      # POST — Haiku extraction of company + job title from pasted JD text
     extract-resume/         # POST — PDF/DOCX text extraction
     download-pdf/[type]/    # POST — PDF generation and download
-    resumes/                # GET/POST/DELETE — library CRUD
+    resumes/                # GET/POST — My Documents CRUD
     applications/           # DELETE bulk
-    applications/[id]/      # DELETE single
+    applications/[id]/      # GET single (for PDF preview) + DELETE single
+    interview/
+      research/             # POST — Haiku company + role summary
+      chat/                 # POST — Sonnet adaptive chat turn
+      generate/             # POST — Sonnet experience document generation
+      extract-roles/        # POST — Haiku role extraction from uploaded documents
+      sessions/             # GET/POST — draft session management
+      sessions/[id]/        # PATCH/DELETE — update or delete a session
 
 components/
-  Navbar.tsx                # Nav with theme toggle, signed-in links
+  Navbar.tsx                # Nav with theme toggle, mobile hamburger menu, signed-in links
   ContextSelector.tsx       # Library picker — primary background + additional context
   PDFPreviewModal.tsx       # PDF preview modal — BlobProvider iframe, dynamically imported (ssr: false)
+  TourGuide.tsx             # driver.js onboarding tour; exports startTour() for replay
 
 lib/
   supabase.ts               # Singleton Supabase client (service role)
@@ -131,8 +153,9 @@ lib/
 types/
   fit-analysis.ts           # FitAnalysis, FitPoint, OverallFit, RoleType
   resume.ts                 # ResumeItem, ItemType, ITEM_TYPE_LABELS
+  database.ts               # Full Supabase Database interface (users, resumes, applications, interview_sessions)
 
-supabase/migrations/        # SQL migration files
+supabase/migrations/        # SQL migration files (001–008)
 ```
 
 ---

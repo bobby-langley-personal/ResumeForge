@@ -139,10 +139,42 @@ Exported from `app/dashboard/page.tsx`:
 
 ## Interview Types (`app/interview/`)
 
+### `CompletedRole`
+```typescript
+{
+  company: string
+  title: string
+  startDate: string
+  endDate: string
+  history: ChatMessage[]   // full conversation for this role
+}
+```
+
+### `ExtractedRole`
+```typescript
+{
+  company: string
+  title: string
+  startDate: string   // format matches source doc (e.g. "Jan 2022", "2022")
+  endDate: string
+}
+```
+
+### `DisplayMessage`
+```typescript
+{ role: 'ai' | 'user'; content: string }  // CHOICES: line stripped from AI messages
+```
+
 ### `ChatMessage`
 ```typescript
 { role: 'user' | 'assistant'; content: string }
 ```
+
+### `CHOICES:` Protocol
+Claude ends adaptive chat messages with a `CHOICES: A | B | C` line. `InterviewClient` parses this with `parseChoices(text)`:
+- Strips the `CHOICES:` line from the display string
+- Returns the choices as a `string[]` for rendering as quick-reply pill buttons
+- The special choice `"Move to next role"` triggers `finishRole()` instead of sending to the AI
 
 ### `InterviewSystemContext`
 ```typescript

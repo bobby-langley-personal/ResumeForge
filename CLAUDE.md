@@ -223,6 +223,7 @@ All feature/fix branches: `claude/issue-{number}-{YYYYMMDD}-{HHMM}` — Vercel s
 ### Interview API routes
 | Route | Purpose |
 |-------|---------|
-| `POST /api/interview/research` | Haiku call — company + role summary for pre-interview context |
-| `POST /api/interview/chat` | Sonnet call — single adaptive chat turn; returns `{ response: string }` |
-| `POST /api/interview/generate` | Sonnet call — builds formatted experience doc from transcript; returns `{ document: string }` |
+| `POST /api/interview/research` | Haiku — 3–5 sentence company + role summary; returns `{ summary: string }` |
+| `POST /api/interview/chat` | Sonnet — single adaptive chat turn; returns `{ response: string }` |
+| `POST /api/interview/generate` | Sonnet — builds formatted experience doc from full chat transcript; returns `{ document: string }` |
+| `POST /api/interview/extract-roles` | Haiku — extracts up to 5 roles from document text, newest first; returns `{ roles: ExtractedRole[] }`. **Note:** Haiku wraps JSON in markdown fences despite instructions — always regex-strip fences and use `match(/\[[\s\S]*\]/)` before parsing |
