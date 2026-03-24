@@ -148,6 +148,7 @@ export default function InterviewClient() {
 
         // Kick off role extraction in the background if docs exist
         if (docs?.length > 0) {
+          console.log('[interview] fetched docs:', docs.map(d => d.title));
           fetch('/api/interview/extract-roles', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -155,9 +156,17 @@ export default function InterviewClient() {
               documents: docs.map((d: ExistingDoc) => ({ title: d.title, text: d.content.text })),
             }),
           })
-            .then(r => r.json())
-            .then(data => { if (data.roles?.length) setSuggestedRoles(data.roles); })
-            .catch(() => { /* non-fatal */ });
+            .then(r => {
+              console.log('[interview] extract-roles status:', r.status);
+              return r.json();
+            })
+            .then(data => {
+              console.log('[interview] extracted roles:', data);
+              if (data.roles?.length) setSuggestedRoles(data.roles);
+            })
+            .catch(err => { console.error('[interview] extract-roles failed:', err); });
+        } else {
+          console.log('[interview] no docs found, skipping extraction');
         }
 
         try {
@@ -244,6 +253,7 @@ export default function InterviewClient() {
 
   const startRoleSetup = (index: number) => {
     const suggested = suggestedRoles[index];
+    console.log('[interview] startRoleSetup index:', index, 'suggestedRoles:', suggestedRoles, 'using:', suggested);
     setCompany(suggested?.company ?? '');
     setJobTitle(suggested?.title ?? '');
     setStartDate(suggested?.startDate ?? '');
@@ -427,6 +437,31 @@ export default function InterviewClient() {
     }
   };
 
+  const [transcriptCopied, setTranscriptCopied] = useState(false);
+
+  const copyTranscript = async () => {
+    const lines: string[] = [];
+
+    completedRoles.forEach((role, i) => {
+      lines.push(`=== Role ${i + 1}: ${role.title} @ ${role.company} (${role.startDate}–${role.endDate}) ===\n`);
+      role.history.forEach(m => {
+        lines.push(`${m.role === 'assistant' ? 'Interviewer' : 'You'}: ${m.content}\n`);
+      });
+      lines.push('');
+    });
+
+    if (history.length > 0) {
+      lines.push(`=== Role ${currentRoleIndex + 1}: ${jobTitle} @ ${company} (in progress) ===\n`);
+      history.forEach(m => {
+        lines.push(`${m.role === 'assistant' ? 'Interviewer' : 'You'}: ${m.content}\n`);
+      });
+    }
+
+    await navigator.clipboard.writeText(lines.join('\n'));
+    setTranscriptCopied(true);
+    setTimeout(() => setTranscriptCopied(false), 2000);
+  };
+
   const copyToClipboard = async () => {
     await navigator.clipboard.writeText(generatedDoc);
     setCopied(true);
@@ -557,6 +592,10 @@ export default function InterviewClient() {
           Start Interview
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
+
+        <p className="text-xs text-muted-foreground text-center leading-relaxed">
+          🧪 This feature is brand new — if anything goes wrong during generation, your answers won't be lost. Use the <span className="font-medium">Copy transcript</span> button in the chat to save your responses at any time.
+        </p>
       </div>
     );
   }
@@ -691,6 +730,14 @@ export default function InterviewClient() {
             <p className="text-xs text-muted-foreground">{displayMessages.length} exchanges</p>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={copyTranscript}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              title="Copy full transcript to clipboard"
+            >
+              {transcriptCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {transcriptCopied ? 'Copied!' : 'Copy transcript'}
+            </button>
             <button
               onClick={saveDraft}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
