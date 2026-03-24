@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
-import { Sun, Moon, Menu, X, MessageSquare } from 'lucide-react';
+import { Sun, Moon, Menu, X, MessageSquare, Compass } from 'lucide-react';
 import { startTour } from '@/components/TourGuide';
 
 const TOUR_KEY = 'resumeforge_tour_completed';
@@ -83,10 +83,10 @@ export default function Navbar() {
               {tourShown && (
                 <button
                   onClick={handleTour}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded"
+                  className="p-2 rounded-md text-muted-foreground hover:text-foreground transition-colors"
                   title="Replay the onboarding tour"
                 >
-                  ? Tour
+                  <Compass className="w-4 h-4" />
                 </button>
               )}
             </SignedIn>
@@ -153,8 +153,9 @@ export default function Navbar() {
               {tourShown && (
                 <button
                   onClick={handleTour}
-                  className="flex items-center w-full px-2 py-3 text-sm text-foreground hover:text-primary transition-colors"
+                  className="flex items-center gap-2 w-full px-2 py-3 text-sm text-foreground hover:text-primary transition-colors"
                 >
+                  <Compass className="w-4 h-4" />
                   Take the Tour
                 </button>
               )}
