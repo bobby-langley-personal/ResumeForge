@@ -4,126 +4,274 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, ArrowRight, SkipForward, Loader2, Copy, Check, BookOpen } from 'lucide-react';
+import { Send, ArrowRight, SkipForward, Loader2, Copy, Check, BookOpen, FileText } from 'lucide-react';
 
-interface InterviewAnswer {
-  question: string;
-  answer: string;
+// ── Types ──────────────────────────────────────────────────────────────────
+
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
 }
 
-interface InterviewRole {
+interface DisplayMessage {
+  role: 'ai' | 'user';
+  content: string; // CHOICES: line stripped out
+}
+
+interface ExistingDoc {
+  id: string;
+  title: string;
+  content: { text: string };
+}
+
+interface CompletedRole {
   company: string;
   title: string;
   startDate: string;
   endDate: string;
-  answers: InterviewAnswer[];
+  history: ChatMessage[];
 }
 
-interface Message {
-  role: 'ai' | 'user';
-  content: string;
-}
-
-type Step = 'intro' | 'role-setup' | 'interview' | 'complete' | 'generating' | 'output';
-
-const QUESTIONS = (company: string) => [
-  `What did ${company} do, and what was your role on the team?`,
-  'What were the biggest problems you solved or fires you put out?',
-  'What tools, platforms, and technologies did you use on a daily basis?',
-  'Did you build, improve, or document any processes or workflows?',
-  'What metrics or outcomes did your work contribute to — even roughly?',
-  'Who did you collaborate with and how? (other teams, stakeholders, clients)',
-  "What are you most proud of from this role that isn't on your resume?",
-  'Anything else about this role worth capturing?',
-];
+type Step =
+  | 'preloading'
+  | 'doc-prompt'
+  | 'intro'
+  | 'role-setup'
+  | 'researching'
+  | 'research-confirm'
+  | 'interview'
+  | 'complete'
+  | 'generating'
+  | 'output';
 
 const ROLE_COUNT_OPTIONS = [1, 2, 3, 4, 5];
 
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function parseChoices(text: string): { display: string; choices: string[] } {
+  const lines = text.split('\n');
+  const choicesIndex = lines.findLastIndex(l => l.startsWith('CHOICES:'));
+  if (choicesIndex === -1) return { display: text, choices: [] };
+
+  const choicesLine = lines[choicesIndex];
+  const choices = choicesLine
+    .replace('CHOICES:', '')
+    .split('|')
+    .map(c => c.trim())
+    .filter(Boolean);
+
+  const display = lines
+    .filter((_, i) => i !== choicesIndex)
+    .join('\n')
+    .trim();
+
+  return { display, choices };
+}
+
+function defaultDocName() {
+  const now = new Date();
+  return `Experience Doc — ${now.toLocaleString('en-US', { month: 'long', year: 'numeric' })}`;
+}
+
+// ── Component ──────────────────────────────────────────────────────────────
+
 export default function InterviewClient() {
   const router = useRouter();
-  const [step, setStep] = useState<Step>('intro');
+
+  const [step, setStep] = useState<Step>('preloading');
+  const [existingDocs, setExistingDocs] = useState<ExistingDoc[]>([]);
+  const [useExistingDocs, setUseExistingDocs] = useState(false);
+  const [existingDocsContext, setExistingDocsContext] = useState('');
+
   const [totalRoles, setTotalRoles] = useState(0);
-  const [completedRoles, setCompletedRoles] = useState<InterviewRole[]>([]);
+  const [completedRoles, setCompletedRoles] = useState<CompletedRole[]>([]);
   const [currentRoleIndex, setCurrentRoleIndex] = useState(0);
 
-  // Role setup form
+  // Role setup
   const [company, setCompany] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [researchSummary, setResearchSummary] = useState('');
+  const [researchConfirmed, setResearchConfirmed] = useState(false);
+  const [clarification, setClarification] = useState('');
+  const [showClarify, setShowClarify] = useState(false);
 
   // Interview chat
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [currentAnswers, setCurrentAnswers] = useState<InterviewAnswer[]>([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [history, setHistory] = useState<ChatMessage[]>([]);
+  const [displayMessages, setDisplayMessages] = useState<DisplayMessage[]>([]);
+  const [choices, setChoices] = useState<string[]>([]);
+  const [thinking, setThinking] = useState(false);
   const [input, setInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Output
   const [generatedDoc, setGeneratedDoc] = useState('');
-  const [docName, setDocName] = useState('My Experience Document');
+  const [docName, setDocName] = useState(defaultDocName());
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [copied, setCopied] = useState(false);
 
+  // Scroll to bottom on new messages
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [displayMessages, thinking]);
 
-  const startRoleSetup = (roleIndex: number) => {
+  // Preload existing docs on mount
+  useEffect(() => {
+    fetch('/api/resumes')
+      .then(r => r.json())
+      .then((docs: ExistingDoc[]) => {
+        setExistingDocs(docs ?? []);
+        setStep(docs?.length > 0 ? 'doc-prompt' : 'intro');
+      })
+      .catch(() => setStep('intro'));
+  }, []);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  const handleUseExistingDocs = (use: boolean) => {
+    if (use) {
+      const context = existingDocs
+        .map(d => `--- ${d.title} ---\n${d.content.text.slice(0, 2000)}`)
+        .join('\n\n');
+      setExistingDocsContext(context);
+      setUseExistingDocs(true);
+    }
+    setStep('intro');
+  };
+
+  const startRoleSetup = (index: number) => {
     setCompany('');
     setJobTitle('');
     setStartDate('');
     setEndDate('');
-    setCurrentRoleIndex(roleIndex);
+    setResearchSummary('');
+    setResearchConfirmed(false);
+    setClarification('');
+    setShowClarify(false);
+    setCurrentRoleIndex(index);
     setStep('role-setup');
   };
 
-  const startInterview = () => {
-    const questions = QUESTIONS(company);
-    setMessages([{ role: 'ai', content: questions[0] }]);
-    setCurrentAnswers([]);
-    setCurrentQuestionIndex(0);
+  const handleRoleContinue = async () => {
+    if (!company.trim() || !jobTitle.trim()) return;
+    setStep('researching');
+    try {
+      const res = await fetch('/api/interview/research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company: company.trim(), title: jobTitle.trim() }),
+      });
+      const data = await res.json();
+      setResearchSummary(data.summary ?? '');
+    } catch {
+      setResearchSummary('');
+    }
+    setStep('research-confirm');
+  };
+
+  const startInterview = async (confirmed: boolean, clarification?: string) => {
+    setResearchConfirmed(confirmed);
+    setHistory([]);
+    setDisplayMessages([]);
+    setChoices([]);
     setInput('');
     setStep('interview');
+
+    // Kick off the first AI question
+    const openingMessage = confirmed
+      ? `Let's start. I've reviewed what I know about ${company}. Please ask me your first question about this role.`
+      : `Let me clarify: ${clarification ?? "my role was different from the typical description"}. Please ask me your first question.`;
+
+    await sendToAI(openingMessage, [], confirmed ? researchSummary : undefined);
   };
 
-  const sendAnswer = () => {
+  const sendToAI = async (
+    message: string,
+    currentHistory: ChatMessage[],
+    research?: string,
+  ) => {
+    setThinking(true);
+    setChoices([]);
+
+    const newHistory: ChatMessage[] = [...currentHistory, { role: 'user', content: message }];
+
+    try {
+      const res = await fetch('/api/interview/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message,
+          history: currentHistory,
+          systemContext: {
+            currentRole: { company: company.trim(), title: jobTitle.trim() },
+            companyResearch: research ?? (researchConfirmed ? researchSummary : undefined),
+            existingDocuments: useExistingDocs ? existingDocsContext : undefined,
+            rolesRemaining: totalRoles - currentRoleIndex,
+          },
+        }),
+      });
+
+      const data = await res.json();
+      const rawResponse: string = data.response ?? '';
+      const { display, choices: parsed } = parseChoices(rawResponse);
+
+      const updatedHistory: ChatMessage[] = [
+        ...newHistory,
+        { role: 'assistant', content: rawResponse },
+      ];
+
+      setHistory(updatedHistory);
+      setDisplayMessages(prev => {
+        const base = message === prev[prev.length - 1]?.content
+          ? prev
+          : [...prev, { role: 'user' as const, content: message }];
+        return [...base, { role: 'ai' as const, content: display }];
+      });
+      setChoices(parsed);
+    } catch {
+      setDisplayMessages(prev => [
+        ...prev,
+        { role: 'user', content: message },
+        { role: 'ai', content: 'Something went wrong. Please try again.' },
+      ]);
+    } finally {
+      setThinking(false);
+    }
+  };
+
+  const handleSend = () => {
     const trimmed = input.trim();
-    if (!trimmed) return;
-
-    const questions = QUESTIONS(company);
-    const answer: InterviewAnswer = { question: questions[currentQuestionIndex], answer: trimmed };
-    const newAnswers = [...currentAnswers, answer];
-    const newMessages: Message[] = [...messages, { role: 'user', content: trimmed }];
-
-    const nextIndex = currentQuestionIndex + 1;
-    if (nextIndex < questions.length) {
-      newMessages.push({ role: 'ai', content: questions[nextIndex] });
-      setCurrentQuestionIndex(nextIndex);
-    }
-
-    setMessages(newMessages);
-    setCurrentAnswers(newAnswers);
+    if (!trimmed || thinking) return;
     setInput('');
+    setDisplayMessages(prev => [...prev, { role: 'user', content: trimmed }]);
+    sendToAI(trimmed, history);
+  };
 
-    if (nextIndex >= questions.length) {
-      finishRole(newAnswers);
+  const handleChoice = (choice: string) => {
+    if (thinking) return;
+    if (choice === 'Move to next role') {
+      finishRole();
+      return;
     }
+    setDisplayMessages(prev => [...prev, { role: 'user', content: choice }]);
+    sendToAI(choice, history);
   };
 
-  const skipRole = () => {
-    finishRole(currentAnswers);
-  };
+  const finishRole = () => {
+    const role: CompletedRole = {
+      company: company.trim(),
+      title: jobTitle.trim(),
+      startDate: startDate.trim(),
+      endDate: endDate.trim(),
+      history,
+    };
+    const updated = [...completedRoles, role];
+    setCompletedRoles(updated);
 
-  const finishRole = (answers: InterviewAnswer[]) => {
-    const role: InterviewRole = { company, title: jobTitle, startDate, endDate, answers };
-    const newCompleted = [...completedRoles, role];
-    setCompletedRoles(newCompleted);
-
-    const nextRoleIndex = currentRoleIndex + 1;
-    if (nextRoleIndex < totalRoles) {
-      startRoleSetup(nextRoleIndex);
+    if (currentRoleIndex + 1 < totalRoles) {
+      startRoleSetup(currentRoleIndex + 1);
     } else {
       setStep('complete');
     }
@@ -135,7 +283,15 @@ export default function InterviewClient() {
       const res = await fetch('/api/interview/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roles: completedRoles }),
+        body: JSON.stringify({
+          transcript: completedRoles.map(r => ({
+            company: r.company,
+            title: r.title,
+            startDate: r.startDate,
+            endDate: r.endDate,
+            history: r.history,
+          })),
+        }),
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
@@ -154,7 +310,7 @@ export default function InterviewClient() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: docName.trim() || 'My Experience Document',
+          title: docName.trim() || defaultDocName(),
           content: { text: generatedDoc },
           item_type: 'other',
           is_default: false,
@@ -174,7 +330,50 @@ export default function InterviewClient() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // ── Intro ──────────────────────────────────────────────────────────────────
+  // ── Renders ────────────────────────────────────────────────────────────────
+
+  if (step === 'preloading') {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (step === 'doc-prompt') {
+    return (
+      <div className="max-w-lg mx-auto space-y-6 py-8">
+        <div className="space-y-2 text-center">
+          <div className="text-3xl">📄</div>
+          <h2 className="text-xl font-bold text-foreground">
+            We found {existingDocs.length} document{existingDocs.length !== 1 ? 's' : ''} in your library
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Use these as a starting point? The interview will fill in gaps and capture what's missing.
+          </p>
+        </div>
+
+        <div className="bg-card border border-border rounded-xl p-4 space-y-2">
+          {existingDocs.map(doc => (
+            <div key={doc.id} className="flex items-center gap-2 text-sm text-foreground">
+              <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              {doc.title}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-3">
+          <Button onClick={() => handleUseExistingDocs(true)} className="flex-1">
+            Yes, use my documents
+          </Button>
+          <Button variant="outline" onClick={() => handleUseExistingDocs(false)} className="flex-1">
+            Start from scratch
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (step === 'intro') {
     return (
       <div className="max-w-lg mx-auto text-center space-y-8 py-8">
@@ -182,20 +381,10 @@ export default function InterviewClient() {
           <div className="text-4xl">🎤</div>
           <h1 className="text-2xl font-bold text-foreground">Build Your Experience Document</h1>
           <p className="text-muted-foreground leading-relaxed">
-            Most resumes undersell the candidate. This interview will help you capture
-            everything — the tools you use daily, the fires you've put out, the processes you
-            quietly improved.
+            Most resumes undersell the candidate. This interview captures everything — the tools
+            you use daily, the fires you've put out, the processes you quietly improved. Things
+            you don't think to mention because they feel obvious. They're not.
           </p>
-        </div>
-
-        <div className="bg-card border border-border rounded-xl p-5 text-left space-y-2">
-          <p className="text-sm font-medium text-foreground">How it works:</p>
-          <ul className="text-sm text-muted-foreground space-y-1.5">
-            <li>• We'll go role by role, starting with your most recent job</li>
-            <li>• Answer honestly — nothing is too obvious or unimportant</li>
-            <li>• When we're done, you'll get a detailed experience document ready to save</li>
-          </ul>
-          <p className="text-xs text-muted-foreground pt-1">Takes about 15–20 minutes for a full career.</p>
         </div>
 
         <div className="space-y-3">
@@ -217,12 +406,7 @@ export default function InterviewClient() {
           </div>
         </div>
 
-        <Button
-          size="lg"
-          onClick={() => startRoleSetup(0)}
-          disabled={totalRoles === 0}
-          className="w-full"
-        >
+        <Button size="lg" onClick={() => startRoleSetup(0)} disabled={totalRoles === 0} className="w-full">
           Start Interview
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
@@ -230,7 +414,6 @@ export default function InterviewClient() {
     );
   }
 
-  // ── Role Setup ─────────────────────────────────────────────────────────────
   if (step === 'role-setup') {
     const valid = company.trim() && jobTitle.trim();
     return (
@@ -245,12 +428,7 @@ export default function InterviewClient() {
         <div className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-foreground">Company name</label>
-            <Input
-              value={company}
-              onChange={e => setCompany(e.target.value)}
-              placeholder="e.g. Acme Corp"
-              onKeyDown={e => e.key === 'Enter' && valid && startInterview()}
-            />
+            <Input value={company} onChange={e => setCompany(e.target.value)} placeholder="e.g. Acme Corp" />
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-foreground">Job title</label>
@@ -258,58 +436,105 @@ export default function InterviewClient() {
               value={jobTitle}
               onChange={e => setJobTitle(e.target.value)}
               placeholder="e.g. Senior Software Engineer"
-              onKeyDown={e => e.key === 'Enter' && valid && startInterview()}
+              onKeyDown={e => e.key === 'Enter' && valid && handleRoleContinue()}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Start date</label>
-              <Input
-                value={startDate}
-                onChange={e => setStartDate(e.target.value)}
-                placeholder="e.g. Jan 2021"
-              />
+              <Input value={startDate} onChange={e => setStartDate(e.target.value)} placeholder="e.g. Jan 2021" />
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">End date</label>
-              <Input
-                value={endDate}
-                onChange={e => setEndDate(e.target.value)}
-                placeholder="e.g. Present"
-              />
+              <Input value={endDate} onChange={e => setEndDate(e.target.value)} placeholder="e.g. Present" />
             </div>
           </div>
         </div>
 
-        <Button onClick={startInterview} disabled={!valid} className="w-full">
-          Start questions for this role
+        <Button onClick={handleRoleContinue} disabled={!valid} className="w-full">
+          Continue
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
       </div>
     );
   }
 
-  // ── Interview Chat ─────────────────────────────────────────────────────────
-  if (step === 'interview') {
-    const questions = QUESTIONS(company);
-    const questionsDone = currentQuestionIndex >= questions.length;
+  if (step === 'researching') {
+    return (
+      <div className="max-w-lg mx-auto text-center space-y-4 py-24">
+        <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
+        <p className="text-muted-foreground">🔍 Looking up {company}…</p>
+      </div>
+    );
+  }
 
+  if (step === 'research-confirm') {
+    return (
+      <div className="max-w-lg mx-auto space-y-6 py-8">
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+            Role {currentRoleIndex + 1} of {totalRoles} — {company}
+          </p>
+          <h2 className="text-xl font-bold text-foreground">About this role</h2>
+        </div>
+
+        {researchSummary ? (
+          <div className="bg-card border border-border rounded-xl p-5 space-y-3">
+            <p className="text-sm text-foreground leading-relaxed">{researchSummary}</p>
+          </div>
+        ) : (
+          <div className="bg-card border border-border rounded-xl p-5">
+            <p className="text-sm text-muted-foreground">No research summary available. We'll go straight into the interview.</p>
+          </div>
+        )}
+
+        <p className="text-sm text-foreground font-medium">Does this match your experience?</p>
+
+        {!showClarify ? (
+          <div className="flex gap-3">
+            <Button onClick={() => startInterview(true)} className="flex-1">
+              Yes, that's right
+            </Button>
+            <Button variant="outline" onClick={() => setShowClarify(true)} className="flex-1">
+              Not quite
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <textarea
+              value={clarification}
+              onChange={e => setClarification(e.target.value)}
+              placeholder="Briefly describe how your role was different…"
+              rows={3}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+            <Button
+              onClick={() => startInterview(false, clarification)}
+              disabled={!clarification.trim()}
+              className="w-full"
+            >
+              Start Interview
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (step === 'interview') {
     return (
       <div className="max-w-2xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-border shrink-0">
           <div>
             <p className="font-medium text-foreground">
-              Role {currentRoleIndex + 1} of {totalRoles} — {company}
+              Role {currentRoleIndex + 1} of {totalRoles} — {jobTitle} @ {company}
             </p>
-            <p className="text-xs text-muted-foreground">
-              {questionsDone
-                ? 'All questions answered'
-                : `Question ${Math.min(currentQuestionIndex + 1, questions.length)} of ${questions.length}`}
-            </p>
+            <p className="text-xs text-muted-foreground">{displayMessages.length} exchanges</p>
           </div>
           <button
-            onClick={skipRole}
+            onClick={finishRole}
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <SkipForward className="w-3.5 h-3.5" />
@@ -319,10 +544,10 @@ export default function InterviewClient() {
 
         {/* Chat messages */}
         <div className="flex-1 overflow-y-auto py-4 space-y-3">
-          {messages.map((msg, i) => (
+          {displayMessages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
                   msg.role === 'ai'
                     ? 'bg-muted text-foreground rounded-tl-sm'
                     : 'bg-primary text-primary-foreground rounded-tr-sm'
@@ -332,42 +557,64 @@ export default function InterviewClient() {
               </div>
             </div>
           ))}
+
+          {/* Thinking indicator */}
+          {thinking && (
+            <div className="flex justify-start">
+              <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-3">
+                <span className="flex gap-1">
+                  <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce [animation-delay:0ms]" />
+                  <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce [animation-delay:150ms]" />
+                  <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce [animation-delay:300ms]" />
+                </span>
+              </div>
+            </div>
+          )}
+
           <div ref={chatEndRef} />
         </div>
 
-        {/* Input */}
-        {!questionsDone && (
-          <div className="shrink-0 pt-3 border-t border-border">
-            <div className="flex gap-2">
-              <textarea
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendAnswer();
-                  }
-                }}
-                placeholder="Type your answer… (Enter to send, Shift+Enter for new line)"
-                rows={3}
-                className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-ring"
-              />
-              <Button
-                onClick={sendAnswer}
-                disabled={!input.trim()}
-                className="self-end"
-                size="icon"
+        {/* Quick-reply choices */}
+        {choices.length > 0 && !thinking && (
+          <div className="shrink-0 pb-2 flex flex-wrap gap-2">
+            {choices.map(choice => (
+              <button
+                key={choice}
+                onClick={() => handleChoice(choice)}
+                className="px-3 py-1.5 rounded-full text-sm border border-border text-foreground hover:bg-muted transition-colors"
               >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
+                {choice}
+              </button>
+            ))}
           </div>
         )}
+
+        {/* Text input */}
+        <div className="shrink-0 pt-2 border-t border-border">
+          <div className="flex gap-2">
+            <textarea
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder="Type your answer… (Enter to send, Shift+Enter for new line)"
+              rows={3}
+              disabled={thinking}
+              className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
+            />
+            <Button onClick={handleSend} disabled={!input.trim() || thinking} className="self-end" size="icon">
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
 
-  // ── Complete ───────────────────────────────────────────────────────────────
   if (step === 'complete') {
     return (
       <div className="max-w-lg mx-auto text-center space-y-6 py-8">
@@ -378,6 +625,7 @@ export default function InterviewClient() {
             We covered {completedRoles.length} role{completedRoles.length !== 1 ? 's' : ''} and
             captured your career history. Ready to build your document?
           </p>
+          <p className="text-xs text-muted-foreground">This usually takes about 15 seconds.</p>
         </div>
         <Button size="lg" onClick={generate} className="w-full">
           Generate Experience Document
@@ -387,7 +635,6 @@ export default function InterviewClient() {
     );
   }
 
-  // ── Generating ─────────────────────────────────────────────────────────────
   if (step === 'generating') {
     return (
       <div className="max-w-lg mx-auto text-center space-y-4 py-16">
@@ -398,7 +645,6 @@ export default function InterviewClient() {
     );
   }
 
-  // ── Output ─────────────────────────────────────────────────────────────────
   if (step === 'output') {
     return (
       <div className="max-w-2xl mx-auto space-y-6 py-8">
@@ -407,22 +653,16 @@ export default function InterviewClient() {
           <p className="text-sm text-muted-foreground">Review, then save to My Documents.</p>
         </div>
 
-        {/* Document preview */}
         <div className="bg-card border border-border rounded-xl p-5 max-h-[50vh] overflow-y-auto">
           <pre className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed">
             {generatedDoc}
           </pre>
         </div>
 
-        {/* Save controls */}
         <div className="space-y-3">
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-foreground">Document name</label>
-            <Input
-              value={docName}
-              onChange={e => setDocName(e.target.value)}
-              placeholder="My Experience Document"
-            />
+            <Input value={docName} onChange={e => setDocName(e.target.value)} />
           </div>
 
           {saveError && <p className="text-sm text-destructive">{saveError}</p>}

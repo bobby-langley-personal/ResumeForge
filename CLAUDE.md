@@ -203,10 +203,21 @@ All feature/fix branches: `claude/issue-{number}-{YYYYMMDD}-{HHMM}` — Vercel s
 ## AI Experience Interview (`/interview`)
 
 - `app/interview/page.tsx` — server wrapper (auth guard), renders `InterviewClient`
-- `app/interview/InterviewClient.tsx` — full client state machine with 6 steps: `intro → role-setup → interview → complete → generating → output`
-- Up to 5+ roles; each role has 8 fixed questions in a scrollable chat UI
-- "Skip role" skips to next role (or complete if last)
-- On complete, calls `POST /api/interview/generate` with full transcript → renders doc in preview pane
+- `app/interview/InterviewClient.tsx` — full client state machine with steps: `preloading → doc-prompt → intro → role-setup → researching → research-confirm → interview → complete → generating → output`
+- **Pre-population:** on mount fetches `/api/resumes`; if docs found, shows prompt to use them as AI context
+- **Company research:** after role setup, calls `POST /api/interview/research` (Haiku) for a company + role summary; user confirms or clarifies before interview starts
+- **Adaptive chat:** each turn calls `POST /api/interview/chat` (Sonnet) with full history + system context; Claude decides what to ask next
+- **Thinking indicator:** animated dots between user message and AI response
+- **CHOICES: parsing:** Claude ends messages with `CHOICES: A | B | C`; UI renders as quick-reply pill buttons; "Move to next role" choice triggers role completion
+- "Skip role" also available at any time
+- On complete, calls `POST /api/interview/generate` with full chat history per role → renders doc in preview pane
 - "Save to My Documents" → `POST /api/resumes` with `item_type: 'other'`, redirects to `/resumes`
 - "Copy to clipboard" copies raw text
 - Linked from My Documents page header; also add link from TipsPanel "Expanded Work History" tip once issue #69 is merged
+
+### Interview API routes
+| Route | Purpose |
+|-------|---------|
+| `POST /api/interview/research` | Haiku call — company + role summary for pre-interview context |
+| `POST /api/interview/chat` | Sonnet call — single adaptive chat turn; returns `{ response: string }` |
+| `POST /api/interview/generate` | Sonnet call — builds formatted experience doc from transcript; returns `{ document: string }` |

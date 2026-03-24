@@ -139,29 +139,45 @@ Exported from `app/dashboard/page.tsx`:
 
 ## Interview Types (`app/interview/`)
 
-### `InterviewAnswer`
+### `ChatMessage`
+```typescript
+{ role: 'user' | 'assistant'; content: string }
+```
+
+### `InterviewSystemContext`
 ```typescript
 {
-  question: string   // the question text
-  answer: string     // the user's response
+  currentRole: { company: string; title: string }
+  companyResearch?: string
+  existingDocuments?: string
+  rolesRemaining: number
 }
 ```
 
-### `InterviewRole`
+### `InterviewChatRequest`
+```typescript
+{
+  message: string
+  history: ChatMessage[]
+  systemContext: InterviewSystemContext
+}
+```
+
+### `InterviewTranscript`
 ```typescript
 {
   company: string
   title: string
   startDate: string
   endDate: string
-  answers: InterviewAnswer[]
+  history: ChatMessage[]
 }
 ```
 
 ### `InterviewGenerateRequest`
 ```typescript
 {
-  roles: InterviewRole[]
+  transcript: InterviewTranscript[]
 }
 ```
 
