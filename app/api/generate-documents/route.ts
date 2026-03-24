@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     console.log('[generate-documents] Auth check passed, userId:', userId);
 
     // Parse request body
-    const { company, jobTitle, jobDescription, backgroundExperience, isFromUploadedFile, fitAnalysis: precomputedAnalysis, includeCoverLetter = false, additionalContext = [], jobUrl, questions = [], shortResponse = false } = await req.json();
+    const { company, jobTitle, jobDescription, backgroundExperience, isFromUploadedFile, fitAnalysis: precomputedAnalysis, includeCoverLetter = false, includeSummary = false, additionalContext = [], jobUrl, questions = [], shortResponse = false } = await req.json();
     console.log('[generate-documents] Parsed body:', { 
       company, 
       jobTitle, 
@@ -80,6 +80,10 @@ Rules:
 - Prioritize recent and relevant experience
 - Cut or minimize experience that is irrelevant to the target role
 - Write bullet points that follow the format: [Action verb] + [what you did] + [measurable outcome]
+- Bullet point count per role: most recent or primary role 6–8; supporting roles 4–6; early career or less relevant roles 3–4. Every bullet must earn its place — do not pad to hit the max. If two bullets cover closely related work, combine them into one stronger bullet. Never exceed 8.
+- Keep each bullet point under 180 characters including spaces. If a bullet runs long, split it into two focused bullets rather than letting it wrap to a third line.
+- Never repeat the same action verb more than once within a single role's bullet list. Scan all bullets for that role before writing — maintain a mental list of verbs already used. Vary openers: Built → Engineered, Developed, Created, Designed, Shipped, Delivered, Launched, Implemented, Deployed, Authored; Led → Managed, Directed, Oversaw, Guided, Mentored, Headed; Improved → Reduced, Increased, Accelerated, Optimized, Streamlined, Elevated, Boosted
+- Never use hedging or diminishing language on leadership experience. Words like "Informally", "Somewhat", "Partially", "Helped with", "Assisted in leading" undermine the candidate. If they led, they led. Reframe confidently: "Informally led a team" → "Managed a team of 2 engineers"; "Helped lead" → "Co-led" or just "Led"
 
 Output the resume in EXACTLY this format:
 
@@ -88,18 +92,26 @@ EMAIL: [email]
 PHONE: [phone]
 LOCATION: [city, state]
 LINKEDIN: [linkedin url]
-
+${includeSummary ? `
 SUMMARY:
-[2-3 sentence professional summary]
-
+[2-3 sentence professional summary tailored to the role]
+` : `
+(Do not include a SUMMARY section. Start directly with EXPERIENCE after the header fields.)
+`}
 EXPERIENCE:
-[Company Name] | [City, State] | [Start Month Year] – [End Month Year or Present]
-[Job Title]
+[Company Name] | [City, State]
+[Job Title] | [Start Month Year] – [End Month Year or Present]
 • [bullet point]
 • [bullet point]
 • [bullet point]
 
-[Next Company]...
+For multiple roles at the same company, list the company name once and add each role underneath:
+[Next Job Title] | [Start Month Year] – [End Month Year]
+• [bullet point]
+
+[Next Company] | [City, State]
+[Job Title] | [Dates]
+• [bullet point]
 
 SKILLS:
 [Category]: [skill1], [skill2], [skill3]
@@ -109,7 +121,7 @@ EDUCATION:
 [Institution] | [City, State]
 [Degree]
 
-Output the resume in EXACTLY this format. Use • for bullet points. Separate each experience entry with a blank line. Do not add any other sections or formatting. Do not use markdown.`,
+Output the resume in EXACTLY this format. Do NOT put dates on the company line — dates belong on the job title line only. Use • for bullet points. Separate each company block with a blank line. Do not add any other sections or formatting. Do not use markdown.`,
             messages: [
               {
                 role: 'user',

@@ -16,6 +16,18 @@ interface ResumePDFProps {
   compact?: boolean;
 }
 
+interface ParsedRole {
+  title: string;
+  dates: string;
+  bulletPoints: string[];
+}
+
+interface ExperienceGroup {
+  company: string;
+  location: string;
+  roles: ParsedRole[];
+}
+
 interface ParsedResume {
   header: {
     name: string;
@@ -25,13 +37,7 @@ interface ParsedResume {
     linkedin: string;
   };
   summary: string;
-  experience: Array<{
-    company: string;
-    title: string;
-    dates: string;
-    location: string;
-    bulletPoints: string[];
-  }>;
+  experience: ExperienceGroup[];
   skills: Array<{
     category: string;
     items: string[];
@@ -44,14 +50,14 @@ interface ParsedResume {
 }
 
 function makeStyles(compact: boolean) {
-  const s = compact ? 0.85 : 1; // 15% reduction when compact
+  const s = compact ? 0.85 : 1;
   const r = (v: number) => Math.round(v * s);
 
   return StyleSheet.create({
     page: {
       flexDirection: 'column',
       backgroundColor: '#ffffff',
-      padding: 54, // 0.75 inches = 54 points — keep margins unchanged
+      padding: 54,
       fontFamily: 'Helvetica',
       fontSize: 10,
       lineHeight: 1.3,
@@ -63,11 +69,11 @@ function makeStyles(compact: boolean) {
     name: {
       fontSize: 20,
       fontFamily: 'Helvetica-Bold',
-      marginBottom: 8,
+      marginBottom: 12,
     },
     contact: {
       fontSize: 10,
-      marginBottom: 2,
+      marginBottom: 3,
     },
     sectionTitle: {
       fontSize: 12,
@@ -84,25 +90,33 @@ function makeStyles(compact: boolean) {
       marginBottom: r(5),
       textAlign: 'justify',
     },
-    experienceItem: {
+    experienceGroup: {
       marginBottom: r(8),
+    },
+    companyLine: {
+      fontSize: 10,
+      fontFamily: 'Helvetica-Bold',
+      marginBottom: r(2),
+    },
+    roleEntry: {
+      marginBottom: r(5),
+    },
+    additionalRoleEntry: {
+      marginTop: r(3),
+      marginBottom: r(5),
     },
     jobHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      marginBottom: r(3),
+      marginBottom: r(2),
     },
     jobTitle: {
-      fontSize: 11,
+      fontSize: 10,
       fontFamily: 'Helvetica-Bold',
     },
     jobDates: {
       fontSize: 10,
       fontStyle: 'italic',
-    },
-    company: {
-      fontSize: 10,
-      marginBottom: r(3),
     },
     bulletPoint: {
       fontSize: 10,
@@ -111,14 +125,11 @@ function makeStyles(compact: boolean) {
     },
     skillsList: {
       fontSize: 10,
-      marginBottom: r(5),
+      marginBottom: 4,
+      lineHeight: 1.3,
     },
     educationItem: {
-      marginBottom: r(5),
-    },
-    educationHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
+      marginBottom: 6,
     },
     degree: {
       fontSize: 11,
@@ -130,17 +141,16 @@ function makeStyles(compact: boolean) {
   });
 }
 
+// Returns true if a string looks like a date range (year or "Present")
+function looksLikeDateRange(s: string): boolean {
+  return /(\d{4}|Present|Current)/i.test(s.trim());
+}
+
 function parseResumeText(resumeText: string): ParsedResume {
   const lines = resumeText.split('\n').map(line => line.trim()).filter(line => line);
-  
+
   const parsed: ParsedResume = {
-    header: {
-      name: '',
-      email: '',
-      phone: '',
-      location: '',
-      linkedin: '',
-    },
+    header: { name: '', email: '', phone: '', location: '', linkedin: '' },
     summary: '',
     experience: [],
     skills: [],
@@ -148,136 +158,118 @@ function parseResumeText(resumeText: string): ParsedResume {
   };
 
   let currentSection = '';
-  let currentExperience: any = null;
+  let currentGroup: ExperienceGroup | null = null;
   let summaryLines: string[] = [];
-  
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    
-    // Parse header fields with explicit labels
-    if (line.startsWith('NAME:')) {
-      parsed.header.name = line.replace('NAME:', '').trim();
-      continue;
-    }
-    if (line.startsWith('EMAIL:')) {
-      parsed.header.email = line.replace('EMAIL:', '').trim();
-      continue;
-    }
-    if (line.startsWith('PHONE:')) {
-      parsed.header.phone = line.replace('PHONE:', '').trim();
-      continue;
-    }
-    if (line.startsWith('LOCATION:')) {
-      parsed.header.location = line.replace('LOCATION:', '').trim();
-      continue;
-    }
-    if (line.startsWith('LINKEDIN:')) {
-      parsed.header.linkedin = line.replace('LINKEDIN:', '').trim();
-      continue;
-    }
-    
-    // Detect section headers
-    if (line === 'SUMMARY:') {
-      currentSection = 'summary';
-      continue;
-    }
-    if (line === 'EXPERIENCE:') {
-      currentSection = 'experience';
-      continue;
-    }
-    if (line === 'SKILLS:') {
-      currentSection = 'skills';
-      continue;
-    }
-    if (line === 'EDUCATION:') {
-      currentSection = 'education';
-      continue;
-    }
-    
-    // Process current section
+
+    // Header fields
+    if (line.startsWith('NAME:')) { parsed.header.name = line.replace('NAME:', '').trim(); continue; }
+    if (line.startsWith('EMAIL:')) { parsed.header.email = line.replace('EMAIL:', '').trim(); continue; }
+    if (line.startsWith('PHONE:')) { parsed.header.phone = line.replace('PHONE:', '').trim(); continue; }
+    if (line.startsWith('LOCATION:')) { parsed.header.location = line.replace('LOCATION:', '').trim(); continue; }
+    if (line.startsWith('LINKEDIN:')) { parsed.header.linkedin = line.replace('LINKEDIN:', '').trim(); continue; }
+
+    // Section headers
+    if (line === 'SUMMARY:') { currentSection = 'summary'; continue; }
+    if (line === 'EXPERIENCE:') { currentSection = 'experience'; continue; }
+    if (line === 'SKILLS:') { currentSection = 'skills'; continue; }
+    if (line === 'EDUCATION:') { currentSection = 'education'; continue; }
+
     switch (currentSection) {
       case 'summary':
         summaryLines.push(line);
         break;
-        
-      case 'experience':
-        // Check for company header line: "Company | Location | Dates"
-        if (line.includes(' | ') && (line.includes('–') || line.includes('Present'))) {
-          // Save previous experience if exists
-          if (currentExperience) {
-            parsed.experience.push(currentExperience);
-          }
-          
+
+      case 'experience': {
+        if (line.includes(' | ')) {
           const parts = line.split(' | ');
-          currentExperience = {
-            company: parts[0]?.trim() || '',
-            location: parts[1]?.trim() || '',
-            dates: parts[2]?.trim() || '',
-            title: '',
-            bulletPoints: [],
-          };
-        } else if (currentExperience && line.startsWith('•')) {
-          // Bullet point
-          currentExperience.bulletPoints.push(line.replace('•', '').trim());
-        } else if (currentExperience && !currentExperience.title && line.trim() !== '') {
-          // Job title (first non-bullet line after company header)
-          currentExperience.title = line;
+
+          if (parts.length >= 3) {
+            // Legacy format backward compat: "Company | Location | Dates"
+            // Start a new company group; dates roll into first role for fallback display
+            if (currentGroup) parsed.experience.push(currentGroup);
+            currentGroup = {
+              company: parts[0].trim(),
+              location: parts[1].trim(),
+              roles: [{ title: '', dates: parts.slice(2).join(' | ').trim(), bulletPoints: [] }],
+            };
+          } else if (parts.length === 2) {
+            if (looksLikeDateRange(parts[1])) {
+              // New format role line: "Job Title | Dates"
+              if (currentGroup) {
+                // If there's an empty-title placeholder (from legacy 3-part company line), fill it
+                const last = currentGroup.roles[currentGroup.roles.length - 1];
+                if (last && !last.title) {
+                  last.title = parts[0].trim();
+                  // Keep the dates from the company line if we don't have per-role dates yet
+                  if (!last.dates) last.dates = parts[1].trim();
+                  else last.dates = parts[1].trim(); // prefer per-role dates
+                } else {
+                  currentGroup.roles.push({ title: parts[0].trim(), dates: parts[1].trim(), bulletPoints: [] });
+                }
+              }
+            } else {
+              // New format company line: "Company | Location"
+              if (currentGroup) parsed.experience.push(currentGroup);
+              currentGroup = { company: parts[0].trim(), location: parts[1].trim(), roles: [] };
+            }
+          }
+        } else if ((line.startsWith('•') || line.startsWith('-')) && currentGroup?.roles.length) {
+          // Bullet point — strip leading • or -
+          const lastRole = currentGroup.roles[currentGroup.roles.length - 1];
+          lastRole.bulletPoints.push(line.replace(/^[•\-]\s*/, '').trim());
+        } else if (currentGroup) {
+          // Plain line — job title for the latest role if it has no title yet,
+          // or start a new title-only role if no roles exist yet
+          if (currentGroup.roles.length === 0) {
+            currentGroup.roles.push({ title: line, dates: '', bulletPoints: [] });
+          } else {
+            const lastRole = currentGroup.roles[currentGroup.roles.length - 1];
+            if (!lastRole.title) lastRole.title = line;
+          }
         }
         break;
-        
+      }
+
       case 'skills':
-        // Parse "Category: skill1, skill2, skill3" format
         if (line.includes(':')) {
-          const [category, skillsStr] = line.split(':', 2);
-          const skills = skillsStr.split(',').map(s => s.trim()).filter(s => s);
-          parsed.skills.push({
-            category: category.trim(),
-            items: skills,
-          });
+          const colonIndex = line.indexOf(':');
+          const category = line.slice(0, colonIndex).trim();
+          const skillsStr = line.slice(colonIndex + 1);
+          const skills = skillsStr.split(',').map(s => s.trim()).filter(Boolean);
+          parsed.skills.push({ category, items: skills });
         }
         break;
-        
+
       case 'education':
-        // Parse "Institution | Location" then "Degree" format
         if (line.includes(' | ')) {
           const [institution, location] = line.split(' | ', 2);
-          // Look ahead for degree on next line
           const nextLine = lines[i + 1];
           parsed.education.push({
             institution: institution.trim(),
             location: location.trim(),
             degree: nextLine?.trim() || '',
           });
-          // Skip the degree line since we consumed it
           if (nextLine) i++;
         } else if (parsed.education.length === 0) {
-          // Simple format without location
-          parsed.education.push({
-            institution: line,
-            location: '',
-            degree: '',
-          });
+          parsed.education.push({ institution: line, location: '', degree: '' });
         }
         break;
     }
   }
-  
-  // Finalize parsing
+
   parsed.summary = summaryLines.join(' ');
-  
-  // Add any remaining experience
-  if (currentExperience) {
-    parsed.experience.push(currentExperience);
-  }
-  
+  if (currentGroup) parsed.experience.push(currentGroup);
+
   return parsed;
 }
 
 export default function ResumePDF({ resumeText, candidateName, company, jobTitle, compact = false }: ResumePDFProps) {
   const styles = makeStyles(compact);
   const parsed = parseResumeText(resumeText);
-  
-  // Use provided candidateName if header parsing failed
+
   if (!parsed.header.name && candidateName) {
     parsed.header.name = candidateName;
   }
@@ -288,19 +280,18 @@ export default function ResumePDF({ resumeText, candidateName, company, jobTitle
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.name}>{parsed.header.name || candidateName}</Text>
-          {/* Contact info on one line separated by | */}
           <Text style={styles.contact}>
             {[
               parsed.header.location,
-              parsed.header.phone, 
+              parsed.header.phone,
               parsed.header.email,
-              parsed.header.linkedin || 'LinkedIn: Not provided'
+              parsed.header.linkedin || 'LinkedIn: Not provided',
             ].filter(Boolean).join(' | ')}
           </Text>
         </View>
 
-        {/* Summary */}
-        {parsed.summary && (
+        {/* Summary — only rendered when non-empty */}
+        {parsed.summary && parsed.summary.trim().length > 0 && (
           <View>
             <Text style={styles.sectionTitle}>Summary</Text>
             <Text style={styles.text}>{parsed.summary}</Text>
@@ -311,19 +302,25 @@ export default function ResumePDF({ resumeText, candidateName, company, jobTitle
         {parsed.experience.length > 0 && (
           <View>
             <Text style={styles.sectionTitle}>Experience</Text>
-            {parsed.experience.map((job, index) => (
-              <View key={index} style={styles.experienceItem}>
-                <View style={styles.jobHeader}>
-                  <Text style={styles.jobTitle}>{job.title}</Text>
-                  <Text style={styles.jobDates}>{job.dates}</Text>
-                </View>
-                <Text style={styles.company}>
-                  {job.company}{job.location ? ` | ${job.location}` : ''}
+            {parsed.experience.map((group, groupIndex) => (
+              <View key={groupIndex} style={styles.experienceGroup}>
+                {/* Company name + location — bold, no dates */}
+                <Text style={styles.companyLine}>
+                  {group.company}{group.location ? ` | ${group.location}` : ''}
                 </Text>
-                {job.bulletPoints.map((bullet, bulletIndex) => (
-                  <Text key={bulletIndex} style={styles.bulletPoint}>
-                    • {bullet}
-                  </Text>
+                {/* Roles — each with title + dates on same line */}
+                {group.roles.map((role, roleIndex) => (
+                  <View key={roleIndex} style={roleIndex === 0 ? styles.roleEntry : styles.additionalRoleEntry}>
+                    <View style={styles.jobHeader}>
+                      <Text style={styles.jobTitle}>{role.title}</Text>
+                      <Text style={styles.jobDates}>{role.dates}</Text>
+                    </View>
+                    {role.bulletPoints.map((bullet, bulletIndex) => (
+                      <Text key={bulletIndex} style={styles.bulletPoint}>
+                        • {bullet}
+                      </Text>
+                    ))}
+                  </View>
                 ))}
               </View>
             ))}

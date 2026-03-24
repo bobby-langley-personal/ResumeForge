@@ -118,6 +118,7 @@ export default function Home() {
   const [pendingFormData, setPendingFormData] = useState<FormData | null>(null);
   const [additionalContext, setAdditionalContext] = useState<ResumeItem[]>([]);
   const [includeCoverLetter, setIncludeCoverLetter] = useState(false);
+  const [includeSummary, setIncludeSummary] = useState(false);
   const [company, setCompany] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [jobDescription, setJobDescription] = useState('');
@@ -293,7 +294,7 @@ export default function Home() {
       const response = await fetch('/api/generate-documents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...pendingFormData, fitAnalysis, includeCoverLetter, jobUrl: jobUrl.trim() || undefined, additionalContext: additionalContext.map(i => ({ title: i.title, type: i.item_type, text: i.content.text })), questions: questions.filter(q => q.trim()), shortResponse }),
+        body: JSON.stringify({ ...pendingFormData, fitAnalysis, includeCoverLetter, includeSummary, jobUrl: jobUrl.trim() || undefined, additionalContext: additionalContext.map(i => ({ title: i.title, type: i.item_type, text: i.content.text })), questions: questions.filter(q => q.trim()), shortResponse }),
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -913,6 +914,17 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                 </div>
 
                 <div className="flex flex-col items-center space-y-4 mb-6">
+                  {/* Summary toggle */}
+                  <label className="flex items-center gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={includeSummary}
+                      onChange={(e) => setIncludeSummary(e.target.checked)}
+                      disabled={uiState === 'analyzing'}
+                      className="w-4 h-4 rounded border-border accent-primary"
+                    />
+                    <span className="text-sm text-muted-foreground">Include a summary section</span>
+                  </label>
                   {/* Cover letter toggle */}
                   <label className="flex items-center gap-3 cursor-pointer select-none">
                     <input
