@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   if (!documents?.length) return Response.json({ roles: [] });
 
   const combined = (documents as { title: string; text: string }[])
-    .map(d => `--- ${d.title} ---\n${d.text.slice(0, 3000)}`)
+    .map(d => `--- ${d.title} ---\n${d.text.slice(0, 6000)}`)
     .join('\n\n');
 
   const { HAIKU } = await getModels();
@@ -50,7 +50,11 @@ Rules:
   if (content.type !== 'text') return Response.json({ roles: [] });
 
   try {
-    const roles: ExtractedRole[] = JSON.parse(content.text.trim());
+    // Haiku often wraps JSON in markdown fences despite instructions — strip them
+    const stripped = content.text.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim();
+    const jsonMatch = stripped.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return Response.json({ roles: [] });
+    const roles: ExtractedRole[] = JSON.parse(jsonMatch[0]);
     return Response.json({ roles: Array.isArray(roles) ? roles : [] });
   } catch {
     return Response.json({ roles: [] });
