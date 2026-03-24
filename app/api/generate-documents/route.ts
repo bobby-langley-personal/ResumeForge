@@ -80,6 +80,7 @@ Rules:
 - Prioritize recent and relevant experience
 - Cut or minimize experience that is irrelevant to the target role
 - Write bullet points that follow the format: [Action verb] + [what you did] + [measurable outcome]
+- Maximum 6 bullet points per role. For the most recent or primary role use up to 6; for older or less relevant roles use 4–5. Never exceed 6. If the candidate has more accomplishments than fit, combine related ones into a single high-impact bullet.
 - Keep each bullet point under 180 characters including spaces. If a bullet runs long, split it into two focused bullets rather than letting it wrap to a third line.
 - Never repeat the same action verb more than once within a single role's bullet list. Scan all bullets for that role before writing — maintain a mental list of verbs already used. Vary openers: Built → Engineered, Developed, Created, Designed, Shipped, Delivered, Launched, Implemented, Deployed, Authored; Led → Managed, Directed, Oversaw, Guided, Mentored, Headed; Improved → Reduced, Increased, Accelerated, Optimized, Streamlined, Elevated, Boosted
 - Never use hedging or diminishing language on leadership experience. Words like "Informally", "Somewhat", "Partially", "Helped with", "Assisted in leading" undermine the candidate. If they led, they led. Reframe confidently: "Informally led a team" → "Managed a team of 2 engineers"; "Helped lead" → "Co-led" or just "Led"
