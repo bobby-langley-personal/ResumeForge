@@ -135,6 +135,8 @@ export default function Home() {
   const [answersExpanded, setAnswersExpanded] = useState(true);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [previewType, setPreviewType] = useState<'resume' | 'cover-letter' | null>(null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [pendingSaveFile, setPendingSaveFile] = useState<{ text: string; fileName: string } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -229,6 +231,8 @@ export default function Home() {
       setUploadedFileContent(result.text);
       setUploadedFileName(result.fileName);
       setIsPreviewExpanded(true);
+      setPendingSaveFile({ text: result.text, fileName: result.fileName });
+      setShowSaveModal(true);
 
     } catch (error) {
       console.error('File upload failed:', error);
@@ -237,6 +241,24 @@ export default function Home() {
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handleSaveToDocuments = async () => {
+    if (!pendingSaveFile) return;
+    setShowSaveModal(false);
+    const title = pendingSaveFile.fileName.replace(/\.[^.]+$/, ''); // strip extension
+    await fetch('/api/resumes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        content: { text: pendingSaveFile.text, fileName: pendingSaveFile.fileName },
+        item_type: 'resume',
+        is_default: false,
+      }),
+    });
+    setPendingSaveFile(null);
+    setResetKey(k => k + 1); // re-mount ContextSelector so the new doc appears
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -763,6 +785,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
 
                     <div id="tour-experience" className="flex space-x-4 mb-6">
                       <Button
+                        id="tour-upload-btn"
                         type="button"
                         variant={inputMethod === 'upload' ? 'default' : 'outline'}
                         onClick={() => { setInputMethod('upload'); fileInputRef.current?.click(); }}
@@ -1046,6 +1069,33 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                 >
                   Start Fresh
                 </Button>
+              </div>
+            )}
+
+            {/* Save to Documents Modal */}
+            {showSaveModal && pendingSaveFile && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-black/50" onClick={() => setShowSaveModal(false)} />
+                <div className="relative bg-background border border-border rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
+                  <h2 className="text-base font-semibold text-foreground">Save to your profile?</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Save <span className="font-medium text-foreground">{pendingSaveFile.fileName}</span> to My Documents so it auto-loads next time.
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleSaveToDocuments}
+                      className="flex-1 h-9 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                    >
+                      Yes, save it
+                    </button>
+                    <button
+                      onClick={() => { setShowSaveModal(false); setPendingSaveFile(null); }}
+                      className="flex-1 h-9 rounded-md border border-border text-sm text-foreground hover:bg-muted transition-colors"
+                    >
+                      No thanks
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 

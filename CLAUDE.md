@@ -209,7 +209,7 @@ should only target unnecessary whitespace — never content.
 - Dark mode by default, toggled via `dark` class on `<html>`
 - Preference stored in `localStorage` under key `'theme'` (`'dark'` or `'light'`)
 - Inline script in `app/layout.tsx` applies preference before first paint (no flash)
-- Toggle button (Sun/Moon icon) lives in `Navbar.tsx` → `ThemeToggle` component
+- Toggle lives in the Navbar hamburger dropdown (not a standalone icon button)
 
 ---
 
@@ -218,11 +218,26 @@ should only target unnecessary whitespace — never content.
 - `components/TourGuide.tsx` — `'use client'` component; auto-starts the tour for first-time users; exports `startTour()` for replay
 - localStorage key: `resumeforge_tour_completed` — `'true'` means tour has been seen; absence or any other value triggers auto-start
 - Tour auto-starts 800ms after mount to allow the page to fully render
-- `TourButton` in `Navbar.tsx` — appears only after tour has been completed once; clicking replays the tour by calling `startTour()`
+- Tour replay appears in the Navbar hamburger dropdown (as "Take the Tour") — only shown after the tour has been completed once
 - Step 2 (Job Search) is **backlogged** — the job search feature is not yet implemented; tour skips from Welcome directly to Job Details
 - Tour targets use `id` attributes: `tour-heading`, `tour-job-details`, `tour-background`, `tour-context`, `tour-questions`, `tour-generate`, `tour-my-documents`
 - `ContextSelector` shows a dashed empty-state callout with a link to `/resumes` when the user has no library documents; the callout also carries `id="tour-context"` so the tour step targets it regardless of whether documents exist
 - Dark theme CSS override in `app/globals.css` under `.resumeforge-tour` class
+
+## Navbar
+
+- Hamburger menu (`Menu` icon) is visible on **all screen sizes** for signed-in users — no always-visible nav links on desktop
+- Hamburger dropdown contains: Tailor New Resume (`/`), AI Resumes (`/dashboard`), My Documents (`/resumes`), divider, Take the Tour, Light/Dark Mode toggle, divider, Feedback
+- Signed-out users see a persistent Sun/Moon toggle + Sign In button (no hamburger)
+- `FeedbackModal` is `dynamic` imported with `ssr: false` in both `Navbar.tsx` and `Footer.tsx`
+
+## Footer
+
+- `components/Footer.tsx` — rendered in `app/layout.tsx` for all pages
+- Shows "Built by Bobby Langley" attribution (left) and a Feedback button (right)
+- `body` in `layout.tsx` uses `flex flex-col min-h-screen` so footer sticks to bottom
+
+---
 
 ## Branch Naming
 

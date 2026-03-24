@@ -5,6 +5,7 @@ import { supabaseServer } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import ResumeLibrary from './ResumeLibrary';
 import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 import { ResumeItem } from '@/types/resume';
 
 export const metadata = { title: 'My Documents — ResumeForge' };
@@ -27,6 +28,10 @@ export default async function ResumesPage() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <Link href="/" className="flex items-center gap-1.5 w-fit text-sm text-muted-foreground hover:text-foreground transition-colors mb-3">
+          <ArrowLeft className="w-4 h-4" />
+          Back to resume generator
+        </Link>
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-2xl font-bold text-foreground">My Documents</h2>
