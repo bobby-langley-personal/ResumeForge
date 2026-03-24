@@ -34,6 +34,7 @@ interface CompletedRole {
 
 type Step =
   | 'preloading'
+  | 'draft-prompt'
   | 'doc-prompt'
   | 'intro'
   | 'role-setup'
@@ -43,6 +44,26 @@ type Step =
   | 'complete'
   | 'generating'
   | 'output';
+
+interface InterviewDraft {
+  savedAt: string;
+  totalRoles: number;
+  currentRoleIndex: number;
+  completedRoles: CompletedRole[];
+  company: string;
+  jobTitle: string;
+  startDate: string;
+  endDate: string;
+  researchSummary: string;
+  history: ChatMessage[];
+  displayMessages: DisplayMessage[];
+  choices: string[];
+  useExistingDocs: boolean;
+  existingDocsContext: string;
+  resumeStep: 'role-setup' | 'interview';
+}
+
+const DRAFT_KEY = 'resumeforge_interview_draft';
 
 const ROLE_COUNT_OPTIONS = [1, 2, 3, 4, 5];
 
@@ -117,16 +138,83 @@ export default function InterviewClient() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [displayMessages, thinking]);
 
-  // Preload existing docs on mount
+  // Preload existing docs on mount; check for saved draft
   useEffect(() => {
     fetch('/api/resumes')
       .then(r => r.json())
       .then((docs: ExistingDoc[]) => {
         setExistingDocs(docs ?? []);
+        try {
+          const raw = localStorage.getItem(DRAFT_KEY);
+          if (raw) {
+            setStep('draft-prompt');
+            return;
+          }
+        } catch { /* ignore */ }
         setStep(docs?.length > 0 ? 'doc-prompt' : 'intro');
       })
       .catch(() => setStep('intro'));
   }, []);
+
+  // ── Draft helpers ──────────────────────────────────────────────────────────
+
+  const saveDraft = () => {
+    const draft: InterviewDraft = {
+      savedAt: new Date().toISOString(),
+      totalRoles,
+      currentRoleIndex,
+      completedRoles,
+      company,
+      jobTitle,
+      startDate,
+      endDate,
+      researchSummary,
+      history,
+      displayMessages,
+      choices,
+      useExistingDocs,
+      existingDocsContext,
+      resumeStep: step === 'interview' ? 'interview' : 'role-setup',
+    };
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch { /* ignore */ }
+    router.push('/resumes');
+  };
+
+  const clearDraft = () => {
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+  };
+
+  const restoreDraft = () => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) { setStep('intro'); return; }
+      const draft: InterviewDraft = JSON.parse(raw);
+      setTotalRoles(draft.totalRoles);
+      setCurrentRoleIndex(draft.currentRoleIndex);
+      setCompletedRoles(draft.completedRoles);
+      setCompany(draft.company);
+      setJobTitle(draft.jobTitle);
+      setStartDate(draft.startDate);
+      setEndDate(draft.endDate);
+      setResearchSummary(draft.researchSummary);
+      setHistory(draft.history);
+      setDisplayMessages(draft.displayMessages);
+      setChoices(draft.choices);
+      setUseExistingDocs(draft.useExistingDocs);
+      setExistingDocsContext(draft.existingDocsContext);
+      setStep(draft.resumeStep);
+    } catch {
+      clearDraft();
+      setStep('intro');
+    }
+  };
+
+  const discardDraft = () => {
+    clearDraft();
+    setStep(existingDocs.length > 0 ? 'doc-prompt' : 'intro');
+  };
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -317,6 +405,7 @@ export default function InterviewClient() {
         }),
       });
       if (!res.ok) throw new Error(await res.text());
+      clearDraft();
       router.push('/resumes');
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Save failed');
@@ -336,6 +425,50 @@ export default function InterviewClient() {
     return (
       <div className="flex items-center justify-center py-24">
         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (step === 'draft-prompt') {
+    let draft: InterviewDraft | null = null;
+    try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? ''); } catch { /* ignore */ }
+    const savedDate = draft?.savedAt
+      ? new Date(draft.savedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+      : null;
+
+    return (
+      <div className="max-w-lg mx-auto space-y-6 py-8">
+        <div className="space-y-2 text-center">
+          <div className="text-3xl">💾</div>
+          <h2 className="text-xl font-bold text-foreground">Resume your interview?</h2>
+          <p className="text-sm text-muted-foreground">
+            You have a saved interview in progress
+            {savedDate ? ` from ${savedDate}` : ''}.
+          </p>
+        </div>
+
+        {draft && (
+          <div className="bg-card border border-border rounded-xl p-4 space-y-1.5 text-sm">
+            <p className="text-foreground font-medium">
+              {draft.completedRoles.length} role{draft.completedRoles.length !== 1 ? 's' : ''} completed
+              {draft.company ? ` · currently on ${draft.company}` : ''}
+            </p>
+            {draft.completedRoles.length > 0 && (
+              <p className="text-muted-foreground text-xs">
+                {draft.completedRoles.map(r => `${r.title} @ ${r.company}`).join(', ')}
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <Button onClick={restoreDraft} className="flex-1">
+            Resume interview
+          </Button>
+          <Button variant="outline" onClick={discardDraft} className="flex-1">
+            Start over
+          </Button>
+        </div>
       </div>
     );
   }
@@ -451,10 +584,17 @@ export default function InterviewClient() {
           </div>
         </div>
 
-        <Button onClick={handleRoleContinue} disabled={!valid} className="w-full">
-          Continue
-          <ArrowRight className="w-4 h-4 ml-2" />
-        </Button>
+        <div className="flex gap-3">
+          <Button onClick={handleRoleContinue} disabled={!valid} className="flex-1">
+            Continue
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+          {completedRoles.length > 0 && (
+            <Button variant="outline" onClick={saveDraft}>
+              Save & exit
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
@@ -533,13 +673,21 @@ export default function InterviewClient() {
             </p>
             <p className="text-xs text-muted-foreground">{displayMessages.length} exchanges</p>
           </div>
-          <button
-            onClick={finishRole}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <SkipForward className="w-3.5 h-3.5" />
-            Skip role
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={saveDraft}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Save & exit
+            </button>
+            <button
+              onClick={finishRole}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <SkipForward className="w-3.5 h-3.5" />
+              Skip role
+            </button>
+          </div>
         </div>
 
         {/* Chat messages */}
