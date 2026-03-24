@@ -83,6 +83,7 @@ Current valid columns:
 - `isFromUploadedFile` — boolean, affects resume prompt framing
 - `fitAnalysis` — pre-computed FitAnalysis (skips re-analysis)
 - `includeCoverLetter` — boolean (default false)
+- `includeSummary` — boolean (default false); when false the prompt instructs the AI to omit the SUMMARY section entirely
 - `additionalContext` — array of `{ title, type, text }` from My Documents
 - `questions` — optional `string[]` of application questions (max 5)
 - `shortResponse` — boolean, if true answers are 2-3 sentences instead of paragraphs

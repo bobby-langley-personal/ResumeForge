@@ -97,6 +97,18 @@ Exported from `app/dashboard/page.tsx`:
 }
 ```
 
+### PDF Experience Structure
+The PDF parser groups experience entries by company. Multiple roles at the same company are rendered under one company header:
+```
+Company | Location
+  Job Title (bold)          Dates (italic, right-aligned)
+  • bullet
+  Additional Title (bold)   Dates
+  • bullet
+```
+**Pattern A** (new company): `Company | Location | Dates` — 3 pipe-separated parts
+**Pattern B** (additional role): `Title | Dates` — 2 parts where second matches `/(\d{4}|Present)/i`
+
 ### `ApplicationQuestion`
 ```typescript
 {

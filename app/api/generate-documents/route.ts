@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     console.log('[generate-documents] Auth check passed, userId:', userId);
 
     // Parse request body
-    const { company, jobTitle, jobDescription, backgroundExperience, isFromUploadedFile, fitAnalysis: precomputedAnalysis, includeCoverLetter = false, additionalContext = [], jobUrl, questions = [], shortResponse = false } = await req.json();
+    const { company, jobTitle, jobDescription, backgroundExperience, isFromUploadedFile, fitAnalysis: precomputedAnalysis, includeCoverLetter = false, includeSummary = false, additionalContext = [], jobUrl, questions = [], shortResponse = false } = await req.json();
     console.log('[generate-documents] Parsed body:', { 
       company, 
       jobTitle, 
@@ -88,10 +88,12 @@ EMAIL: [email]
 PHONE: [phone]
 LOCATION: [city, state]
 LINKEDIN: [linkedin url]
-
+${includeSummary ? `
 SUMMARY:
-[2-3 sentence professional summary]
-
+[2-3 sentence professional summary tailored to the role]
+` : `
+(Do not include a SUMMARY section. Start directly with EXPERIENCE after the header fields.)
+`}
 EXPERIENCE:
 [Company Name] | [City, State] | [Start Month Year] – [End Month Year or Present]
 [Job Title]
@@ -99,7 +101,11 @@ EXPERIENCE:
 • [bullet point]
 • [bullet point]
 
-[Next Company]...
+For multiple roles at the same company, list the company once then add subsequent roles as:
+[Next Job Title] | [Start Month Year] – [End Month Year]
+• [bullet point]
+
+[Next Company] | [City, State] | [Dates]...
 
 SKILLS:
 [Category]: [skill1], [skill2], [skill3]
