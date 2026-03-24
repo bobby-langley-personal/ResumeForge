@@ -107,6 +107,7 @@ export default function InterviewClient() {
   const [totalRoles, setTotalRoles] = useState(0);
   const [completedRoles, setCompletedRoles] = useState<CompletedRole[]>([]);
   const [currentRoleIndex, setCurrentRoleIndex] = useState(0);
+  const [revisitingIndex, setRevisitingIndex] = useState(-1);
   const [suggestedRoles, setSuggestedRoles] = useState<{ company: string; title: string; startDate: string; endDate: string }[]>([]);
 
   // Role setup
@@ -379,6 +380,15 @@ export default function InterviewClient() {
       endDate: endDate.trim(),
       history,
     };
+
+    if (revisitingIndex >= 0) {
+      // Updating an existing role, return to complete screen
+      setCompletedRoles(prev => prev.map((r, i) => i === revisitingIndex ? role : r));
+      setRevisitingIndex(-1);
+      setStep('complete');
+      return;
+    }
+
     const updated = [...completedRoles, role];
     setCompletedRoles(updated);
 
@@ -387,6 +397,30 @@ export default function InterviewClient() {
     } else {
       setStep('complete');
     }
+  };
+
+  const revisitRole = (index: number) => {
+    const role = completedRoles[index];
+    setCompany(role.company);
+    setJobTitle(role.title);
+    setStartDate(role.startDate);
+    setEndDate(role.endDate);
+    setResearchSummary('');
+    setResearchConfirmed(false);
+    setClarification('');
+    setShowClarify(false);
+    setCurrentRoleIndex(index);
+    setRevisitingIndex(index);
+    // Reconstruct display messages from history (strip CHOICES: lines)
+    const rebuilt: DisplayMessage[] = role.history.map(m => ({
+      role: m.role === 'assistant' ? 'ai' : 'user',
+      content: m.role === 'assistant' ? parseChoices(m.content).display : m.content,
+    }));
+    setHistory(role.history);
+    setDisplayMessages(rebuilt);
+    setChoices([]);
+    setInput('');
+    setStep('interview');
   };
 
   const generate = async () => {
@@ -829,20 +863,43 @@ export default function InterviewClient() {
 
   if (step === 'complete') {
     return (
-      <div className="max-w-lg mx-auto text-center space-y-6 py-8">
-        <div className="space-y-3">
+      <div className="max-w-lg mx-auto space-y-6 py-8">
+        <div className="space-y-2 text-center">
           <div className="text-4xl">✓</div>
           <h2 className="text-xl font-bold text-foreground">Interview complete</h2>
-          <p className="text-muted-foreground">
-            We covered {completedRoles.length} role{completedRoles.length !== 1 ? 's' : ''} and
-            captured your career history. Ready to build your document?
+          <p className="text-muted-foreground text-sm">
+            Review your roles below, then generate your document.
           </p>
-          <p className="text-xs text-muted-foreground">This usually takes about 15 seconds.</p>
         </div>
+
+        <div className="space-y-2">
+          {completedRoles.map((role, i) => {
+            const exchanges = Math.floor(role.history.length / 2);
+            const skipped = role.history.length === 0;
+            return (
+              <div key={i} className="flex items-center justify-between p-3 rounded-lg border border-border bg-card">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{role.title} @ {role.company}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {skipped ? 'Skipped' : `${exchanges} exchange${exchanges !== 1 ? 's' : ''}`}
+                  </p>
+                </div>
+                <button
+                  onClick={() => revisitRole(i)}
+                  className="text-xs text-primary hover:underline shrink-0 ml-3"
+                >
+                  {skipped ? 'Start' : 'Continue'}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
         <Button size="lg" onClick={generate} className="w-full">
           Generate Experience Document
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
+        <p className="text-xs text-muted-foreground text-center">This usually takes about 15 seconds.</p>
       </div>
     );
   }
