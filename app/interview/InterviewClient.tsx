@@ -109,6 +109,11 @@ export default function InterviewClient() {
   const [currentRoleIndex, setCurrentRoleIndex] = useState(0);
   const [revisitingIndex, setRevisitingIndex] = useState(-1);
   const [suggestedRoles, setSuggestedRoles] = useState<{ company: string; title: string; startDate: string; endDate: string }[]>([]);
+  const [selectedSuggested, setSelectedSuggested] = useState<boolean[]>([]);
+  const [customRoles, setCustomRoles] = useState<{ company: string; title: string }[]>([]);
+  const [customCompany, setCustomCompany] = useState('');
+  const [customTitle, setCustomTitle] = useState('');
+  const [extracting, setExtracting] = useState(false);
 
   // Role setup
   const [company, setCompany] = useState('');
@@ -149,7 +154,7 @@ export default function InterviewClient() {
 
         // Kick off role extraction in the background if docs exist
         if (docs?.length > 0) {
-          console.log('[interview] fetched docs:', docs.map(d => d.title));
+          setExtracting(true);
           fetch('/api/interview/extract-roles', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -157,17 +162,15 @@ export default function InterviewClient() {
               documents: docs.map((d: ExistingDoc) => ({ title: d.title, text: d.content.text })),
             }),
           })
-            .then(r => {
-              console.log('[interview] extract-roles status:', r.status);
-              return r.json();
-            })
+            .then(r => r.json())
             .then(data => {
-              console.log('[interview] extracted roles:', data);
-              if (data.roles?.length) setSuggestedRoles(data.roles);
+              if (data.roles?.length) {
+                setSuggestedRoles(data.roles);
+                setSelectedSuggested(data.roles.map(() => true));
+              }
             })
-            .catch(err => { console.error('[interview] extract-roles failed:', err); });
-        } else {
-          console.log('[interview] no docs found, skipping extraction');
+            .catch(() => { /* non-fatal */ })
+            .finally(() => setExtracting(false));
         }
 
         try {
@@ -252,9 +255,21 @@ export default function InterviewClient() {
     setStep('intro');
   };
 
-  const startRoleSetup = (index: number) => {
-    const suggested = suggestedRoles[index];
-    console.log('[interview] startRoleSetup index:', index, 'suggestedRoles:', suggestedRoles, 'using:', suggested);
+  const beginInterview = () => {
+    const active = [
+      ...suggestedRoles.filter((_, i) => selectedSuggested[i] !== false),
+      ...customRoles.map(r => ({ ...r, startDate: '', endDate: '' })),
+    ];
+    if (active.length === 0) return;
+    setSuggestedRoles(active);
+    setTotalRoles(active.length);
+    setCompletedRoles([]);
+    startRoleSetup(0, active);
+  };
+
+  const startRoleSetup = (index: number, rolesList?: typeof suggestedRoles) => {
+    const roles = rolesList ?? suggestedRoles;
+    const suggested = roles[index];
     setCompany(suggested?.company ?? '');
     setJobTitle(suggested?.title ?? '');
     setStartDate(suggested?.startDate ?? '');
@@ -393,7 +408,7 @@ export default function InterviewClient() {
     setCompletedRoles(updated);
 
     if (currentRoleIndex + 1 < totalRoles) {
-      startRoleSetup(currentRoleIndex + 1);
+      startRoleSetup(currentRoleIndex + 1, suggestedRoles);
     } else {
       setStep('complete');
     }
@@ -591,39 +606,104 @@ export default function InterviewClient() {
   }
 
   if (step === 'intro') {
+    const activeCount = suggestedRoles.filter((_, i) => selectedSuggested[i] !== false).length + customRoles.length;
+
     return (
-      <div className="max-w-lg mx-auto text-center space-y-8 py-8">
-        <div className="space-y-3">
+      <div className="max-w-lg mx-auto space-y-6 py-8">
+        <div className="space-y-2 text-center">
           <div className="text-4xl">🎤</div>
           <h1 className="text-2xl font-bold text-foreground">Build Your Experience Document</h1>
-          <p className="text-muted-foreground leading-relaxed">
-            Most resumes undersell the candidate. This interview captures everything — the tools
-            you use daily, the fires you've put out, the processes you quietly improved. Things
-            you don't think to mention because they feel obvious. They're not.
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            This interview captures everything — the tools you use daily, the fires you've put out, the processes you quietly improved.
           </p>
         </div>
 
-        <div className="space-y-3">
-          <p className="text-sm font-medium text-foreground">How many roles would you like to cover?</p>
-          <div className="flex justify-center gap-2 flex-wrap">
-            {ROLE_COUNT_OPTIONS.map(n => (
+        {/* Role checklist */}
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-foreground">
+            {extracting ? 'Detecting roles from your documents…' : suggestedRoles.length > 0 ? 'Select the roles to cover:' : 'Which roles would you like to cover?'}
+          </p>
+
+          {extracting && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Scanning your documents…
+            </div>
+          )}
+
+          {suggestedRoles.map((role, i) => (
+            <label key={i} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card cursor-pointer hover:bg-muted/30 transition-colors">
+              <input
+                type="checkbox"
+                checked={selectedSuggested[i] !== false}
+                onChange={e => setSelectedSuggested(prev => {
+                  const next = [...prev];
+                  next[i] = e.target.checked;
+                  return next;
+                })}
+                className="w-4 h-4 accent-primary shrink-0"
+              />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">{role.title}</p>
+                <p className="text-xs text-muted-foreground">{role.company}{role.startDate ? ` · ${role.startDate}–${role.endDate || 'Present'}` : ''}</p>
+              </div>
+            </label>
+          ))}
+
+          {customRoles.map((role, i) => (
+            <div key={`custom-${i}`} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
+              <input type="checkbox" checked readOnly className="w-4 h-4 accent-primary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground">{role.title}</p>
+                <p className="text-xs text-muted-foreground">{role.company}</p>
+              </div>
               <button
-                key={n}
-                onClick={() => setTotalRoles(n)}
-                className={`w-12 h-12 rounded-full text-sm font-medium border transition-colors ${
-                  totalRoles === n
-                    ? 'bg-foreground text-background border-foreground'
-                    : 'bg-transparent text-muted-foreground border-border hover:border-foreground hover:text-foreground'
-                }`}
+                onClick={() => setCustomRoles(prev => prev.filter((_, j) => j !== i))}
+                className="text-xs text-muted-foreground hover:text-destructive transition-colors shrink-0"
               >
-                {n === 5 ? '5+' : n}
+                Remove
               </button>
-            ))}
+            </div>
+          ))}
+
+          {/* Add custom role */}
+          <div className="flex gap-2 pt-1">
+            <Input
+              value={customCompany}
+              onChange={e => setCustomCompany(e.target.value)}
+              placeholder="Company"
+              className="flex-1"
+            />
+            <Input
+              value={customTitle}
+              onChange={e => setCustomTitle(e.target.value)}
+              placeholder="Job title"
+              className="flex-1"
+              onKeyDown={e => {
+                if (e.key === 'Enter' && customCompany.trim() && customTitle.trim()) {
+                  setCustomRoles(prev => [...prev, { company: customCompany.trim(), title: customTitle.trim() }]);
+                  setCustomCompany('');
+                  setCustomTitle('');
+                }
+              }}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!customCompany.trim() || !customTitle.trim()}
+              onClick={() => {
+                setCustomRoles(prev => [...prev, { company: customCompany.trim(), title: customTitle.trim() }]);
+                setCustomCompany('');
+                setCustomTitle('');
+              }}
+            >
+              Add
+            </Button>
           </div>
         </div>
 
-        <Button size="lg" onClick={() => startRoleSetup(0)} disabled={totalRoles === 0} className="w-full">
-          Start Interview
+        <Button size="lg" onClick={beginInterview} disabled={activeCount === 0} className="w-full">
+          Start Interview ({activeCount} role{activeCount !== 1 ? 's' : ''})
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
 
