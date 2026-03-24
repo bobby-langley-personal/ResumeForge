@@ -29,8 +29,8 @@ export default function ContextSelector({ onLoadBackground, onAdditionalContextC
           setSelectedId(defaultItem.id);
           onLoadBackground(defaultItem.content.text);
         }
-        // Pre-select up to 3 most recent non-default items as additional context
-        const nonDefault = data.filter(i => !i.is_default).slice(0, 3);
+        // Pre-select all non-default items as additional context
+        const nonDefault = data.filter(i => !i.is_default);
         if (nonDefault.length > 0) {
           setAdditionalIds(new Set(nonDefault.map(i => i.id)));
           setExpanded(true);
