@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
-import { FileText, Download, Trash2, MessageSquare, X, Eye } from 'lucide-react';
+import { FileText, Download, Trash2, MessageSquare, X, Eye, Lightbulb } from 'lucide-react';
+import FitAnalysisModal from '@/components/FitAnalysisModal';
+import { FitAnalysis } from '@/types/fit-analysis';
 
 const PDFPreviewModal = dynamic(() => import('@/components/PDFPreviewModal'), { ssr: false });
 
@@ -14,6 +16,7 @@ interface ApplicationCardProps {
   createdAt: string;
   hasCoverLetter: boolean;
   questionAnswers: { question: string; answer: string }[] | null;
+  fitAnalysis: FitAnalysis | null;
   selected: boolean;
   onToggleSelect: (id: string) => void;
   onDelete: (id: string) => void;
@@ -22,12 +25,13 @@ interface ApplicationCardProps {
 const wordCount = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
 
 export default function ApplicationCard({
-  id, company, jobTitle, createdAt, hasCoverLetter, questionAnswers,
+  id, company, jobTitle, createdAt, hasCoverLetter, questionAnswers, fitAnalysis,
   selected, onToggleSelect, onDelete,
 }: ApplicationCardProps) {
   const [downloading, setDownloading] = useState<'resume' | 'cover-letter' | null>(null);
   const [error, setError] = useState('');
   const [showAnswers, setShowAnswers] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [previewType, setPreviewType] = useState<'resume' | 'cover-letter' | null>(null);
   const [previewData, setPreviewData] = useState<{
@@ -115,6 +119,14 @@ export default function ApplicationCard({
           </p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={() => fitAnalysis && setShowInsights(true)}
+            disabled={!fitAnalysis}
+            className={`p-1 transition-colors ${fitAnalysis ? 'text-yellow-400 hover:text-yellow-300' : 'text-slate-600 cursor-not-allowed'}`}
+            title={fitAnalysis ? 'View fit analysis' : 'No insights available for this application'}
+          >
+            <Lightbulb className="w-4 h-4" />
+          </button>
           {questionAnswers && questionAnswers.length > 0 && (
             <button
               onClick={() => setShowAnswers(true)}
@@ -192,6 +204,17 @@ export default function ApplicationCard({
           </div>
         )}
       </div>
+
+      {/* Fit Analysis Modal */}
+      {showInsights && fitAnalysis && (
+        <FitAnalysisModal
+          fitAnalysis={fitAnalysis}
+          company={company}
+          jobTitle={jobTitle}
+          createdAt={createdAt}
+          onClose={() => setShowInsights(false)}
+        />
+      )}
 
       {/* PDF Preview Modal */}
       {previewType && previewData && (

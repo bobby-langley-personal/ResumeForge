@@ -12,20 +12,30 @@ Before generating anything, ResumeForge runs a fit analysis using Claude Haiku:
 - Lists specific strengths, gaps, and suggestions — each attributed to the source artifact they came from
 - Generates 3–5 **Planned Improvements**: concrete changes that will be made to the resume (e.g. "surface the 50% ticket resolution metric", "add missing keyword: GraphQL")
 - Detects role type (technical, management, sales, customer success, research) to tailor the analysis tone
+- Fit analysis is **saved with each application** and viewable any time from the AI Resumes dashboard via a lightbulb icon on each card
 
 ### 2. Document Generation
 After reviewing the fit analysis, the user approves generation. Claude Sonnet streams back:
 - A fully tailored resume formatted for the specific role and company
-- An optional cover letter (toggled before submission)
+- An optional **summary section** (toggled before submission — off by default)
+- An optional **cover letter** (toggled before submission)
 - Both stream live to the page as they generate
 - If application questions are provided, a third phase generates written answers grounded in the resume and background — displayed with word counts and copy buttons
+- A **"Start Fresh"** button resets the form after generation
 
-### 2a. Application Questions
+### 2a. Resume Bullet Point Rules
+The generation prompt enforces strict quality rules:
+- **Tiered bullet counts** — most recent/primary role 6–8 bullets; supporting roles 4–6; early career/less relevant roles 3–4; hard ceiling of 8 per role
+- **180-character max per bullet** — long bullets are split rather than wrapped
+- **No repeated action verbs** — each bullet within a role must open with a unique verb
+- **No hedging on leadership** — "Informally led" becomes "Managed", "Helped lead" becomes "Co-led"
+
+### 2b. Application Questions
 Users can add up to 5 open-ended application questions before generating:
 - Questions can be entered manually or auto-populated from URL import
 - Toggle between short responses (2–3 sentences) and full paragraphs
 - AI-generated answers are shown after generation with word count and one-click copy
-- Answers are saved and viewable from the AI Resumes dashboard via a modal
+- Answers are saved and viewable from the AI Resumes dashboard via a chat icon modal
 
 ### 3. Job URL Auto-Import
 Users can paste a job posting URL instead of copying text manually:
@@ -41,28 +51,34 @@ Users can paste a job posting URL instead of copying text manually:
 ### 4. My Documents (Resume Library)
 A personal library of saved context artifacts:
 - Upload PDF or DOCX files — text is extracted server-side
+- **Save to profile prompt** — when uploading a file on the home page, a modal asks if you'd like to save it to My Documents so it auto-loads next time
 - Categorize items: Resume, Cover Letter, Portfolio, Other
 - Mark one item as **Default** — it auto-loads as the primary background on the home page
-- The 3 most recent non-default items are pre-selected as **additional context** for the AI, expanding the accordion automatically
+- **All** non-default items are pre-selected as **additional context** for the AI, with the accordion expanded automatically
 - Additional context items are appended to both the fit analysis and generation prompts, with source attribution on every insight
 
 ### 5. AI Resumes Dashboard
 Saves every generated resume to Supabase:
 - Card view with company, job title, and date
+- **Lightbulb icon** (yellow = insights available, slate = none) — opens the Fit Analysis modal showing strengths, gaps, suggestions, and planned improvements from when the resume was generated
 - Download resume or cover letter as PDF
 - If the record has application question answers, a chat icon opens a modal showing each Q&A with word count and copy button
-- Multi-select checkboxes for bulk delete
-- Single-card trash icon for individual delete
+- Multi-select checkboxes for bulk delete; trash icon for individual delete
+- **"← Back to resume generator"** link at the top for easy navigation
 
 ### 6. PDF Downloads & Preview
-Generated documents can be downloaded as formatted PDFs directly from the dashboard or immediately after generation. An Eye icon next to each download button opens a preview modal — rendered client-side using `@react-pdf/renderer`'s `BlobProvider` in an iframe — so you can review formatting before saving.
+Generated documents can be downloaded as formatted PDFs directly from the dashboard or immediately after generation:
+- Eye icon next to each download button opens a **preview modal** — rendered client-side using `@react-pdf/renderer`'s `BlobProvider` in an iframe
+- PDF experience format: company + location on one line, each role title + dates on the next line, bullets below — dates never appear on the company line
+- 2-page resumes are acceptable and normal for 4+ years of experience — content is never truncated to force single-page output
 
 ### 7. First-Time Onboarding Tour
 A guided walkthrough for new users powered by `driver.js`:
 - Auto-starts 800ms after first sign-in (tracked via `localStorage`)
-- 6 steps: Welcome → Job Details → Your Background → Context Documents → Application Questions → Generate
+- 7 steps: Welcome → Job Details → Your Background → Context Documents → Application Questions → Generate → Navigation
+- Each step has a **pulsing blue ring** on the highlighted element and a **bouncing arrow** pointing at the specific field within the section
 - Dismissable at any step; completing or dismissing sets the `resumeforge_tour_completed` flag
-- "? Tour" replay button appears in the navbar after the tour has been seen at least once
+- Tour replay available in the hamburger nav menu (Compass icon) after the tour has been completed once
 - Styled to match the app's dark theme via custom CSS overrides in `globals.css`
 
 ### 8. AI Experience Interview (`/interview`)
@@ -71,10 +87,16 @@ An AI-guided career interview that builds a detailed experience document from th
 - **Company research** — after each role is set up, Haiku generates a 3–5 sentence company + role summary; user confirms accuracy or clarifies before the interview starts
 - **Adaptive AI conversation** — each turn calls Claude Sonnet with the full chat history and system context; Claude decides what to ask next rather than following a fixed script
 - **Quick-reply choices** — Claude ends messages with `CHOICES: A | B | C`; UI parses and renders these as pill buttons; "Move to next role" triggers role completion
-- **Role revisit** — complete screen shows each finished role with a button to go back and continue the conversation
 - **Cross-device draft persistence** — draft auto-saves to Supabase `interview_sessions` table after each role completes and on "Save & exit"; user can resume on any device (mobile or desktop)
 - **Output** — generates a detailed, formatted experience document via Sonnet; user names and saves it to My Documents or copies to clipboard
 - Accessible from the My Documents page header ("Build experience doc →" with Beta badge)
+
+### 9. Feedback
+Users can submit feedback or bug reports at any time:
+- **Hamburger menu** — feedback option in the nav dropdown on all screen sizes
+- **Footer** — persistent feedback button at the bottom of every page
+- Two types: General and Bug Report
+- Submissions are saved to Supabase `feedback` table
 
 ---
 
@@ -97,8 +119,9 @@ An AI-guided career interview that builds a detailed experience document from th
 - **Supabase singleton** — `supabaseServer()` returns a module-level singleton to avoid connection exhaustion on Vercel's serverless functions.
 - **Model cache** — `getModels()` caches Anthropic model IDs in memory for 1 hour with a hardcoded fallback, avoiding repeated API calls on every request.
 - **SSE streaming** — Document generation uses Server-Sent Events via the Edge runtime so the resume streams word-by-word to the UI.
-- **Fit analysis first** — Generation is always gated behind a fit review modal, so users see what the AI plans to change before committing.
-- **Dark mode default** — Theme is toggled via a `dark` class on `<html>`, defaulting to dark. Preference persists in `localStorage`. An inline script in `layout.tsx` prevents flash of wrong theme on load.
+- **Fit analysis first** — Generation is always gated behind a fit review modal, so users see what the AI plans to change before committing. Fit analysis is saved with the application and accessible from the dashboard.
+- **Dark mode default** — Theme is toggled via a `dark` class on `<html>`, defaulting to dark. Preference persists in `localStorage`. An inline script in `layout.tsx` prevents flash of wrong theme on load. Theme toggle lives in the hamburger nav menu.
+- **Hamburger-only nav** — All navigation (Tailor New Resume, AI Resumes, My Documents) lives in the hamburger dropdown on all screen sizes. No always-visible nav links on desktop.
 
 ---
 
@@ -107,12 +130,12 @@ An AI-guided career interview that builds a detailed experience document from th
 ```
 app/
   page.tsx                  # Home — job input form, fit analysis modal, generation flow
-  layout.tsx                # Root layout with Clerk provider and theme script
+  layout.tsx                # Root layout with Clerk provider, theme script, and Footer
   globals.css               # CSS variables for light/dark themes + driver.js tour overrides
   dashboard/
     page.tsx                # AI Resumes dashboard (server component)
     ApplicationList.tsx     # Client component — multi-select, delete
-    ApplicationCard.tsx     # Individual resume card with download + Q&A modal
+    ApplicationCard.tsx     # Resume card — download, preview, Q&A modal, fit analysis lightbulb
     loading.tsx             # Skeleton UI for Suspense boundary
   resumes/
     page.tsx                # My Documents library page (server component)
@@ -131,6 +154,7 @@ app/
     resumes/                # GET/POST — My Documents CRUD
     applications/           # DELETE bulk
     applications/[id]/      # GET single (for PDF preview) + DELETE single
+    feedback/               # POST — save feedback to Supabase
     interview/
       research/             # POST — Haiku company + role summary
       chat/                 # POST — Sonnet adaptive chat turn
@@ -140,8 +164,11 @@ app/
       sessions/[id]/        # PATCH/DELETE — update or delete a session
 
 components/
-  Navbar.tsx                # Nav with theme toggle, mobile hamburger menu, signed-in links
-  ContextSelector.tsx       # Library picker — primary background + additional context
+  Navbar.tsx                # Hamburger nav (all screen sizes) — navigation + theme + feedback + tour
+  Footer.tsx                # Persistent footer — attribution + feedback shortcut
+  ContextSelector.tsx       # Library picker — primary background + additional context (all docs pre-selected)
+  FitAnalysisModal.tsx      # Reusable fit analysis modal — used on home page and dashboard cards
+  FeedbackModal.tsx         # Feedback form modal — general and bug report types
   PDFPreviewModal.tsx       # PDF preview modal — BlobProvider iframe, dynamically imported (ssr: false)
   TourGuide.tsx             # driver.js onboarding tour; exports startTour() for replay
 
@@ -153,14 +180,18 @@ lib/
 types/
   fit-analysis.ts           # FitAnalysis, FitPoint, OverallFit, RoleType
   resume.ts                 # ResumeItem, ItemType, ITEM_TYPE_LABELS
-  database.ts               # Full Supabase Database interface (users, resumes, applications, interview_sessions)
+  database.ts               # Full Supabase Database interface (users, resumes, applications, interview_sessions, feedback)
 
-supabase/migrations/        # SQL migration files (001–008)
+supabase/migrations/        # SQL migration files (001–009)
+
+.env.local.example          # All required environment variables with comments
 ```
 
 ---
 
 ## Environment Variables
+
+See `.env.local.example` for the full list. Required:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
@@ -168,6 +199,12 @@ NEXT_PUBLIC_SUPABASE_SERVICE_KEY=   # Service role key (not anon)
 ANTHROPIC_API_KEY=
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
 CLERK_SECRET_KEY=
+```
+
+Optional (for email delivery of feedback submissions):
+```env
+RESEND_API_KEY=
+FEEDBACK_EMAIL=
 ```
 
 ---

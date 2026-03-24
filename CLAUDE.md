@@ -145,8 +145,10 @@ const { SONNET, HAIKU } = await getModels();
 - `ApplicationItem` type exported from `app/dashboard/page.tsx`, imported by `ApplicationList`
 - Multi-select bulk delete via checkboxes; single delete via trash icon on each card
 - Data fetched server-side in `DashboardPage`, passed to `ApplicationList` as `initialItems`
+- `ApplicationCard` shows a `Lightbulb` icon (yellow = active, slate = disabled) — active when `fit_analysis` is non-null, opens `FitAnalysisModal`
 - `ApplicationCard` shows a `MessageSquare` icon if `question_answers` exist — opens a full-screen modal with Q&A list, word count per answer, and copy buttons
 - `ApplicationCard` has Eye icon preview buttons alongside each download button — fetches application content via `GET /api/applications/[id]` on first click, caches for subsequent previews
+- `components/FitAnalysisModal.tsx` — reusable modal used on both home page (with `actions` slot for Generate/Start Over) and dashboard cards; handles Escape key, backdrop click, graceful fallback if data malformed
 
 ## Resume Generation — Output Format
 
