@@ -50,14 +50,14 @@ interface ParsedResume {
 }
 
 function makeStyles(compact: boolean) {
-  const s = compact ? 0.85 : 1; // 15% reduction when compact
+  const s = compact ? 0.85 : 1;
   const r = (v: number) => Math.round(v * s);
 
   return StyleSheet.create({
     page: {
       flexDirection: 'column',
       backgroundColor: '#ffffff',
-      padding: 54, // 0.75 inches = 54 points
+      padding: 54,
       fontFamily: 'Helvetica',
       fontSize: 10,
       lineHeight: 1.3,
@@ -91,26 +91,27 @@ function makeStyles(compact: boolean) {
       textAlign: 'justify',
     },
     experienceGroup: {
-      marginBottom: r(10),
+      marginBottom: r(8),
     },
     companyLine: {
       fontSize: 10,
-      marginBottom: r(3),
+      fontFamily: 'Helvetica-Bold',
+      marginBottom: r(2),
     },
     roleEntry: {
-      marginBottom: r(6),
+      marginBottom: r(5),
     },
     additionalRoleEntry: {
-      marginTop: r(4),
-      marginBottom: r(6),
+      marginTop: r(3),
+      marginBottom: r(5),
     },
     jobHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      marginBottom: r(3),
+      marginBottom: r(2),
     },
     jobTitle: {
-      fontSize: 11,
+      fontSize: 10,
       fontFamily: 'Helvetica-Bold',
     },
     jobDates: {
@@ -124,14 +125,11 @@ function makeStyles(compact: boolean) {
     },
     skillsList: {
       fontSize: 10,
-      marginBottom: r(5),
+      marginBottom: 4,
+      lineHeight: 1.3,
     },
     educationItem: {
-      marginBottom: r(5),
-    },
-    educationHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
+      marginBottom: 6,
     },
     degree: {
       fontSize: 11,
@@ -189,33 +187,48 @@ function parseResumeText(resumeText: string): ParsedResume {
           const parts = line.split(' | ');
 
           if (parts.length >= 3) {
-            // Pattern A — new company: "Company | Location | Dates"
+            // Legacy format backward compat: "Company | Location | Dates"
+            // Start a new company group; dates roll into first role for fallback display
             if (currentGroup) parsed.experience.push(currentGroup);
             currentGroup = {
               company: parts[0].trim(),
               location: parts[1].trim(),
-              roles: [{
-                title: '',
-                dates: parts.slice(2).join(' | ').trim(),
-                bulletPoints: [],
-              }],
+              roles: [{ title: '', dates: parts.slice(2).join(' | ').trim(), bulletPoints: [] }],
             };
-          } else if (parts.length === 2 && looksLikeDateRange(parts[1]) && currentGroup) {
-            // Pattern B — additional role at same company: "Title | Dates"
-            currentGroup.roles.push({
-              title: parts[0].trim(),
-              dates: parts[1].trim(),
-              bulletPoints: [],
-            });
+          } else if (parts.length === 2) {
+            if (looksLikeDateRange(parts[1])) {
+              // New format role line: "Job Title | Dates"
+              if (currentGroup) {
+                // If there's an empty-title placeholder (from legacy 3-part company line), fill it
+                const last = currentGroup.roles[currentGroup.roles.length - 1];
+                if (last && !last.title) {
+                  last.title = parts[0].trim();
+                  // Keep the dates from the company line if we don't have per-role dates yet
+                  if (!last.dates) last.dates = parts[1].trim();
+                  else last.dates = parts[1].trim(); // prefer per-role dates
+                } else {
+                  currentGroup.roles.push({ title: parts[0].trim(), dates: parts[1].trim(), bulletPoints: [] });
+                }
+              }
+            } else {
+              // New format company line: "Company | Location"
+              if (currentGroup) parsed.experience.push(currentGroup);
+              currentGroup = { company: parts[0].trim(), location: parts[1].trim(), roles: [] };
+            }
           }
-        } else if (line.startsWith('•') && currentGroup?.roles.length) {
-          // Bullet point for the current (last) role
+        } else if ((line.startsWith('•') || line.startsWith('-')) && currentGroup?.roles.length) {
+          // Bullet point — strip leading • or -
           const lastRole = currentGroup.roles[currentGroup.roles.length - 1];
-          lastRole.bulletPoints.push(line.replace('•', '').trim());
-        } else if (currentGroup?.roles.length) {
-          // Plain line — job title for the latest role if it doesn't have one yet
-          const lastRole = currentGroup.roles[currentGroup.roles.length - 1];
-          if (!lastRole.title) lastRole.title = line;
+          lastRole.bulletPoints.push(line.replace(/^[•\-]\s*/, '').trim());
+        } else if (currentGroup) {
+          // Plain line — job title for the latest role if it has no title yet,
+          // or start a new title-only role if no roles exist yet
+          if (currentGroup.roles.length === 0) {
+            currentGroup.roles.push({ title: line, dates: '', bulletPoints: [] });
+          } else {
+            const lastRole = currentGroup.roles[currentGroup.roles.length - 1];
+            if (!lastRole.title) lastRole.title = line;
+          }
         }
         break;
       }
@@ -291,11 +304,11 @@ export default function ResumePDF({ resumeText, candidateName, company, jobTitle
             <Text style={styles.sectionTitle}>Experience</Text>
             {parsed.experience.map((group, groupIndex) => (
               <View key={groupIndex} style={styles.experienceGroup}>
-                {/* Company name + location — shown once per company */}
+                {/* Company name + location — bold, no dates */}
                 <Text style={styles.companyLine}>
                   {group.company}{group.location ? ` | ${group.location}` : ''}
                 </Text>
-                {/* All roles at this company */}
+                {/* Roles — each with title + dates on same line */}
                 {group.roles.map((role, roleIndex) => (
                   <View key={roleIndex} style={roleIndex === 0 ? styles.roleEntry : styles.additionalRoleEntry}>
                     <View style={styles.jobHeader}>

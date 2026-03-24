@@ -148,10 +148,34 @@ const { SONNET, HAIKU } = await getModels();
 - `ApplicationCard` shows a `MessageSquare` icon if `question_answers` exist — opens a full-screen modal with Q&A list, word count per answer, and copy buttons
 - `ApplicationCard` has Eye icon preview buttons alongside each download button — fetches application content via `GET /api/applications/[id]` on first click, caches for subsequent previews
 
+## Resume Generation — Output Format
+
+The EXPERIENCE section format is strict. **Dates go on the role line, never on the company line.**
+
+```
+[Company Name] | [City, State]
+[Job Title] | [Start Month Year] – [End Month Year or Present]
+• bullet
+• bullet
+
+[Next Job Title] | [Dates]        ← additional role at same company, no company repeat
+• bullet
+
+[Next Company] | [City, State]
+[Job Title] | [Dates]
+• bullet
+```
+
+The PDF parser (`lib/pdf/ResumePDF.tsx`) detects:
+- **Company line**: `X | Y` where Y does **not** match `/(\d{4}|Present|Current)/i`
+- **Role line**: `X | Y` where Y **does** match that pattern
+- **Backward compat**: 3-part `Company | Location | Dates` is accepted; dates move to first role
+
 ## Resume Generation — Bullet Point Rules
 
 These rules are baked into the generation prompt and must be preserved whenever the prompt is edited:
 
+- **Max 180 chars per bullet** — if it runs long, split into two bullets rather than wrapping to a third line
 - **No repeated action verbs** — never use the same opening verb more than once within a single role's bullets. Scan all bullets for that role before writing. Synonyms: Built → Engineered, Developed, Created, Designed, Shipped, Delivered, Launched, Implemented, Deployed, Authored; Led → Managed, Directed, Oversaw, Guided, Mentored, Headed; Improved → Reduced, Increased, Accelerated, Optimized, Streamlined, Elevated, Boosted
 - **No hedging on leadership** — words like "Informally", "Somewhat", "Partially", "Helped with", "Assisted in leading" undermine the candidate. If they led, they led. Reframe confidently: "Informally led a team" → "Managed a team of 2 engineers"; "Helped lead" → "Co-led" or just "Led"
 
