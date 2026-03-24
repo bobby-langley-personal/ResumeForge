@@ -6,6 +6,49 @@ import 'driver.js/dist/driver.css';
 
 const TOUR_KEY = 'resumeforge_tour_completed';
 
+// ── Arrow injection helpers ───────────────────────────────────────────────────
+
+let arrowEl: HTMLElement | null = null;
+
+function showArrow(targetId: string, direction: 'up' | 'down' | 'left' | 'right' = 'down') {
+  hideArrow();
+  // Small delay so driver.js finishes scrolling before we measure
+  setTimeout(() => {
+    const target = document.getElementById(targetId);
+    if (!target) return;
+
+    const rect = target.getBoundingClientRect();
+    const el = document.createElement('div');
+    el.className = 'tour-field-arrow';
+
+    const arrows = { up: '↑', down: '↓', left: '←', right: '→' };
+    el.textContent = arrows[direction];
+
+    if (direction === 'down') {
+      el.style.left = `${rect.left + rect.width / 2 - 11}px`;
+      el.style.top  = `${rect.top - 34}px`;
+    } else if (direction === 'up') {
+      el.style.left = `${rect.left + rect.width / 2 - 11}px`;
+      el.style.top  = `${rect.bottom + 8}px`;
+    } else if (direction === 'right') {
+      el.style.left = `${rect.left - 34}px`;
+      el.style.top  = `${rect.top + rect.height / 2 - 11}px`;
+    } else {
+      el.style.left = `${rect.right + 8}px`;
+      el.style.top  = `${rect.top + rect.height / 2 - 11}px`;
+    }
+
+    document.body.appendChild(el);
+    arrowEl = el;
+  }, 120);
+}
+
+function hideArrow() {
+  if (arrowEl) { arrowEl.remove(); arrowEl = null; }
+}
+
+// ── Tour definition ───────────────────────────────────────────────────────────
+
 export function startTour() {
   const driverObj = driver({
     showProgress: true,
@@ -18,6 +61,7 @@ export function startTour() {
     stageRadius: 8,
     popoverClass: 'resumeforge-tour',
     onDestroyStarted: () => {
+      hideArrow();
       localStorage.setItem(TOUR_KEY, 'true');
       driverObj.destroy();
     },
@@ -37,10 +81,12 @@ export function startTour() {
         popover: {
           title: 'Enter the role details',
           description:
-            'Fill in the company name, job title, and job description for the role you\'re applying to. Paste the job description and ResumeForge will try to auto-fill Company and Title — not always perfect, so double-check.',
+            'Fill in the company name, job title, and paste the full job description. Paste the JD first — ResumeForge will try to auto-fill Company and Title, so just double-check.',
           side: 'right',
           align: 'start',
         },
+        onHighlightStarted: () => showArrow('jobDescription', 'down'),
+        onDeselected: hideArrow,
       },
       {
         element: '#tour-background',
@@ -51,6 +97,8 @@ export function startTour() {
           side: 'left',
           align: 'start',
         },
+        onHighlightStarted: () => showArrow('tour-upload-btn', 'down'),
+        onDeselected: hideArrow,
       },
       {
         element: '#tour-context',
@@ -61,6 +109,8 @@ export function startTour() {
           side: 'left',
           align: 'start',
         },
+        onHighlightStarted: () => showArrow('tour-context', 'up'),
+        onDeselected: hideArrow,
       },
       {
         element: '#tour-questions',
@@ -71,6 +121,8 @@ export function startTour() {
           side: 'top',
           align: 'start',
         },
+        onHighlightStarted: () => showArrow('tour-questions', 'down'),
+        onDeselected: hideArrow,
       },
       {
         element: '#tour-generate',
@@ -81,16 +133,20 @@ export function startTour() {
           side: 'top',
           align: 'center',
         },
+        onHighlightStarted: () => showArrow('tour-generate', 'down'),
+        onDeselected: hideArrow,
       },
       {
-        element: '#tour-my-documents',
+        element: '#tour-nav',
         popover: {
-          title: 'First — upload your resume here',
+          title: 'Navigate from here',
           description:
-            'Save your resume (and any other documents) to My Documents. Your default resume auto-loads every time you come back, so you never have to paste it again.',
+            'Use this menu to get around — Tailor New Resume brings you back here, AI Resumes shows your saved applications, and My Documents is where you store your resume and other context files so they auto-load every time.',
           side: 'bottom',
-          align: 'start',
+          align: 'end',
         },
+        onHighlightStarted: () => showArrow('tour-nav', 'up'),
+        onDeselected: hideArrow,
       },
     ],
   });
@@ -103,7 +159,6 @@ export default function TourGuide() {
     const completed = localStorage.getItem(TOUR_KEY);
     if (completed === 'true') return;
 
-    // Small delay so the page renders fully before the tour starts
     const timer = setTimeout(() => startTour(), 800);
     return () => clearTimeout(timer);
   }, []);

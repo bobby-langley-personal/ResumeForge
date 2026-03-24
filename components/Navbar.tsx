@@ -74,7 +74,7 @@ export default function Navbar() {
           <div className="flex items-center gap-2">
             <SignedIn>
               {/* Hamburger + dropdown anchored to this button */}
-              <div className="relative">
+              <div id="tour-nav" className="relative">
                 <button
                   onClick={() => setMenuOpen(v => !v)}
                   className="p-2 rounded-md text-muted-foreground hover:text-foreground transition-colors"

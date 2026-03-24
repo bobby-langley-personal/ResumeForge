@@ -74,6 +74,35 @@
   }
 }
 
+/* driver.js tour — pulsing ring on highlighted element */
+.driver-highlighted-element {
+  outline: 2px solid rgba(99, 155, 230, 0.8) !important;
+  outline-offset: 4px !important;
+  border-radius: 8px !important;
+  animation: tour-ring-pulse 1.8s ease-in-out infinite !important;
+}
+
+@keyframes tour-ring-pulse {
+  0%, 100% { outline-color: rgba(99, 155, 230, 0.4); }
+  50%       { outline-color: rgba(99, 155, 230, 1); }
+}
+
+/* Injected field arrow indicator */
+.tour-field-arrow {
+  position: fixed;
+  z-index: 100000;
+  pointer-events: none;
+  color: rgb(99, 155, 230);
+  font-size: 36px;
+  line-height: 1;
+  animation: tour-arrow-bounce 0.9s ease-in-out infinite;
+}
+
+@keyframes tour-arrow-bounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-7px); }
+}
+
 /* driver.js tour — dark theme overrides */
 .resumeforge-tour.driver-popover {
   background-color: hsl(222 47% 11%);

@@ -5,7 +5,7 @@ import { supabaseServer } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import ApplicationList from './ApplicationList';
 import { Button } from '@/components/ui/button';
-import { FileSearch } from 'lucide-react';
+import { ArrowLeft, FileSearch } from 'lucide-react';
 
 export const metadata = { title: 'AI Resumes — ResumeForge' };
 
@@ -27,6 +27,10 @@ export default async function DashboardPage() {
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="mb-8">
+          <Link href="/" className="flex items-center gap-1.5 w-fit text-sm text-muted-foreground hover:text-foreground transition-colors mb-3">
+            <ArrowLeft className="w-4 h-4" />
+            Back to resume generator
+          </Link>
           <h2 className="text-2xl font-bold text-foreground">AI Resumes</h2>
         </div>
 
