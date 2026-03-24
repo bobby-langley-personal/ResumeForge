@@ -34,9 +34,19 @@ export default async function ResumesPage() {
               Saved resumes, cover letter examples, and other context artifacts
             </p>
           </div>
-          <Link href="/dashboard">
-            <Button variant="outline">AI Resumes</Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/interview">
+              <Button variant="outline" className="relative">
+                Build experience doc →
+                <span className="absolute -top-2 -right-2 text-[9px] font-semibold uppercase tracking-wide bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full leading-none">
+                  Beta
+                </span>
+              </Button>
+            </Link>
+            <Link href="/dashboard">
+              <Button variant="outline">AI Resumes</Button>
+            </Link>
+          </div>
         </div>
         <ResumeLibrary initialItems={(data ?? []) as unknown as ResumeItem[]} />
       </main>

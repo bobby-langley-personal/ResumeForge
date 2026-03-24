@@ -137,6 +137,36 @@ Exported from `app/dashboard/page.tsx`:
 
 ---
 
+## Interview Types (`app/interview/`)
+
+### `InterviewAnswer`
+```typescript
+{
+  question: string   // the question text
+  answer: string     // the user's response
+}
+```
+
+### `InterviewRole`
+```typescript
+{
+  company: string
+  title: string
+  startDate: string
+  endDate: string
+  answers: InterviewAnswer[]
+}
+```
+
+### `InterviewGenerateRequest`
+```typescript
+{
+  roles: InterviewRole[]
+}
+```
+
+---
+
 ## Model Types (`lib/models.ts`)
 
 ### Current model IDs
