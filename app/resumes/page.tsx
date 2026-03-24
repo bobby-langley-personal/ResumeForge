@@ -36,7 +36,12 @@ export default async function ResumesPage() {
           </div>
           <div className="flex items-center gap-2">
             <Link href="/interview">
-              <Button variant="outline">Build experience doc →</Button>
+              <Button variant="outline" className="relative">
+                Build experience doc →
+                <span className="absolute -top-2 -right-2 text-[9px] font-semibold uppercase tracking-wide bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full leading-none">
+                  Beta
+                </span>
+              </Button>
             </Link>
             <Link href="/dashboard">
               <Button variant="outline">AI Resumes</Button>
