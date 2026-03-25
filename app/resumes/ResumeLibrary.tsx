@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ResumeItem, ItemType, ITEM_TYPE_LABELS } from '@/types/resume';
 import { Plus, Trash2, Star, Pencil, Upload, X, Check } from 'lucide-react';
+import TipsPanel from '@/components/TipsPanel';
 
 interface Props {
   initialItems: ResumeItem[];
@@ -170,6 +171,8 @@ export default function ResumeLibrary({ initialItems }: Props) {
           </div>
         ))}
       </div>
+
+      <TipsPanel onUpload={openAdd} />
 
       {/* Add / Edit Modal */}
       {modal && (
