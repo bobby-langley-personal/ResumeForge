@@ -15,6 +15,7 @@ import { ResumeItem } from '@/types/resume';
 import ContextSelector from '@/components/ContextSelector';
 import TourGuide from '@/components/TourGuide';
 import FitAnalysisModal from '@/components/FitAnalysisModal';
+import { InterviewPrepSection } from '@/components/InterviewPrepPanel';
 
 const PDFPreviewModal = dynamic(() => import('@/components/PDFPreviewModal'), { ssr: false });
 
@@ -482,6 +483,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                   size="sm"
                   className="mt-2"
                   onClick={resetForm}
+                  title="Clear the error and start over"
                 >
                   Try Again
                 </Button>
@@ -497,10 +499,10 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                 onClose={resetForm}
                 actions={
                   <div id="tour-generate" className="flex flex-col sm:flex-row gap-3 pt-2">
-                    <Button size="lg" className="flex-1" onClick={handleGenerateDocuments}>
+                    <Button size="lg" className="flex-1" onClick={handleGenerateDocuments} title="Generate your tailored resume based on the fit analysis">
                       {includeCoverLetter ? 'Generate Resume & Cover Letter' : 'Generate Resume'}
                     </Button>
-                    <Button variant="outline" size="lg" onClick={resetForm}>Start Over</Button>
+                    <Button variant="outline" size="lg" onClick={resetForm} title="Discard and start over with a new job description">Start Over</Button>
                   </div>
                 }
               />
@@ -594,6 +596,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                             variant="outline"
                             onClick={handleFetchUrl}
                             disabled={!jobUrl.trim() || uiState === 'analyzing' || isFetchingUrl}
+                            title="Fetch and extract the job description from this URL"
                           >
                             {isFetchingUrl ? (
                               <span className="flex items-center gap-1.5">
@@ -617,6 +620,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                         type="button"
                         onClick={() => setQuestionsExpanded(e => !e)}
                         disabled={uiState === 'analyzing'}
+                        title="Add optional application questions to get AI-generated answers"
                         className="w-full flex items-center justify-between px-5 py-3.5 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
                       >
                         <span>
@@ -655,6 +659,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                                   type="button"
                                   onClick={() => removeQuestion(i)}
                                   disabled={uiState === 'analyzing'}
+                                  title={questions.length === 1 ? 'Clear this question' : 'Remove this question'}
                                   className="text-xs text-muted-foreground hover:text-destructive transition-colors"
                                 >
                                   {questions.length === 1 ? 'Clear' : 'Remove'}
@@ -675,6 +680,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                               type="button"
                               onClick={addQuestion}
                               disabled={uiState === 'analyzing'}
+                              title="Add another application question (max 5)"
                               className="text-sm text-primary hover:underline"
                             >
                               + Add another question
@@ -703,6 +709,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                         variant={inputMethod === 'upload' ? 'default' : 'outline'}
                         onClick={() => { setInputMethod('upload'); fileInputRef.current?.click(); }}
                         disabled={uiState === 'analyzing'}
+                        title="Upload a PDF or DOCX resume — text will be extracted automatically"
                         className="flex items-center space-x-2"
                       >
                         <Upload className="w-4 h-4" />
@@ -713,6 +720,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                         variant={inputMethod === 'manual' ? 'default' : 'outline'}
                         onClick={() => setInputMethod('manual')}
                         disabled={uiState === 'analyzing'}
+                        title="Paste your resume or work experience as plain text"
                         className="flex items-center space-x-2"
                       >
                         <FileText className="w-4 h-4" />
@@ -761,6 +769,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                                 size="sm"
                                 onClick={() => setIsPreviewExpanded(!isPreviewExpanded)}
                                 className="flex items-center space-x-1"
+                                title={isPreviewExpanded ? 'Collapse extracted text' : 'Expand to view and edit extracted text'}
                               >
                                 <span>{isPreviewExpanded ? 'Collapse' : 'Expand'}</span>
                                 {isPreviewExpanded ? (
@@ -943,6 +952,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                       size="lg"
                       onClick={() => handleDownload('resume')}
                       className="px-8"
+                      title="Download your tailored resume as a PDF"
                     >
                       Download Resume PDF
                     </Button>
@@ -961,6 +971,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                         size="lg"
                         onClick={() => handleDownload('cover-letter')}
                         className="px-8"
+                        title="Download your cover letter as a PDF"
                       >
                         Download Cover Letter PDF
                       </Button>
@@ -979,6 +990,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                   variant="outline"
                   onClick={resetForm}
                   className="mt-4"
+                  title="Clear all results and start a new resume from scratch"
                 >
                   Start Fresh
                 </Button>
@@ -998,12 +1010,14 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                     <button
                       onClick={handleSaveToDocuments}
                       className="flex-1 h-9 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                      title="Save this document to My Documents for future use"
                     >
                       Yes, save it
                     </button>
                     <button
                       onClick={() => { setShowSaveModal(false); setPendingSaveFile(null); }}
                       className="flex-1 h-9 rounded-md border border-border text-sm text-foreground hover:bg-muted transition-colors"
+                      title="Skip saving — you can always download directly"
                     >
                       No thanks
                     </button>
@@ -1041,6 +1055,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                   type="button"
                   onClick={() => setAnswersExpanded(e => !e)}
                   className="w-full flex items-center justify-between px-5 py-3.5 text-sm font-semibold text-foreground hover:bg-muted/50 transition-colors"
+                  title={answersExpanded ? 'Collapse application answers' : 'Expand to view AI-generated application answers'}
                 >
                   <span>Application Answers ({questionAnswers.length})</span>
                   <span className="text-muted-foreground">{answersExpanded ? '▲' : '▼'}</span>
@@ -1061,6 +1076,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                           type="button"
                           onClick={() => copyAnswer(qa.answer, i)}
                           className="text-xs text-primary hover:underline"
+                          title="Copy this answer to clipboard"
                         >
                           {copiedIdx === i ? 'Copied!' : 'Copy Answer'}
                         </button>
@@ -1069,6 +1085,18 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                   </div>
                 )}
               </div>
+            )}
+
+            {/* Interview Prep Section */}
+            {uiState === 'done' && applicationId && resumeContent && (
+              <InterviewPrepSection
+                applicationId={applicationId}
+                jobTitle={jobTitle}
+                company={company}
+                jobDescription={jobDescription}
+                generatedResume={resumeContent}
+                toughQuestions={questionAnswers.length > 0 ? questionAnswers.map(qa => qa.question) : undefined}
+              />
             )}
           </div>
         </SignedIn>

@@ -30,6 +30,7 @@ export default function Footer() {
           <button
             onClick={() => setOpen(true)}
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            title="Send feedback or report an issue"
           >
             <MessageSquare className="w-3.5 h-3.5" />
             Feedback

@@ -66,6 +66,7 @@ Display labels map: `{ resume: 'Resume', cover_letter: 'Cover Letter', portfolio
 | `fit_analysis` | Json \| null | Stored `FitAnalysis` object |
 | `questions` | Json \| null | `string[]` — pasted application questions |
 | `question_answers` | Json \| null | `ApplicationQuestion[]` — AI-generated answers |
+| `interview_prep` | Json \| null | Stored `InterviewPrep` object |
 | `created_at` | string | ISO timestamp |
 | `updated_at` | string | ISO timestamp |
 
@@ -156,6 +157,42 @@ Company | Location
   createdAt?: string        // ISO string — formatted as "Month D, YYYY" in modal header
   onClose: () => void
   actions?: React.ReactNode // optional slot — home page passes Generate/Start Over buttons
+}
+```
+
+---
+
+## Interview Prep Types (`types/interview-prep.ts`)
+
+### `InterviewQuestionCategory`
+`'technical' | 'behavioral' | 'motivation' | 'background' | 'situational' | 'curveball'`
+
+### `InterviewQuestion`
+```typescript
+{
+  category: InterviewQuestionCategory
+  question: string
+  hint: string[]          // 2–3 talking points grounded in the resume
+  resumeReference: string // direct quote or detail from the generated resume
+}
+```
+
+### `InterviewPrep`
+```typescript
+{
+  questions: InterviewQuestion[]  // always 8 questions across 6 categories
+}
+```
+
+### `InterviewPrepRequest`
+```typescript
+{
+  applicationId: string
+  jobTitle: string
+  company: string
+  jobDescription: string
+  generatedResume: string
+  toughQuestions?: string[]  // application question text, folded into prompt if present
 }
 ```
 

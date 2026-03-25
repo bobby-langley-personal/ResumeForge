@@ -71,6 +71,7 @@ Current valid columns:
 | `GET /api/applications/[id]` | Node | Fetch application content + candidateName for PDF preview |
 | `DELETE /api/applications` | Node | Bulk delete by `ids` array |
 | `DELETE /api/applications/[id]` | Node | Delete single resume record |
+| `POST /api/interview-prep` | Node | Haiku — generates 8 interview questions across 6 categories; saves to `applications.interview_prep`; returns `InterviewPrep` |
 | `POST /api/interview/generate` | Node | Sonnet non-streaming call — builds experience doc from interview transcript; returns `{ document: string }` |
 | `GET /api/interview/sessions` | Node | Fetch most recent `draft` session for current user; returns `{ session }` (null if none) |
 | `POST /api/interview/sessions` | Node | Create a new draft session; returns `{ id }` |
@@ -148,6 +149,8 @@ const { SONNET, HAIKU } = await getModels();
 - `ApplicationCard` shows a `Lightbulb` icon (yellow = active, slate = disabled) — active when `fit_analysis` is non-null, opens `FitAnalysisModal`
 - `ApplicationCard` shows a `MessageSquare` icon if `question_answers` exist — opens a full-screen modal with Q&A list, word count per answer, and copy buttons
 - `ApplicationCard` has Eye icon preview buttons alongside each download button — fetches application content via `GET /api/applications/[id]` on first click, caches for subsequent previews
+- `ApplicationCard` shows a `Target` icon (primary color = prep exists, muted = not yet generated) — clicking triggers `POST /api/interview-prep` if null, then opens `InterviewPrepPanel` in a modal
+- `ApplicationCard` shows a `ScrollText` icon — opens a modal with the formatted job description
 - `components/FitAnalysisModal.tsx` — reusable modal used on both home page (with `actions` slot for Generate/Start Over) and dashboard cards; handles Escape key, backdrop click, graceful fallback if data malformed
 
 ## Resume Generation — Output Format

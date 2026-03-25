@@ -104,6 +104,7 @@ export default function ContextSelector({ onLoadBackground, onAdditionalContextC
             onClick={() => setExpanded(v => !v)}
             disabled={disabled}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            title={expanded ? 'Hide additional context items' : 'Show additional context items to include in AI prompt'}
           >
             {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
             Additional context for AI ({additionalIds.size} selected)

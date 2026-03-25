@@ -118,7 +118,7 @@ export default function ResumeLibrary({ initialItems }: Props) {
     <div>
       <div className="flex items-center justify-between mb-6">
         <p className="text-sm text-muted-foreground">{items.length} saved item{items.length !== 1 ? 's' : ''}</p>
-        <Button onClick={openAdd}>
+        <Button onClick={openAdd} title="Add a new resume or document to your library">
           <Plus className="w-4 h-4 mr-2" />
           Add New
         </Button>
@@ -180,7 +180,7 @@ export default function ResumeLibrary({ initialItems }: Props) {
           <div className="bg-card border border-border rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between p-6 border-b border-border">
               <h2 className="text-lg font-semibold">{modal === 'add' ? 'Add New Item' : 'Edit Item'}</h2>
-              <button onClick={closeModal} className="text-muted-foreground hover:text-foreground">
+              <button onClick={closeModal} className="text-muted-foreground hover:text-foreground" title="Close without saving">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -234,8 +234,8 @@ export default function ResumeLibrary({ initialItems }: Props) {
             </div>
 
             <div className="p-6 border-t border-border flex justify-end gap-3">
-              <Button variant="outline" onClick={closeModal}>Cancel</Button>
-              <Button onClick={handleSave} disabled={saving}>
+              <Button variant="outline" onClick={closeModal} title="Discard changes and close">Cancel</Button>
+              <Button onClick={handleSave} disabled={saving} title="Save this document to My Documents">
                 <Check className="w-4 h-4 mr-2" />
                 {saving ? 'Saving…' : 'Save'}
               </Button>

@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
-import { FileText, Download, Trash2, MessageSquare, ScrollText, X, Eye, Lightbulb } from 'lucide-react';
+import { FileText, Download, Trash2, MessageSquare, ScrollText, Target, X, Eye, Lightbulb } from 'lucide-react';
 import FitAnalysisModal from '@/components/FitAnalysisModal';
+import InterviewPrepPanel from '@/components/InterviewPrepPanel';
 import { FitAnalysis } from '@/types/fit-analysis';
+import { InterviewPrep } from '@/types/interview-prep';
 
 const PDFPreviewModal = dynamic(() => import('@/components/PDFPreviewModal'), { ssr: false });
 
@@ -106,11 +108,15 @@ export default function ApplicationCard({
   const [showAnswers, setShowAnswers] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
   const [showJD, setShowJD] = useState(false);
+  const [showPrep, setShowPrep] = useState(false);
+  const [interviewPrep, setInterviewPrep] = useState<InterviewPrep | null>(null);
+  const [prepLoading, setPrepLoading] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [previewType, setPreviewType] = useState<'resume' | 'cover-letter' | null>(null);
   const [previewData, setPreviewData] = useState<{
     resumeContent: string | null;
     coverLetterContent: string | null;
+    interviewPrep: InterviewPrep | null;
     candidateName: string;
     company: string;
     jobTitle: string;
@@ -145,6 +151,86 @@ export default function ApplicationCard({
       setError('Preview failed. Please try again.');
     } finally {
       setLoadingPreview(false);
+    }
+  };
+
+  const handleOpenPrep = async () => {
+    setShowPrep(true);
+    if (interviewPrep) return;
+    setPrepLoading(true);
+    setError('');
+    try {
+      // Fetch application data (resume_content + any existing interview_prep)
+      let appData = previewData;
+      if (!appData) {
+        const res = await fetch(`/api/applications/${id}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        appData = await res.json();
+        setPreviewData(appData);
+      }
+      // Use existing prep if available
+      if (appData?.interviewPrep) {
+        setInterviewPrep(appData.interviewPrep as InterviewPrep);
+        setPrepLoading(false);
+        return;
+      }
+      const resumeContent = appData?.resumeContent;
+      if (!resumeContent) throw new Error('No resume content');
+      const res = await fetch('/api/interview-prep', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          applicationId: id,
+          jobTitle,
+          company,
+          jobDescription,
+          generatedResume: resumeContent,
+          toughQuestions: questionAnswers?.map(qa => qa.question),
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const prep: InterviewPrep = await res.json();
+      setInterviewPrep(prep);
+    } catch {
+      setError('Failed to generate interview prep. Please try again.');
+    } finally {
+      setPrepLoading(false);
+    }
+  };
+
+  const handleRegenPrep = async () => {
+    setPrepLoading(true);
+    setInterviewPrep(null);
+    setError('');
+    try {
+      let resumeContent = previewData?.resumeContent ?? null;
+      if (!resumeContent) {
+        const res = await fetch(`/api/applications/${id}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        setPreviewData(data);
+        resumeContent = data.resumeContent;
+      }
+      if (!resumeContent) throw new Error('No resume content');
+      const res = await fetch('/api/interview-prep', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          applicationId: id,
+          jobTitle,
+          company,
+          jobDescription,
+          generatedResume: resumeContent,
+          toughQuestions: questionAnswers?.map(qa => qa.question),
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const prep: InterviewPrep = await res.json();
+      setInterviewPrep(prep);
+    } catch {
+      setError('Failed to regenerate. Please try again.');
+    } finally {
+      setPrepLoading(false);
     }
   };
 
@@ -194,6 +280,14 @@ export default function ApplicationCard({
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <button
+            onClick={handleOpenPrep}
+            disabled={prepLoading}
+            className={`p-1 transition-colors ${interviewPrep ? 'text-primary hover:text-primary/80' : 'text-muted-foreground hover:text-foreground'}`}
+            title={interviewPrep ? 'View interview prep' : 'Generate interview prep'}
+          >
+            {prepLoading ? <span className="w-4 h-4 block animate-spin rounded-full border-2 border-current border-t-transparent" /> : <Target className="w-4 h-4" />}
+          </button>
+          <button
             onClick={() => setShowJD(true)}
             className="p-1 text-muted-foreground hover:text-foreground transition-colors"
             title="View job description"
@@ -238,7 +332,7 @@ export default function ApplicationCard({
                 <h3 className="font-semibold text-foreground">Application Answers</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">{company} — {jobTitle}</p>
               </div>
-              <button onClick={() => setShowAnswers(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+              <button onClick={() => setShowAnswers(false)} className="text-muted-foreground hover:text-foreground transition-colors" title="Close">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -253,6 +347,7 @@ export default function ApplicationCard({
                   <button
                     onClick={() => copyAnswer(qa.answer, i)}
                     className="text-xs text-primary hover:underline"
+                    title="Copy this answer to clipboard"
                   >
                     {copiedIdx === i ? 'Copied!' : 'Copy Answer'}
                   </button>
@@ -265,7 +360,7 @@ export default function ApplicationCard({
 
       <div className="flex flex-col gap-2 mt-auto">
         <div className="flex gap-2">
-          <Button size="sm" onClick={() => handleDownload('resume')} disabled={downloading !== null || loadingPreview} className="flex-1">
+          <Button size="sm" onClick={() => handleDownload('resume')} disabled={downloading !== null || loadingPreview} className="flex-1" title="Download resume as PDF">
             <Download className="w-3.5 h-3.5 mr-2" />
             {downloading === 'resume' ? 'Downloading…' : 'Resume'}
           </Button>
@@ -275,7 +370,7 @@ export default function ApplicationCard({
         </div>
         {hasCoverLetter && (
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => handleDownload('cover-letter')} disabled={downloading !== null || loadingPreview} className="flex-1">
+            <Button size="sm" variant="outline" onClick={() => handleDownload('cover-letter')} disabled={downloading !== null || loadingPreview} className="flex-1" title="Download cover letter as PDF">
               <Download className="w-3.5 h-3.5 mr-2" />
               {downloading === 'cover-letter' ? 'Downloading…' : 'Cover Letter'}
             </Button>
@@ -295,12 +390,40 @@ export default function ApplicationCard({
                 <h3 className="font-semibold text-foreground">Job Description</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">{company} — {jobTitle}</p>
               </div>
-              <button onClick={() => setShowJD(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+              <button onClick={() => setShowJD(false)} className="text-muted-foreground hover:text-foreground transition-colors" title="Close">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="px-5 py-4 overflow-y-auto flex-1">
               <FormattedJD text={jobDescription} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Interview Prep Modal */}
+      {showPrep && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowPrep(false)}>
+          <div className="bg-card border border-border rounded-xl shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+              <div>
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <Target className="w-4 h-4 text-primary" /> Interview Prep
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">{company} — {jobTitle}</p>
+              </div>
+              <button onClick={() => setShowPrep(false)} className="text-muted-foreground hover:text-foreground transition-colors" title="Close">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="px-5 py-4 overflow-y-auto flex-1">
+              <InterviewPrepPanel
+                prep={interviewPrep}
+                applicationId={id}
+                onRegenerate={handleRegenPrep}
+                regenerating={prepLoading}
+                loading={prepLoading && !interviewPrep}
+              />
             </div>
           </div>
         </div>

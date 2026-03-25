@@ -11,7 +11,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const supabase = supabaseServer();
   const { data: application, error } = await supabase
     .from('applications')
-    .select('id, user_id, company, job_title, resume_content, cover_letter_content')
+    .select('id, user_id, company, job_title, resume_content, cover_letter_content, interview_prep')
     .eq('id', id)
     .single();
 
@@ -26,6 +26,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     jobTitle: application.job_title,
     resumeContent: application.resume_content,
     coverLetterContent: application.cover_letter_content,
+    interviewPrep: application.interview_prep ?? null,
     candidateName,
   });
 }

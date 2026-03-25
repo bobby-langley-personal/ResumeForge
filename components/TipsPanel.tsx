@@ -165,6 +165,7 @@ function TipAccordion({ tip, onUpload }: { tip: Tip; onUpload: () => void }) {
       <button
         onClick={() => setOpen(v => !v)}
         className="flex items-center justify-between w-full px-4 py-3 text-left hover:bg-muted/40 transition-colors"
+        title={open ? `Collapse ${tip.title}` : `Expand ${tip.title}`}
       >
         <span className="flex items-center gap-2 text-sm font-medium text-foreground">
           <span>{tip.icon}</span>
@@ -179,7 +180,7 @@ function TipAccordion({ tip, onUpload }: { tip: Tip; onUpload: () => void }) {
         <div className="overflow-hidden">
           <div className="px-4 pb-4 pt-1 border-t border-border space-y-4">
             {tip.body}
-            <Button size="sm" variant="outline" onClick={onUpload}>
+            <Button size="sm" variant="outline" onClick={onUpload} title="Open the document upload dialog">
               <Plus className="w-3.5 h-3.5 mr-1.5" />
               Upload a document
             </Button>
@@ -198,6 +199,7 @@ export default function TipsPanel({ onUpload }: TipsPanelProps) {
       <button
         onClick={() => setPanelOpen(v => !v)}
         className="flex items-center justify-between w-full px-5 py-4 text-left hover:bg-muted/30 transition-colors"
+        title={panelOpen ? 'Hide tips' : 'Show tips for getting better results'}
       >
         <span className="flex items-center gap-2">
           <Lightbulb className="w-4 h-4 text-yellow-500" />

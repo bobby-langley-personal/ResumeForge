@@ -143,6 +143,7 @@ export interface Database {
           fit_analysis: unknown | null
           questions: unknown | null
           question_answers: unknown | null
+          interview_prep: unknown | null
           created_at: string
           updated_at: string
         }
@@ -160,6 +161,7 @@ export interface Database {
           fit_analysis?: unknown | null
           questions?: unknown | null
           question_answers?: unknown | null
+          interview_prep?: unknown | null
           created_at?: string
           updated_at?: string
         }
@@ -177,6 +179,7 @@ export interface Database {
           fit_analysis?: unknown | null
           questions?: unknown | null
           question_answers?: unknown | null
+          interview_prep?: unknown | null
           created_at?: string
           updated_at?: string
         }
