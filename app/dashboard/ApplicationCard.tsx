@@ -92,7 +92,6 @@ interface ApplicationCardProps {
   hasCoverLetter: boolean;
   questionAnswers: { question: string; answer: string }[] | null;
   fitAnalysis: FitAnalysis | null;
-  interviewPrep: InterviewPrep | null;
   selected: boolean;
   onToggleSelect: (id: string) => void;
   onDelete: (id: string) => void;
@@ -101,7 +100,7 @@ interface ApplicationCardProps {
 const wordCount = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
 
 export default function ApplicationCard({
-  id, company, jobTitle, jobDescription, createdAt, hasCoverLetter, questionAnswers, fitAnalysis, interviewPrep: initialInterviewPrep,
+  id, company, jobTitle, jobDescription, createdAt, hasCoverLetter, questionAnswers, fitAnalysis,
   selected, onToggleSelect, onDelete,
 }: ApplicationCardProps) {
   const [downloading, setDownloading] = useState<'resume' | 'cover-letter' | null>(null);
@@ -110,13 +109,14 @@ export default function ApplicationCard({
   const [showInsights, setShowInsights] = useState(false);
   const [showJD, setShowJD] = useState(false);
   const [showPrep, setShowPrep] = useState(false);
-  const [interviewPrep, setInterviewPrep] = useState<InterviewPrep | null>(initialInterviewPrep);
+  const [interviewPrep, setInterviewPrep] = useState<InterviewPrep | null>(null);
   const [prepLoading, setPrepLoading] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [previewType, setPreviewType] = useState<'resume' | 'cover-letter' | null>(null);
   const [previewData, setPreviewData] = useState<{
     resumeContent: string | null;
     coverLetterContent: string | null;
+    interviewPrep: InterviewPrep | null;
     candidateName: string;
     company: string;
     jobTitle: string;
@@ -156,18 +156,25 @@ export default function ApplicationCard({
 
   const handleOpenPrep = async () => {
     if (interviewPrep) { setShowPrep(true); return; }
-    // Need resume content to generate — fetch it then call interview-prep
     setPrepLoading(true);
     setError('');
     try {
-      let resumeContent = previewData?.resumeContent ?? null;
-      if (!resumeContent) {
+      // Fetch application data (resume_content + any existing interview_prep)
+      let appData = previewData;
+      if (!appData) {
         const res = await fetch(`/api/applications/${id}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        setPreviewData(data);
-        resumeContent = data.resumeContent;
+        appData = await res.json();
+        setPreviewData(appData);
       }
+      // Use existing prep if available
+      if (appData?.interviewPrep) {
+        setInterviewPrep(appData.interviewPrep as InterviewPrep);
+        setShowPrep(true);
+        setPrepLoading(false);
+        return;
+      }
+      const resumeContent = appData?.resumeContent;
       if (!resumeContent) throw new Error('No resume content');
       const res = await fetch('/api/interview-prep', {
         method: 'POST',
