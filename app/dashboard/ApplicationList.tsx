@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Search, Trash2 } from 'lucide-react';
 import ApplicationCard from './ApplicationCard';
 import { ApplicationItem } from './page';
 
@@ -12,8 +13,17 @@ interface Props {
 
 export default function ApplicationList({ initialItems }: Props) {
   const [items, setItems] = useState<ApplicationItem[]>(initialItems);
+  const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter(i =>
+      i.company.toLowerCase().includes(q) || i.job_title.toLowerCase().includes(q)
+    );
+  }, [items, search]);
 
   const toggleSelect = (id: string) => {
     setSelected(prev => {
@@ -25,10 +35,10 @@ export default function ApplicationList({ initialItems }: Props) {
   };
 
   const toggleSelectAll = () => {
-    if (selected.size === items.length) {
+    if (selected.size === filtered.length && filtered.length > 0) {
       setSelected(new Set());
     } else {
-      setSelected(new Set(items.map(i => i.id)));
+      setSelected(new Set(filtered.map(i => i.id)));
     }
   };
 
@@ -58,13 +68,24 @@ export default function ApplicationList({ initialItems }: Props) {
 
   return (
     <div>
+      {/* Search */}
+      <div className="relative mb-5">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+        <Input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search by company or job title…"
+          className="pl-9"
+        />
+      </div>
+
       {/* Bulk action toolbar */}
       <div className="flex items-center gap-3 mb-4">
         <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none">
           <input
             type="checkbox"
             className="w-4 h-4 accent-primary"
-            checked={selected.size === items.length && items.length > 0}
+            checked={selected.size === filtered.length && filtered.length > 0}
             onChange={toggleSelectAll}
           />
           {selected.size > 0 ? `${selected.size} selected` : 'Select all'}
@@ -82,8 +103,12 @@ export default function ApplicationList({ initialItems }: Props) {
         )}
       </div>
 
+      {filtered.length === 0 && search && (
+        <p className="text-sm text-muted-foreground py-12 text-center">No resumes match "{search}"</p>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {items.map(app => (
+        {filtered.map(app => (
           <ApplicationCard
             key={app.id}
             id={app.id}
