@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { SignedIn, SignedOut, SignInButton, useUser } from '@clerk/nextjs';
 import dynamic from 'next/dynamic';
 import Navbar from '@/components/Navbar';
@@ -16,6 +16,7 @@ import ContextSelector from '@/components/ContextSelector';
 import TourGuide from '@/components/TourGuide';
 import FitAnalysisModal from '@/components/FitAnalysisModal';
 import { InterviewPrepSection } from '@/components/InterviewPrepPanel';
+import ResumeChatPanel from '@/components/ResumeChatPanel';
 
 const PDFPreviewModal = dynamic(() => import('@/components/PDFPreviewModal'), { ssr: false });
 
@@ -136,6 +137,14 @@ export default function Home() {
   const [pendingSaveFile, setPendingSaveFile] = useState<{ text: string; fileName: string } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const originalResumeRef = useRef('');
+
+  // Capture original resume text the first time generation completes
+  useEffect(() => {
+    if (uiState === 'done' && resumeContent && !originalResumeRef.current) {
+      originalResumeRef.current = resumeContent;
+    }
+  }, [uiState, resumeContent]);
 
   // Pre-generation refs — background generation starts 500ms after fit analysis
   type PreGenStatus = 'idle' | 'pending' | 'running' | 'done' | 'aborted';
@@ -498,6 +507,7 @@ export default function Home() {
     }
     preGenStatus.current = 'idle';
     preGenBuffer.current = { resume: '', coverLetter: '', answers: [], applicationId: null, lastStatus: '' };
+    originalResumeRef.current = '';
 
     setResetKey(k => k + 1);
     setUIState('idle');
@@ -1190,6 +1200,21 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                 jobDescription={jobDescription}
                 generatedResume={resumeContent}
                 toughQuestions={questionAnswers.length > 0 ? questionAnswers.map(qa => qa.question) : undefined}
+              />
+            )}
+
+            {/* Resume Chat */}
+            {uiState === 'done' && applicationId && resumeContent && (
+              <ResumeChatPanel
+                applicationId={applicationId}
+                currentResumeText={resumeContent}
+                originalResumeText={originalResumeRef.current}
+                coverLetterText={coverLetterContent || undefined}
+                jobDescription={jobDescription}
+                company={company}
+                jobTitle={jobTitle}
+                backgroundExperience={pendingFormData?.backgroundExperience}
+                onResumeUpdate={setResumeContent}
               />
             )}
           </div>

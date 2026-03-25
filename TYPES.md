@@ -67,6 +67,7 @@ Display labels map: `{ resume: 'Resume', cover_letter: 'Cover Letter', portfolio
 | `questions` | Json \| null | `string[]` — pasted application questions |
 | `question_answers` | Json \| null | `ApplicationQuestion[]` — AI-generated answers |
 | `interview_prep` | Json \| null | Stored `InterviewPrep` object |
+| `chat_history` | Json \| null | `ResumeChatMessage[]` — persisted chat turns |
 | `created_at` | string | ISO timestamp |
 | `updated_at` | string | ISO timestamp |
 
@@ -115,6 +116,44 @@ Company | Location
 {
   question: string   // original question text
   answer: string     // AI-generated answer
+}
+```
+
+---
+
+## Resume Chat Types (`components/ResumeChatPanel.tsx`, `app/api/resume-chat/route.ts`)
+
+### `ResumeChatMessage`
+```typescript
+{
+  role: 'user' | 'assistant'
+  content: string
+  type?: 'change' | 'answer'   // assistant messages only; 'change' = resume was updated
+}
+```
+
+### `ResumeChatRequest`
+```typescript
+{
+  applicationId: string
+  message: string
+  currentResumeText: string
+  originalResumeText: string
+  coverLetterText?: string
+  jobDescription: string
+  company: string
+  jobTitle: string
+  backgroundExperience: string
+  chatHistory: { role: 'user' | 'assistant'; content: string }[]  // last 10 turns
+}
+```
+
+### `ResumeChatResponse`
+```typescript
+{
+  type: 'change' | 'answer'
+  message: string           // change description or answer text
+  updatedResume?: string    // present only when type === 'change'
 }
 ```
 
