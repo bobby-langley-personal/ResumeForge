@@ -72,6 +72,7 @@ Current valid columns:
 | `DELETE /api/applications` | Node | Bulk delete by `ids` array |
 | `DELETE /api/applications/[id]` | Node | Delete single resume record |
 | `POST /api/interview-prep` | Node | Haiku — generates 8 interview questions across 6 categories; saves to `applications.interview_prep`; returns `InterviewPrep` |
+| `POST /api/log-event` | Node | Server-side event logging — writes JSON to Vercel function logs; always returns 200 |
 | `POST /api/interview/generate` | Node | Sonnet non-streaming call — builds experience doc from interview transcript; returns `{ document: string }` |
 | `GET /api/interview/sessions` | Node | Fetch most recent `draft` session for current user; returns `{ session }` (null if none) |
 | `POST /api/interview/sessions` | Node | Create a new draft session; returns `{ id }` |
@@ -143,6 +144,7 @@ const { SONNET, HAIKU } = await getModels();
 ## AI Resumes Dashboard (`/dashboard`)
 
 - No status editing — removed intentionally
+- ApplicationList has a search bar at the top — filters by company or job title using `useMemo`
 - `ApplicationItem` type exported from `app/dashboard/page.tsx`, imported by `ApplicationList`
 - Multi-select bulk delete via checkboxes; single delete via trash icon on each card
 - Data fetched server-side in `DashboardPage`, passed to `ApplicationList` as `initialItems`
@@ -150,7 +152,7 @@ const { SONNET, HAIKU } = await getModels();
 - `ApplicationCard` shows a `MessageSquare` icon if `question_answers` exist — opens a full-screen modal with Q&A list, word count per answer, and copy buttons
 - `ApplicationCard` has Eye icon preview buttons alongside each download button — fetches application content via `GET /api/applications/[id]` on first click, caches for subsequent previews
 - `ApplicationCard` shows a `Target` icon (primary color = prep exists, muted = not yet generated) — clicking triggers `POST /api/interview-prep` if null, then opens `InterviewPrepPanel` in a modal
-- `ApplicationCard` shows a `ScrollText` icon — opens a modal with the formatted job description
+- `ApplicationCard` shows a `ScrollText` icon — opens a modal with the formatted job description (`FormattedJD` component)
 - `components/FitAnalysisModal.tsx` — reusable modal used on both home page (with `actions` slot for Generate/Start Over) and dashboard cards; handles Escape key, backdrop click, graceful fallback if data malformed
 
 ## Resume Generation — Output Format
@@ -180,7 +182,7 @@ The PDF parser (`lib/pdf/ResumePDF.tsx`) detects:
 
 These rules are baked into the generation prompt and must be preserved whenever the prompt is edited:
 
-- **Bullet count by role seniority** — most recent/primary role 6–8; supporting roles 4–6; early career/less relevant roles 3–4. Every bullet must earn its place — don't pad to hit the max. Combine closely related work into one stronger bullet. Hard ceiling: 8.
+- **Bullet count by role seniority** — most recent/primary role 8–10; supporting roles 6–8; early career/less relevant roles 4–5. Aim for the higher end of each range — a well-written resume for a candidate with 4+ years of experience should fill 2 pages. Only combine bullets if truly redundant. Hard ceiling: 10 bullets per role.
 - **Max 180 chars per bullet** — if it runs long, split into two bullets rather than wrapping to a third line
 - **No repeated action verbs** — never use the same opening verb more than once within a single role's bullets. Scan all bullets for that role before writing. Synonyms: Built → Engineered, Developed, Created, Designed, Shipped, Delivered, Launched, Implemented, Deployed, Authored; Led → Managed, Directed, Oversaw, Guided, Mentored, Headed; Improved → Reduced, Increased, Accelerated, Optimized, Streamlined, Elevated, Boosted
 - **No hedging on leadership** — words like "Informally", "Somewhat", "Partially", "Helped with", "Assisted in leading" undermine the candidate. If they led, they led. Reframe confidently: "Informally led a team" → "Managed a team of 2 engineers"; "Helped lead" → "Co-led" or just "Led"

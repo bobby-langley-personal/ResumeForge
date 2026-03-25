@@ -25,7 +25,7 @@ After reviewing the fit analysis, the user approves generation. Claude Sonnet st
 
 ### 2a. Resume Bullet Point Rules
 The generation prompt enforces strict quality rules:
-- **Tiered bullet counts** — most recent/primary role 6–8 bullets; supporting roles 4–6; early career/less relevant roles 3–4; hard ceiling of 8 per role
+- **Tiered bullet counts** — most recent/primary role 8–10 bullets; supporting roles 6–8; early career/less relevant roles 4–5; hard ceiling of 10 per role; aim for the higher end — a candidate with 4+ years of experience should fill 2 pages
 - **180-character max per bullet** — long bullets are split rather than wrapped
 - **No repeated action verbs** — each bullet within a role must open with a unique verb
 - **No hedging on leadership** — "Informally led" becomes "Managed", "Helped lead" becomes "Co-led"
@@ -60,8 +60,12 @@ A personal library of saved context artifacts:
 ### 5. AI Resumes Dashboard
 Saves every generated resume to Supabase:
 - Card view with company, job title, and date
+- **Search bar** at the top — filter cards by company or job title in real time
+- **Target icon** — generates and displays AI interview prep (8 tailored questions with hints, resume references, and practiced tracking); opens immediately with skeleton loading UI while generating; saved to Supabase for future visits
+- **ScrollText icon** — opens a formatted job description modal with smart paragraph/bullet detection
 - **Lightbulb icon** (yellow = insights available, slate = none) — opens the Fit Analysis modal showing strengths, gaps, suggestions, and planned improvements from when the resume was generated
 - Download resume or cover letter as PDF
+- Eye icon next to each download button opens a **preview modal**
 - If the record has application question answers, a chat icon opens a modal showing each Q&A with word count and copy button
 - Multi-select checkboxes for bulk delete; trash icon for individual delete
 - **"← Back to resume generator"** link at the top for easy navigation
@@ -98,6 +102,24 @@ Users can submit feedback or bug reports at any time:
 - Two types: General and Bug Report
 - Submissions are saved to Supabase `feedback` table
 
+### 10. Interview Prep
+After a resume is generated (or from the AI Resumes dashboard), users can generate tailored interview prep:
+- **8 AI-generated questions** across 6 categories: Technical (2), Behavioral (2), Motivation (1), Background (1), Situational (1), Curveball (1)
+- Each question includes **2–3 answer hints** grounded in the actual resume content and a **resume reference** (direct quote from the generated resume)
+- **Skeleton loading UI** — modal opens immediately with 8 animated placeholder cards while Haiku generates, so users get instant feedback
+- **Practiced tracking** — toggle each question as practiced; state persists in `localStorage` keyed by `applicationId`
+- **Regenerate** — one-click regeneration of a fresh question set
+- Category badges are color-coded: Technical=blue, Behavioral=purple, Motivation=green, Background=slate, Situational=orange, Curveball=red
+- Available on the home page post-generation via a collapsible "Interview Prep" section, and on each card in the AI Resumes dashboard via the Target icon
+- Questions are saved to `applications.interview_prep` (JSONB) and loaded lazily to avoid breaking the dashboard if the migration hasn't run
+
+### 11. Versioning
+ResumeForge uses a CalVer-style version format: `{Major}.{YY}{M}.{DD}{H}` — e.g. `1.263.259` for version 1, March 2026, 25th day, 9am.
+- Version is computed at **build time** in `next.config.mjs` from the major version in `package.json` and the current date/time
+- Injected as `NEXT_PUBLIC_APP_VERSION` environment variable
+- Displayed in the Footer at 40% opacity
+- Major version bumps are manual (update `package.json`); minor/patch auto-update on every deploy
+
 ---
 
 ## Tech Stack
@@ -119,6 +141,7 @@ Users can submit feedback or bug reports at any time:
 - **Supabase singleton** — `supabaseServer()` returns a module-level singleton to avoid connection exhaustion on Vercel's serverless functions.
 - **Model cache** — `getModels()` caches Anthropic model IDs in memory for 1 hour with a hardcoded fallback, avoiding repeated API calls on every request.
 - **SSE streaming** — Document generation uses Server-Sent Events via the Edge runtime so the resume streams word-by-word to the UI.
+- **Pre-generation** — Resume generation begins 500ms after the user sees the fit analysis results, running in the background via refs (never touching state). When the user clicks "Generate", if generation is already complete the result appears instantly; if still running, it streams into the UI in real time.
 - **Fit analysis first** — Generation is always gated behind a fit review modal, so users see what the AI plans to change before committing. Fit analysis is saved with the application and accessible from the dashboard.
 - **Dark mode default** — Theme is toggled via a `dark` class on `<html>`, defaulting to dark. Preference persists in `localStorage`. An inline script in `layout.tsx` prevents flash of wrong theme on load. Theme toggle lives in the hamburger nav menu.
 - **Hamburger-only nav** — All navigation (Tailor New Resume, AI Resumes, My Documents) lives in the hamburger dropdown on all screen sizes. No always-visible nav links on desktop.
@@ -155,6 +178,8 @@ app/
     applications/           # DELETE bulk
     applications/[id]/      # GET single (for PDF preview) + DELETE single
     feedback/               # POST — save feedback to Supabase
+    interview-prep/         # POST — Haiku generates 8 interview questions; saves to applications.interview_prep
+    log-event/              # POST — Server-side analytics logging (Vercel function logs)
     interview/
       research/             # POST — Haiku company + role summary
       chat/                 # POST — Sonnet adaptive chat turn
@@ -171,6 +196,7 @@ components/
   FeedbackModal.tsx         # Feedback form modal — general and bug report types
   PDFPreviewModal.tsx       # PDF preview modal — BlobProvider iframe, dynamically imported (ssr: false)
   TourGuide.tsx             # driver.js onboarding tour; exports startTour() for replay
+  InterviewPrepPanel.tsx    # Interview prep UI — QuestionCard, SkeletonQuestionCard, InterviewPrepSection
 
 lib/
   supabase.ts               # Singleton Supabase client (service role)
@@ -181,8 +207,9 @@ types/
   fit-analysis.ts           # FitAnalysis, FitPoint, OverallFit, RoleType
   resume.ts                 # ResumeItem, ItemType, ITEM_TYPE_LABELS
   database.ts               # Full Supabase Database interface (users, resumes, applications, interview_sessions, feedback)
+  interview-prep.ts         # InterviewPrep, InterviewQuestion, InterviewQuestionCategory, InterviewPrepRequest
 
-supabase/migrations/        # SQL migration files (001–009)
+supabase/migrations/        # SQL migration files (001–010)
 
 .env.local.example          # All required environment variables with comments
 ```
