@@ -147,6 +147,18 @@ Company | Location
 }
 ```
 
+### `FitAnalysisModalProps`
+```typescript
+{
+  fitAnalysis: FitAnalysis
+  company: string
+  jobTitle: string
+  createdAt?: string        // ISO string — formatted as "Month D, YYYY" in modal header
+  onClose: () => void
+  actions?: React.ReactNode // optional slot — home page passes Generate/Start Over buttons
+}
+```
+
 ---
 
 ## Interview Types (`app/interview/`)

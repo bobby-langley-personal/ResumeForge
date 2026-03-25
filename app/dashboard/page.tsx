@@ -16,7 +16,7 @@ export default async function DashboardPage() {
   const supabase = supabaseServer();
   const { data: applications, error } = await supabase
     .from('applications')
-    .select('id, company, job_title, cover_letter_content, question_answers, created_at')
+    .select('id, company, job_title, cover_letter_content, question_answers, fit_analysis, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
@@ -58,5 +58,6 @@ export interface ApplicationItem {
   job_title: string;
   cover_letter_content: string | null;
   question_answers: { question: string; answer: string }[] | null;
+  fit_analysis: import('@/types/fit-analysis').FitAnalysis | null;
   created_at: string;
 }

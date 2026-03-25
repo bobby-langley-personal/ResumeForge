@@ -9,11 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { readSSEStream } from '@/lib/sse-reader';
-import { Upload, FileText, ChevronDown, ChevronUp, X, Loader2, Eye } from 'lucide-react';
+import { Upload, FileText, ChevronDown, ChevronUp, Loader2, Eye } from 'lucide-react';
 import { FitAnalysis } from '@/types/fit-analysis';
 import { ResumeItem } from '@/types/resume';
 import ContextSelector from '@/components/ContextSelector';
 import TourGuide from '@/components/TourGuide';
+import FitAnalysisModal from '@/components/FitAnalysisModal';
 
 const PDFPreviewModal = dynamic(() => import('@/components/PDFPreviewModal'), { ssr: false });
 
@@ -93,11 +94,6 @@ interface FormData {
   isFromUploadedFile?: boolean;
 }
 
-const FIT_COLORS: Record<string, string> = {
-  'Strong Fit': 'text-green-700 bg-green-50 border-green-200',
-  'Good Fit': 'text-blue-700 bg-blue-50 border-blue-200',
-  'Stretch Role': 'text-amber-700 bg-amber-50 border-amber-200',
-};
 
 export default function Home() {
   const { user } = useUser();
@@ -494,103 +490,20 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
 
             {/* Fit Analysis Modal */}
             {uiState === 'review' && fitAnalysis && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                <div className="bg-card border border-border rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                  <div className="p-6 space-y-6">
-                    {/* Modal Header */}
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h2 className="text-xl font-bold text-foreground">Fit Analysis</h2>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {pendingFormData?.jobTitle} at {pendingFormData?.company}
-                        </p>
-                      </div>
-                      <button
-                        onClick={resetForm}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
-
-                    {/* Overall Fit Badge */}
-                    <div className={`inline-flex items-center px-4 py-2 rounded-full border text-sm font-semibold ${FIT_COLORS[fitAnalysis.overallFit] ?? 'text-foreground bg-muted border-border'}`}>
-                      {fitAnalysis.overallFit}
-                    </div>
-
-                    {/* Strengths / Gaps / Suggestions */}
-                    <div className="grid grid-cols-1 gap-4">
-                      <div>
-                        <h3 className="text-sm font-semibold text-green-700 mb-2">Strengths</h3>
-                        <ul className="space-y-1">
-                          {fitAnalysis.strengths.map((s, i) => (
-                            <li key={i} className="text-sm text-muted-foreground flex gap-2">
-                              <span className="text-green-600 mt-0.5">✓</span>
-                              <span>{s.point}{s.source && <span className="ml-1 text-xs italic opacity-50">({s.source})</span>}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div>
-                        <h3 className="text-sm font-semibold text-red-700 mb-2">Gaps</h3>
-                        <ul className="space-y-1">
-                          {fitAnalysis.gaps.map((g, i) => (
-                            <li key={i} className="text-sm text-muted-foreground flex gap-2">
-                              <span className="text-red-500 mt-0.5">✗</span>
-                              <span>{g.point}{g.source && <span className="ml-1 text-xs italic opacity-50">({g.source})</span>}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div>
-                        <h3 className="text-sm font-semibold text-blue-700 mb-2">Suggestions</h3>
-                        <ul className="space-y-1">
-                          {fitAnalysis.suggestions.map((s, i) => (
-                            <li key={i} className="text-sm text-muted-foreground flex gap-2">
-                              <span className="text-blue-500 mt-0.5">→</span>
-                              <span>{s.point}{s.source && <span className="ml-1 text-xs italic opacity-50">({s.source})</span>}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {fitAnalysis.plannedImprovements?.length > 0 && (
-                        <div>
-                          <h3 className="text-sm font-semibold text-orange-600 mb-2">Planned Improvements</h3>
-                          <ul className="space-y-1">
-                            {fitAnalysis.plannedImprovements.map((p, i) => (
-                              <li key={i} className="text-sm text-muted-foreground flex gap-2">
-                                <span className="text-orange-500 mt-0.5">✦</span>
-                                <span>{p}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div id="tour-generate" className="flex flex-col sm:flex-row gap-3 pt-2">
-                      <Button
-                        size="lg"
-                        className="flex-1"
-                        onClick={handleGenerateDocuments}
-                      >
-                        {includeCoverLetter ? 'Generate Resume & Cover Letter' : 'Generate Resume'}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        onClick={resetForm}
-                      >
-                        Start Over
-                      </Button>
-                    </div>
+              <FitAnalysisModal
+                fitAnalysis={fitAnalysis}
+                company={pendingFormData?.company ?? ''}
+                jobTitle={pendingFormData?.jobTitle ?? ''}
+                onClose={resetForm}
+                actions={
+                  <div id="tour-generate" className="flex flex-col sm:flex-row gap-3 pt-2">
+                    <Button size="lg" className="flex-1" onClick={handleGenerateDocuments}>
+                      {includeCoverLetter ? 'Generate Resume & Cover Letter' : 'Generate Resume'}
+                    </Button>
+                    <Button variant="outline" size="lg" onClick={resetForm}>Start Over</Button>
                   </div>
-                </div>
-              </div>
+                }
+              />
             )}
 
             {/* Input Form */}

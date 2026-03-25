@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { BlobProvider } from '@react-pdf/renderer';
-import { X } from 'lucide-react';
+import { Download, X } from 'lucide-react';
 import ResumePDF from '@/lib/pdf/ResumePDF';
 import CoverLetterPDF from '@/lib/pdf/CoverLetterPDF';
 
@@ -27,6 +28,13 @@ type PDFPreviewModalProps = (ResumePreviewProps | CoverLetterPreviewProps) & {
 
 export default function PDFPreviewModal(props: PDFPreviewModalProps) {
   const { onClose } = props;
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+
+  const slug = (s: string) => s.replace(/[^a-zA-Z0-9]/g, '_');
+  const filename =
+    props.type === 'resume'
+      ? `Resume_${slug(props.company)}_${slug(props.jobTitle)}.pdf`
+      : `Cover_Letter_${slug(props.company)}_${slug(props.jobTitle)}.pdf`;
 
   const document =
     props.type === 'resume' ? (
@@ -58,16 +66,29 @@ export default function PDFPreviewModal(props: PDFPreviewModalProps) {
           <h3 className="font-semibold text-foreground">
             {props.type === 'resume' ? 'Resume Preview' : 'Cover Letter Preview'}
           </h3>
-          <button
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {blobUrl && (
+              <a
+                href={blobUrl}
+                download={filename}
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Download
+              </a>
+            )}
+            <button
+              onClick={onClose}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
         <div className="flex-1 overflow-hidden rounded-b-xl">
           <BlobProvider document={document}>
             {({ url, loading, error }) => {
+              if (url && url !== blobUrl) setBlobUrl(url);
               if (loading) {
                 return (
                   <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
