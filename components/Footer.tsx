@@ -23,6 +23,9 @@ export default function Footer() {
             >
               Bobby Langley
             </a>
+            {process.env.NEXT_PUBLIC_APP_VERSION && (
+              <span className="ml-2 opacity-40">v{process.env.NEXT_PUBLIC_APP_VERSION}</span>
+            )}
           </p>
           <button
             onClick={() => setOpen(true)}
