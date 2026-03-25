@@ -137,6 +137,13 @@ export default function Home() {
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Pre-generation refs — background generation starts 500ms after fit analysis
+  type PreGenStatus = 'idle' | 'pending' | 'running' | 'done' | 'aborted';
+  const preGenStatus = useRef<PreGenStatus>('idle');
+  const preGenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const preGenAbort = useRef<AbortController | null>(null);
+  const preGenBuffer = useRef({ resume: '', coverLetter: '', answers: [] as { question: string; answer: string }[], applicationId: null as string | null, lastStatus: '' });
+
   const fillTestData = () => {
     setInputMethod('manual');
     setCompany('Kforce / Fintech Client');
@@ -293,6 +300,10 @@ export default function Home() {
       const analysis: FitAnalysis = await response.json();
       setFitAnalysis(analysis);
       setUIState('review');
+
+      // Schedule background generation — starts 500ms after user sees fit analysis
+      preGenStatus.current = 'pending';
+      preGenTimer.current = setTimeout(() => runPreGeneration(data, analysis), 500);
     } catch (error) {
       console.error('Analysis failed:', error);
       setErrorMessage('Failed to analyze fit. Please try again.');
@@ -300,14 +311,89 @@ export default function Home() {
     }
   };
 
+  // Runs in background after fit analysis — writes to refs, never touches state
+  const runPreGeneration = async (formData: typeof pendingFormData, analysis: FitAnalysis) => {
+    if (preGenStatus.current !== 'pending') return;
+    preGenStatus.current = 'running';
+    preGenAbort.current = new AbortController();
+    preGenBuffer.current = { resume: '', coverLetter: '', answers: [], applicationId: null, lastStatus: '' };
+
+    try {
+      const response = await fetch('/api/generate-documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, fitAnalysis: analysis, includeCoverLetter, includeSummary, jobUrl: jobUrl.trim() || undefined, additionalContext: additionalContext.map(i => ({ title: i.title, type: i.item_type, text: i.content.text })), questions: questions.filter(q => q.trim()), shortResponse }),
+        signal: preGenAbort.current.signal,
+      });
+      if (!response.ok) { preGenStatus.current = 'aborted'; return; }
+
+      for await (const chunk of readSSEStream(response)) {
+        if (preGenStatus.current === 'aborted') break;
+        try {
+          const event = JSON.parse(chunk);
+          switch (event.type) {
+            case 'status': preGenBuffer.current.lastStatus = event.message; break;
+            case 'resume_chunk': preGenBuffer.current.resume += event.content; break;
+            case 'cover_letter_chunk': preGenBuffer.current.coverLetter += event.content; break;
+            case 'questions_done': preGenBuffer.current.answers = event.answers ?? []; break;
+            case 'done':
+              preGenBuffer.current.applicationId = event.applicationId ?? null;
+              preGenStatus.current = 'done';
+              break;
+            case 'error': preGenStatus.current = 'aborted'; break;
+          }
+        } catch { /* ignore parse errors */ }
+      }
+    } catch {
+      if (preGenStatus.current !== 'aborted') preGenStatus.current = 'aborted';
+    }
+  };
+
   const handleGenerateDocuments = async () => {
     if (!pendingFormData || !fitAnalysis) return;
+
+    if (preGenTimer.current) { clearTimeout(preGenTimer.current); preGenTimer.current = null; }
 
     setUIState('generating');
     setStatusMessage('Starting generation...');
     setResumeContent('');
     setCoverLetterContent('');
     setQuestionAnswers([]);
+
+    // Pre-gen already finished — use buffer instantly
+    if (preGenStatus.current === 'done') {
+      setResumeContent(preGenBuffer.current.resume);
+      setCoverLetterContent(preGenBuffer.current.coverLetter);
+      setQuestionAnswers(preGenBuffer.current.answers);
+      if (preGenBuffer.current.applicationId) setApplicationId(preGenBuffer.current.applicationId);
+      setStatusMessage('Generation complete!');
+      setUIState('done');
+      return;
+    }
+
+    // Pre-gen is mid-stream — poll buffer into state until done
+    if (preGenStatus.current === 'running') {
+      const poll = setInterval(() => {
+        setResumeContent(preGenBuffer.current.resume);
+        setCoverLetterContent(preGenBuffer.current.coverLetter);
+        if (preGenBuffer.current.lastStatus) setStatusMessage(preGenBuffer.current.lastStatus);
+        if (preGenStatus.current === 'done') {
+          clearInterval(poll);
+          setQuestionAnswers(preGenBuffer.current.answers);
+          if (preGenBuffer.current.applicationId) setApplicationId(preGenBuffer.current.applicationId);
+          setStatusMessage('Generation complete!');
+          setUIState('done');
+        } else if (preGenStatus.current === 'aborted') {
+          clearInterval(poll);
+          setErrorMessage('Generation failed. Please try again.');
+          setUIState('error');
+        }
+      }, 50);
+      return;
+    }
+
+    // Pre-gen not started or aborted — fall through to normal generation
+    preGenStatus.current = 'aborted';
 
     try {
       const response = await fetch('/api/generate-documents', {
@@ -405,6 +491,14 @@ export default function Home() {
   };
 
   const resetForm = () => {
+    if (preGenTimer.current) { clearTimeout(preGenTimer.current); preGenTimer.current = null; }
+    if (preGenStatus.current === 'pending' || preGenStatus.current === 'running') {
+      preGenAbort.current?.abort();
+      fetch('/api/log-event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'fit_analysis_abandoned', preGenStatus: preGenStatus.current }) }).catch(() => {});
+    }
+    preGenStatus.current = 'idle';
+    preGenBuffer.current = { resume: '', coverLetter: '', answers: [], applicationId: null, lastStatus: '' };
+
     setResetKey(k => k + 1);
     setUIState('idle');
     setStatusMessage('');
