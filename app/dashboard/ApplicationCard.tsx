@@ -3,16 +3,89 @@
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
-import { FileText, Download, Trash2, MessageSquare, X, Eye, Lightbulb } from 'lucide-react';
+import { FileText, Download, Trash2, MessageSquare, ScrollText, X, Eye, Lightbulb } from 'lucide-react';
 import FitAnalysisModal from '@/components/FitAnalysisModal';
 import { FitAnalysis } from '@/types/fit-analysis';
 
 const PDFPreviewModal = dynamic(() => import('@/components/PDFPreviewModal'), { ssr: false });
 
+function FormattedJD({ text }: { text: string }) {
+  // Each </p>, </div>, </h*> becomes \n during scraping; \n\n = real block boundary.
+  // Trim lines, collapse 3+ newlines, then split on those real boundaries.
+  const blocks = text
+    .split('\n')
+    .map(l => l.trimEnd())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+    .split(/\n\n+/)
+    .filter(b => b.trim());
+
+  const bulletRe = /^[\u2022\-\*\u25e6\u2013]|\d+\.\s/;
+
+  return (
+    <div className="space-y-4 text-sm">
+      {blocks.map((block, i) => {
+        const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+        if (!lines.length) return null;
+
+        // Section header: single short line ending with colon, or short all-caps
+        if (
+          lines.length === 1 &&
+          lines[0].length < 80 &&
+          (lines[0].endsWith(':') || lines[0] === lines[0].toUpperCase())
+        ) {
+          return <p key={i} className="font-semibold text-foreground pt-1">{lines[0]}</p>;
+        }
+
+        // Separate bullet lines from prose lines within this block
+        const bulletLines = lines.filter(l => bulletRe.test(l));
+        const proseLines  = lines.filter(l => !bulletRe.test(l));
+
+        // Pure bullet block
+        if (bulletLines.length === lines.length) {
+          return (
+            <ul key={i} className="space-y-1 pl-1">
+              {lines.map((l, j) => (
+                <li key={j} className="flex gap-2 text-muted-foreground">
+                  <span className="text-muted-foreground/50 shrink-0 mt-0.5">•</span>
+                  <span>{l.replace(/^[\u2022\-\*\u25e6\u2013]\s*|\d+\.\s*/, '')}</span>
+                </li>
+              ))}
+            </ul>
+          );
+        }
+
+        // Mixed block: prose header lines + bullets underneath
+        return (
+          <div key={i} className="space-y-1.5">
+            {proseLines.length > 0 && (
+              <p className="text-muted-foreground leading-relaxed">
+                {proseLines.join(' ')}
+              </p>
+            )}
+            {bulletLines.length > 0 && (
+              <ul className="space-y-1 pl-1">
+                {bulletLines.map((l, j) => (
+                  <li key={j} className="flex gap-2 text-muted-foreground">
+                    <span className="text-muted-foreground/50 shrink-0 mt-0.5">•</span>
+                    <span>{l.replace(/^[\u2022\-\*\u25e6\u2013]\s*|\d+\.\s*/, '')}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 interface ApplicationCardProps {
   id: string;
   company: string;
   jobTitle: string;
+  jobDescription: string;
   createdAt: string;
   hasCoverLetter: boolean;
   questionAnswers: { question: string; answer: string }[] | null;
@@ -25,13 +98,14 @@ interface ApplicationCardProps {
 const wordCount = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
 
 export default function ApplicationCard({
-  id, company, jobTitle, createdAt, hasCoverLetter, questionAnswers, fitAnalysis,
+  id, company, jobTitle, jobDescription, createdAt, hasCoverLetter, questionAnswers, fitAnalysis,
   selected, onToggleSelect, onDelete,
 }: ApplicationCardProps) {
   const [downloading, setDownloading] = useState<'resume' | 'cover-letter' | null>(null);
   const [error, setError] = useState('');
   const [showAnswers, setShowAnswers] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
+  const [showJD, setShowJD] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [previewType, setPreviewType] = useState<'resume' | 'cover-letter' | null>(null);
   const [previewData, setPreviewData] = useState<{
@@ -120,6 +194,13 @@ export default function ApplicationCard({
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <button
+            onClick={() => setShowJD(true)}
+            className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+            title="View job description"
+          >
+            <ScrollText className="w-4 h-4" />
+          </button>
+          <button
             onClick={() => fitAnalysis && setShowInsights(true)}
             disabled={!fitAnalysis}
             className={`p-1 transition-colors ${fitAnalysis ? 'text-yellow-400 hover:text-yellow-300' : 'text-slate-600 cursor-not-allowed'}`}
@@ -204,6 +285,26 @@ export default function ApplicationCard({
           </div>
         )}
       </div>
+
+      {/* Job Description Modal */}
+      {showJD && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowJD(false)}>
+          <div className="bg-card border border-border rounded-xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+              <div>
+                <h3 className="font-semibold text-foreground">Job Description</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">{company} — {jobTitle}</p>
+              </div>
+              <button onClick={() => setShowJD(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="px-5 py-4 overflow-y-auto flex-1">
+              <FormattedJD text={jobDescription} />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Fit Analysis Modal */}
       {showInsights && fitAnalysis && (
