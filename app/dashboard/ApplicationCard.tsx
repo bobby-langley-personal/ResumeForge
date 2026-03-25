@@ -155,7 +155,8 @@ export default function ApplicationCard({
   };
 
   const handleOpenPrep = async () => {
-    if (interviewPrep) { setShowPrep(true); return; }
+    setShowPrep(true);
+    if (interviewPrep) return;
     setPrepLoading(true);
     setError('');
     try {
@@ -170,7 +171,6 @@ export default function ApplicationCard({
       // Use existing prep if available
       if (appData?.interviewPrep) {
         setInterviewPrep(appData.interviewPrep as InterviewPrep);
-        setShowPrep(true);
         setPrepLoading(false);
         return;
       }
@@ -191,7 +191,6 @@ export default function ApplicationCard({
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const prep: InterviewPrep = await res.json();
       setInterviewPrep(prep);
-      setShowPrep(true);
     } catch {
       setError('Failed to generate interview prep. Please try again.');
     } finally {
@@ -201,6 +200,7 @@ export default function ApplicationCard({
 
   const handleRegenPrep = async () => {
     setPrepLoading(true);
+    setInterviewPrep(null);
     setError('');
     try {
       let resumeContent = previewData?.resumeContent ?? null;
@@ -332,7 +332,7 @@ export default function ApplicationCard({
                 <h3 className="font-semibold text-foreground">Application Answers</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">{company} — {jobTitle}</p>
               </div>
-              <button onClick={() => setShowAnswers(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+              <button onClick={() => setShowAnswers(false)} className="text-muted-foreground hover:text-foreground transition-colors" title="Close">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -347,6 +347,7 @@ export default function ApplicationCard({
                   <button
                     onClick={() => copyAnswer(qa.answer, i)}
                     className="text-xs text-primary hover:underline"
+                    title="Copy this answer to clipboard"
                   >
                     {copiedIdx === i ? 'Copied!' : 'Copy Answer'}
                   </button>
@@ -359,7 +360,7 @@ export default function ApplicationCard({
 
       <div className="flex flex-col gap-2 mt-auto">
         <div className="flex gap-2">
-          <Button size="sm" onClick={() => handleDownload('resume')} disabled={downloading !== null || loadingPreview} className="flex-1">
+          <Button size="sm" onClick={() => handleDownload('resume')} disabled={downloading !== null || loadingPreview} className="flex-1" title="Download resume as PDF">
             <Download className="w-3.5 h-3.5 mr-2" />
             {downloading === 'resume' ? 'Downloading…' : 'Resume'}
           </Button>
@@ -369,7 +370,7 @@ export default function ApplicationCard({
         </div>
         {hasCoverLetter && (
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => handleDownload('cover-letter')} disabled={downloading !== null || loadingPreview} className="flex-1">
+            <Button size="sm" variant="outline" onClick={() => handleDownload('cover-letter')} disabled={downloading !== null || loadingPreview} className="flex-1" title="Download cover letter as PDF">
               <Download className="w-3.5 h-3.5 mr-2" />
               {downloading === 'cover-letter' ? 'Downloading…' : 'Cover Letter'}
             </Button>
@@ -389,7 +390,7 @@ export default function ApplicationCard({
                 <h3 className="font-semibold text-foreground">Job Description</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">{company} — {jobTitle}</p>
               </div>
-              <button onClick={() => setShowJD(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+              <button onClick={() => setShowJD(false)} className="text-muted-foreground hover:text-foreground transition-colors" title="Close">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -401,7 +402,7 @@ export default function ApplicationCard({
       )}
 
       {/* Interview Prep Modal */}
-      {showPrep && interviewPrep && (
+      {showPrep && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowPrep(false)}>
           <div className="bg-card border border-border rounded-xl shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
@@ -411,7 +412,7 @@ export default function ApplicationCard({
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">{company} — {jobTitle}</p>
               </div>
-              <button onClick={() => setShowPrep(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+              <button onClick={() => setShowPrep(false)} className="text-muted-foreground hover:text-foreground transition-colors" title="Close">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -421,6 +422,7 @@ export default function ApplicationCard({
                 applicationId={id}
                 onRegenerate={handleRegenPrep}
                 regenerating={prepLoading}
+                loading={prepLoading && !interviewPrep}
               />
             </div>
           </div>

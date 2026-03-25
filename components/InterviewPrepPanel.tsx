@@ -4,6 +4,19 @@ import { useState, useEffect } from 'react';
 import { ChevronDown, CheckCircle2, RefreshCw, Target } from 'lucide-react';
 import { InterviewPrep, InterviewQuestion, InterviewQuestionCategory } from '@/types/interview-prep';
 
+function SkeletonQuestionCard() {
+  return (
+    <div className="border border-border rounded-lg overflow-hidden animate-pulse">
+      <div className="flex items-center gap-3 w-full px-4 py-3">
+        <span className="w-4 h-4 rounded-full bg-muted shrink-0" />
+        <span className="h-5 w-20 rounded-full bg-muted shrink-0" />
+        <span className="h-4 bg-muted rounded flex-1" />
+        <span className="w-4 h-4 bg-muted rounded shrink-0" />
+      </div>
+    </div>
+  );
+}
+
 const CATEGORY_STYLES: Record<InterviewQuestionCategory, { label: string; className: string }> = {
   technical:   { label: 'Technical',   className: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
   behavioral:  { label: 'Behavioral',  className: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
@@ -27,13 +40,14 @@ function QuestionCard({ q, index, practiced, onTogglePracticed }: {
       <button
         onClick={() => setOpen(v => !v)}
         className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-muted/40 transition-colors"
+        title={open ? 'Collapse question' : 'Expand to see hints and tips'}
       >
         {practiced ? (
           <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
         ) : (
           <span className="w-4 h-4 rounded-full border border-border shrink-0" />
         )}
-        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border shrink-0 ${style.className}`}>
+        <span className={`text-xs font-medium w-[6.5rem] text-center py-0.5 rounded-full border shrink-0 ${style.className}`}>
           {style.label}
         </span>
         <span className="text-sm text-foreground flex-1 text-left">{q.question}</span>
@@ -65,6 +79,7 @@ function QuestionCard({ q, index, practiced, onTogglePracticed }: {
             <button
               onClick={onTogglePracticed}
               className={`text-xs font-medium transition-colors ${practiced ? 'text-green-500 hover:text-green-400' : 'text-muted-foreground hover:text-foreground'}`}
+              title={practiced ? 'Mark as not practiced' : 'Mark this question as practiced'}
             >
               {practiced ? '✓ Practiced' : 'Mark as practiced'}
             </button>
@@ -76,13 +91,14 @@ function QuestionCard({ q, index, practiced, onTogglePracticed }: {
 }
 
 interface InterviewPrepPanelProps {
-  prep: InterviewPrep;
+  prep: InterviewPrep | null;
   applicationId: string;
   onRegenerate: () => void;
   regenerating?: boolean;
+  loading?: boolean;
 }
 
-export default function InterviewPrepPanel({ prep, applicationId, onRegenerate, regenerating }: InterviewPrepPanelProps) {
+export default function InterviewPrepPanel({ prep, applicationId, onRegenerate, regenerating, loading }: InterviewPrepPanelProps) {
   const storageKey = `interview_prep_practiced_${applicationId}`;
   const [practiced, setPracticed] = useState<Set<number>>(new Set());
 
@@ -103,6 +119,21 @@ export default function InterviewPrepPanel({ prep, applicationId, onRegenerate, 
     });
   };
 
+  if (loading || !prep) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground animate-pulse">Generating questions…</p>
+        </div>
+        <div className="space-y-2">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <SkeletonQuestionCard key={i} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const practicedCount = practiced.size;
   const total = prep.questions.length;
 
@@ -116,6 +147,7 @@ export default function InterviewPrepPanel({ prep, applicationId, onRegenerate, 
           onClick={onRegenerate}
           disabled={regenerating}
           className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+          title="Generate a fresh set of interview questions"
         >
           <RefreshCw className={`w-3 h-3 ${regenerating ? 'animate-spin' : ''}`} />
           {regenerating ? 'Regenerating…' : 'Regenerate questions'}
@@ -153,6 +185,7 @@ export function InterviewPrepSection({ applicationId, jobTitle, company, jobDesc
 
   const generate = async () => {
     setLoading(true);
+    setExpanded(true);
     setError('');
     try {
       const res = await fetch('/api/interview-prep', {
@@ -163,7 +196,6 @@ export function InterviewPrepSection({ applicationId, jobTitle, company, jobDesc
       if (!res.ok) throw new Error(await res.text());
       const data: InterviewPrep = await res.json();
       setPrep(data);
-      setExpanded(true);
     } catch {
       setError('Failed to generate. Please try again.');
     } finally {
@@ -175,9 +207,9 @@ export function InterviewPrepSection({ applicationId, jobTitle, company, jobDesc
     <div className="mt-6 border border-border rounded-xl overflow-hidden">
       <button
         type="button"
-        onClick={() => prep ? setExpanded(v => !v) : generate()}
-        disabled={loading}
-        className="w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-muted/50 transition-colors disabled:opacity-70"
+        onClick={() => (prep || loading) ? setExpanded(v => !v) : generate()}
+        className="w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-muted/50 transition-colors"
+        title={(prep || loading) ? (expanded ? 'Collapse interview prep' : 'Expand interview prep') : 'Generate AI interview questions for this role'}
       >
         <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
           <Target className="w-4 h-4 text-primary" />
@@ -185,19 +217,20 @@ export function InterviewPrepSection({ applicationId, jobTitle, company, jobDesc
           {prep && <span className="text-xs font-normal text-muted-foreground ml-1">({prep.questions.length} questions)</span>}
         </span>
         <span className="text-sm text-muted-foreground">
-          {loading ? 'Generating…' : prep ? (expanded ? '▲' : '▼') : 'Prepare me →'}
+          {prep || loading ? (expanded ? '▲' : '▼') : 'Prepare me →'}
         </span>
       </button>
 
       {error && <p className="px-5 pb-3 text-xs text-destructive">{error}</p>}
 
-      {prep && expanded && (
+      {(prep || loading) && expanded && (
         <div className="px-5 pb-5 pt-2 border-t border-border">
           <InterviewPrepPanel
             prep={prep}
             applicationId={applicationId}
             onRegenerate={generate}
             regenerating={loading}
+            loading={loading && !prep}
           />
         </div>
       )}

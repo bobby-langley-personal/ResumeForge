@@ -75,6 +75,7 @@ export default function ApplicationList({ initialItems }: Props) {
             variant="destructive"
             onClick={handleBulkDelete}
             disabled={deleting}
+            title={`Delete ${selected.size} selected resume${selected.size > 1 ? 's' : ''}`}
           >
             <Trash2 className="w-3.5 h-3.5 mr-1.5" />
             {deleting ? 'Deleting…' : `Delete ${selected.size}`}

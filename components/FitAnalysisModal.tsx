@@ -54,7 +54,7 @@ export default function FitAnalysisModal({ fitAnalysis, company, jobTitle, creat
                 </p>
               </div>
             </div>
-            <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+            <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors" title="Close">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -126,7 +126,7 @@ export default function FitAnalysisModal({ fitAnalysis, company, jobTitle, creat
               {/* Actions slot (home page) or default close button (dashboard) */}
               {actions ?? (
                 <div className="flex justify-end pt-2">
-                  <Button variant="outline" onClick={onClose}>Close</Button>
+                  <Button variant="outline" onClick={onClose} title="Close this analysis">Close</Button>
                 </div>
               )}
             </>
