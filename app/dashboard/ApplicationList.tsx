@@ -90,6 +90,7 @@ export default function ApplicationList({ initialItems }: Props) {
             company={app.company}
             jobTitle={app.job_title}
             createdAt={app.created_at}
+            jobDescription={app.job_description}
             hasCoverLetter={!!app.cover_letter_content}
             questionAnswers={app.question_answers ?? null}
             fitAnalysis={app.fit_analysis ?? null}
