@@ -15,6 +15,7 @@ import { ResumeItem } from '@/types/resume';
 import ContextSelector from '@/components/ContextSelector';
 import TourGuide from '@/components/TourGuide';
 import FitAnalysisModal from '@/components/FitAnalysisModal';
+import { InterviewPrepSection } from '@/components/InterviewPrepPanel';
 
 const PDFPreviewModal = dynamic(() => import('@/components/PDFPreviewModal'), { ssr: false });
 
@@ -1069,6 +1070,18 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                   </div>
                 )}
               </div>
+            )}
+
+            {/* Interview Prep Section */}
+            {uiState === 'done' && applicationId && resumeContent && (
+              <InterviewPrepSection
+                applicationId={applicationId}
+                jobTitle={jobTitle}
+                company={company}
+                jobDescription={jobDescription}
+                generatedResume={resumeContent}
+                toughQuestions={questionAnswers.length > 0 ? questionAnswers.map(qa => qa.question) : undefined}
+              />
             )}
           </div>
         </SignedIn>

@@ -6,6 +6,7 @@ import Navbar from '@/components/Navbar';
 import ApplicationList from './ApplicationList';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, FileSearch } from 'lucide-react';
+import { InterviewPrep } from '@/types/interview-prep';
 
 export const metadata = { title: 'AI Resumes — ResumeForge' };
 
@@ -16,7 +17,7 @@ export default async function DashboardPage() {
   const supabase = supabaseServer();
   const { data: applications, error } = await supabase
     .from('applications')
-    .select('id, company, job_title, job_description, cover_letter_content, question_answers, fit_analysis, created_at')
+    .select('id, company, job_title, job_description, cover_letter_content, question_answers, fit_analysis, interview_prep, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
@@ -60,5 +61,6 @@ export interface ApplicationItem {
   cover_letter_content: string | null;
   question_answers: { question: string; answer: string }[] | null;
   fit_analysis: import('@/types/fit-analysis').FitAnalysis | null;
+  interview_prep: InterviewPrep | null;
   created_at: string;
 }

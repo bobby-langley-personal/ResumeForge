@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
-import { FileText, Download, Trash2, MessageSquare, ScrollText, X, Eye, Lightbulb } from 'lucide-react';
+import { FileText, Download, Trash2, MessageSquare, ScrollText, Target, X, Eye, Lightbulb } from 'lucide-react';
 import FitAnalysisModal from '@/components/FitAnalysisModal';
+import InterviewPrepPanel from '@/components/InterviewPrepPanel';
 import { FitAnalysis } from '@/types/fit-analysis';
+import { InterviewPrep } from '@/types/interview-prep';
 
 const PDFPreviewModal = dynamic(() => import('@/components/PDFPreviewModal'), { ssr: false });
 
@@ -90,6 +92,7 @@ interface ApplicationCardProps {
   hasCoverLetter: boolean;
   questionAnswers: { question: string; answer: string }[] | null;
   fitAnalysis: FitAnalysis | null;
+  interviewPrep: InterviewPrep | null;
   selected: boolean;
   onToggleSelect: (id: string) => void;
   onDelete: (id: string) => void;
@@ -98,7 +101,7 @@ interface ApplicationCardProps {
 const wordCount = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
 
 export default function ApplicationCard({
-  id, company, jobTitle, jobDescription, createdAt, hasCoverLetter, questionAnswers, fitAnalysis,
+  id, company, jobTitle, jobDescription, createdAt, hasCoverLetter, questionAnswers, fitAnalysis, interviewPrep: initialInterviewPrep,
   selected, onToggleSelect, onDelete,
 }: ApplicationCardProps) {
   const [downloading, setDownloading] = useState<'resume' | 'cover-letter' | null>(null);
@@ -106,6 +109,9 @@ export default function ApplicationCard({
   const [showAnswers, setShowAnswers] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
   const [showJD, setShowJD] = useState(false);
+  const [showPrep, setShowPrep] = useState(false);
+  const [interviewPrep, setInterviewPrep] = useState<InterviewPrep | null>(initialInterviewPrep);
+  const [prepLoading, setPrepLoading] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [previewType, setPreviewType] = useState<'resume' | 'cover-letter' | null>(null);
   const [previewData, setPreviewData] = useState<{
@@ -145,6 +151,79 @@ export default function ApplicationCard({
       setError('Preview failed. Please try again.');
     } finally {
       setLoadingPreview(false);
+    }
+  };
+
+  const handleOpenPrep = async () => {
+    if (interviewPrep) { setShowPrep(true); return; }
+    // Need resume content to generate — fetch it then call interview-prep
+    setPrepLoading(true);
+    setError('');
+    try {
+      let resumeContent = previewData?.resumeContent ?? null;
+      if (!resumeContent) {
+        const res = await fetch(`/api/applications/${id}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        setPreviewData(data);
+        resumeContent = data.resumeContent;
+      }
+      if (!resumeContent) throw new Error('No resume content');
+      const res = await fetch('/api/interview-prep', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          applicationId: id,
+          jobTitle,
+          company,
+          jobDescription,
+          generatedResume: resumeContent,
+          toughQuestions: questionAnswers?.map(qa => qa.question),
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const prep: InterviewPrep = await res.json();
+      setInterviewPrep(prep);
+      setShowPrep(true);
+    } catch {
+      setError('Failed to generate interview prep. Please try again.');
+    } finally {
+      setPrepLoading(false);
+    }
+  };
+
+  const handleRegenPrep = async () => {
+    setPrepLoading(true);
+    setError('');
+    try {
+      let resumeContent = previewData?.resumeContent ?? null;
+      if (!resumeContent) {
+        const res = await fetch(`/api/applications/${id}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        setPreviewData(data);
+        resumeContent = data.resumeContent;
+      }
+      if (!resumeContent) throw new Error('No resume content');
+      const res = await fetch('/api/interview-prep', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          applicationId: id,
+          jobTitle,
+          company,
+          jobDescription,
+          generatedResume: resumeContent,
+          toughQuestions: questionAnswers?.map(qa => qa.question),
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const prep: InterviewPrep = await res.json();
+      setInterviewPrep(prep);
+    } catch {
+      setError('Failed to regenerate. Please try again.');
+    } finally {
+      setPrepLoading(false);
     }
   };
 
@@ -193,6 +272,14 @@ export default function ApplicationCard({
           </p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={handleOpenPrep}
+            disabled={prepLoading}
+            className={`p-1 transition-colors ${interviewPrep ? 'text-primary hover:text-primary/80' : 'text-muted-foreground hover:text-foreground'}`}
+            title={interviewPrep ? 'View interview prep' : 'Generate interview prep'}
+          >
+            {prepLoading ? <span className="w-4 h-4 block animate-spin rounded-full border-2 border-current border-t-transparent" /> : <Target className="w-4 h-4" />}
+          </button>
           <button
             onClick={() => setShowJD(true)}
             className="p-1 text-muted-foreground hover:text-foreground transition-colors"
@@ -301,6 +388,33 @@ export default function ApplicationCard({
             </div>
             <div className="px-5 py-4 overflow-y-auto flex-1">
               <FormattedJD text={jobDescription} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Interview Prep Modal */}
+      {showPrep && interviewPrep && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowPrep(false)}>
+          <div className="bg-card border border-border rounded-xl shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+              <div>
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <Target className="w-4 h-4 text-primary" /> Interview Prep
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">{company} — {jobTitle}</p>
+              </div>
+              <button onClick={() => setShowPrep(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="px-5 py-4 overflow-y-auto flex-1">
+              <InterviewPrepPanel
+                prep={interviewPrep}
+                applicationId={id}
+                onRegenerate={handleRegenPrep}
+                regenerating={prepLoading}
+              />
             </div>
           </div>
         </div>
