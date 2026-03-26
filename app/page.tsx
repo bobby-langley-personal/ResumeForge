@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { SignedIn, SignedOut, SignInButton, useUser } from '@clerk/nextjs';
 import dynamic from 'next/dynamic';
 import Navbar from '@/components/Navbar';
@@ -16,8 +16,10 @@ import ContextSelector from '@/components/ContextSelector';
 import TourGuide from '@/components/TourGuide';
 import FitAnalysisModal from '@/components/FitAnalysisModal';
 import { InterviewPrepSection } from '@/components/InterviewPrepPanel';
+import ResumeChatPanel from '@/components/ResumeChatPanel';
 
 const PDFPreviewModal = dynamic(() => import('@/components/PDFPreviewModal'), { ssr: false });
+const InlinePDFViewer = dynamic(() => import('@/components/InlinePDFViewer'), { ssr: false });
 
 type UIState = 'idle' | 'analyzing' | 'review' | 'generating' | 'done' | 'error';
 
@@ -132,10 +134,19 @@ export default function Home() {
   const [answersExpanded, setAnswersExpanded] = useState(true);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [previewType, setPreviewType] = useState<'resume' | 'cover-letter' | null>(null);
+  const [showPdfView, setShowPdfView] = useState(true);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [pendingSaveFile, setPendingSaveFile] = useState<{ text: string; fileName: string } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const originalResumeRef = useRef('');
+
+  // Capture original resume text the first time generation completes
+  useEffect(() => {
+    if (uiState === 'done' && resumeContent && !originalResumeRef.current) {
+      originalResumeRef.current = resumeContent;
+    }
+  }, [uiState, resumeContent]);
 
   // Pre-generation refs — background generation starts 500ms after fit analysis
   type PreGenStatus = 'idle' | 'pending' | 'running' | 'done' | 'aborted';
@@ -498,6 +509,8 @@ export default function Home() {
     }
     preGenStatus.current = 'idle';
     preGenBuffer.current = { resume: '', coverLetter: '', answers: [], applicationId: null, lastStatus: '' };
+    originalResumeRef.current = '';
+    setShowPdfView(true);
 
     setResetKey(k => k + 1);
     setUIState('idle');
@@ -1011,27 +1024,64 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold text-foreground">Resume</h3>
                       {uiState === 'done' && (
-                        <span className="text-xs text-muted-foreground">Editable</span>
+                        <button
+                          onClick={() => setShowPdfView(v => !v)}
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                          title={showPdfView ? 'Switch to editable text view' : 'Switch to rendered PDF view'}
+                        >
+                          {showPdfView ? 'Edit text' : 'PDF view'}
+                        </button>
                       )}
                     </div>
-                    <Textarea
-                      value={resumeContent}
-                      onChange={(e) => setResumeContent(e.target.value)}
-                      className="min-h-96 bg-muted font-mono text-sm resize-y"
-                      readOnly={uiState === 'generating'}
-                    />
+                    {uiState === 'done' && showPdfView ? (
+                      <InlinePDFViewer
+                        type="resume"
+                        text={resumeContent}
+                        candidateName={candidateName}
+                        company={company}
+                        jobTitle={jobTitle}
+                      />
+                    ) : (
+                      <Textarea
+                        value={resumeContent}
+                        onChange={(e) => setResumeContent(e.target.value)}
+                        className="min-h-96 bg-muted font-mono text-sm resize-y"
+                        readOnly={uiState === 'generating'}
+                      />
+                    )}
                   </div>
                 )}
 
                 {includeCoverLetter && coverLetterContent && (
                   <div className="space-y-2">
-                    <h3 className="text-lg font-semibold text-foreground">Cover Letter</h3>
-                    <Textarea
-                      value={coverLetterContent}
-                      onChange={(e) => setCoverLetterContent(e.target.value)}
-                      className="min-h-96 bg-muted font-mono text-sm resize-y"
-                      readOnly={uiState === 'generating'}
-                    />
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-foreground">Cover Letter</h3>
+                      {uiState === 'done' && (
+                        <button
+                          onClick={() => setShowPdfView(v => !v)}
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                          title={showPdfView ? 'Switch to editable text view' : 'Switch to rendered PDF view'}
+                        >
+                          {showPdfView ? 'Edit text' : 'PDF view'}
+                        </button>
+                      )}
+                    </div>
+                    {uiState === 'done' && showPdfView ? (
+                      <InlinePDFViewer
+                        type="cover-letter"
+                        text={coverLetterContent}
+                        candidateName={candidateName}
+                        company={company}
+                        jobTitle={jobTitle}
+                      />
+                    ) : (
+                      <Textarea
+                        value={coverLetterContent}
+                        onChange={(e) => setCoverLetterContent(e.target.value)}
+                        className="min-h-96 bg-muted font-mono text-sm resize-y"
+                        readOnly={uiState === 'generating'}
+                      />
+                    )}
                   </div>
                 )}
               </div>
@@ -1190,6 +1240,21 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                 jobDescription={jobDescription}
                 generatedResume={resumeContent}
                 toughQuestions={questionAnswers.length > 0 ? questionAnswers.map(qa => qa.question) : undefined}
+              />
+            )}
+
+            {/* Resume Chat */}
+            {uiState === 'done' && applicationId && resumeContent && (
+              <ResumeChatPanel
+                applicationId={applicationId}
+                currentResumeText={resumeContent}
+                originalResumeText={originalResumeRef.current}
+                coverLetterText={coverLetterContent || undefined}
+                jobDescription={jobDescription}
+                company={company}
+                jobTitle={jobTitle}
+                backgroundExperience={pendingFormData?.backgroundExperience}
+                onResumeUpdate={setResumeContent}
               />
             )}
           </div>

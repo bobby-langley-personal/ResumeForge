@@ -144,6 +144,7 @@ export interface Database {
           questions: unknown | null
           question_answers: unknown | null
           interview_prep: unknown | null
+          chat_history: unknown | null
           created_at: string
           updated_at: string
         }
@@ -162,6 +163,7 @@ export interface Database {
           questions?: unknown | null
           question_answers?: unknown | null
           interview_prep?: unknown | null
+          chat_history?: unknown | null
           created_at?: string
           updated_at?: string
         }
@@ -180,6 +182,7 @@ export interface Database {
           questions?: unknown | null
           question_answers?: unknown | null
           interview_prep?: unknown | null
+          chat_history?: unknown | null
           created_at?: string
           updated_at?: string
         }

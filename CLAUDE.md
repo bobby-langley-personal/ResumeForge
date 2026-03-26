@@ -73,6 +73,7 @@ Current valid columns:
 | `DELETE /api/applications/[id]` | Node | Delete single resume record |
 | `POST /api/interview-prep` | Node | Haiku — generates 8 interview questions across 6 categories; saves to `applications.interview_prep`; returns `InterviewPrep` |
 | `POST /api/log-event` | Node | Server-side event logging — writes JSON to Vercel function logs; always returns 200 |
+| `POST /api/resume-chat` | Node | Sonnet non-streaming — AI chat for refining a generated resume; parses `CHANGE:` vs `ANSWER:` response format; on change, updates `applications.resume_content` and `applications.chat_history` in Supabase |
 | `POST /api/interview/generate` | Node | Sonnet non-streaming call — builds experience doc from interview transcript; returns `{ document: string }` |
 | `GET /api/interview/sessions` | Node | Fetch most recent `draft` session for current user; returns `{ session }` (null if none) |
 | `POST /api/interview/sessions` | Node | Create a new draft session; returns `{ id }` |
