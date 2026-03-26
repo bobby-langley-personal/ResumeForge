@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${filename}"`,
+        'Access-Control-Expose-Headers': 'Content-Disposition',
       },
     })
   } catch (error) {
