@@ -15,6 +15,8 @@ const QUICK_ACTIONS = [
   { id: 'summary',        label: 'Add summary',     prompt: 'Add a 2-3 sentence professional summary tailored to this role' },
   { id: 'remove-summary', label: 'Remove summary',  prompt: 'Remove the summary section' },
   { id: 'shorten',        label: 'Shorten bullets',  prompt: 'Shorten the bullet points — aim for one line each where possible' },
+  { id: 'fit-1-page',     label: 'Fit to 1 page',   prompt: 'Trim this resume to fit on a single page. Be aggressive — prioritize the most recent and relevant role, cut older role bullets significantly, consolidate skills into fewer lines, and remove the summary if needed. Tell me what you cut.' },
+  { id: 'fit-2-pages',    label: 'Fit to 2 pages',  prompt: 'Trim this resume to fit cleanly on two pages without overflow. Shorten long bullets, consolidate skills, and cut the least relevant content from older roles. Tell me what you changed.' },
   { id: 'skills',         label: 'Add skills',       prompt: 'Review the job description and add any missing relevant skills to my skills section' },
   { id: 'tighten',        label: 'Tighten language', prompt: 'Tighten the language throughout — remove weak verbs and passive voice' },
 ];
