@@ -24,7 +24,7 @@ export default function ContextSelector({ onLoadBackground, onAdditionalContextC
       .then((data: ResumeItem[]) => {
         setItems(data);
         setLoaded(true);
-        const defaultItem = data.find(i => i.is_default);
+        const defaultItem = data.find(i => i.is_default) ?? data[0] ?? null;
         if (defaultItem) {
           setSelectedId(defaultItem.id);
           onLoadBackground(defaultItem.content.text);
