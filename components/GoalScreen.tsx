@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Target, FileEdit, Plus, Brain, LayoutList, ArrowRight, X } from 'lucide-react';
+import { Target, FileEdit, Plus, Brain, LayoutList, Diamond, ArrowRight, X } from 'lucide-react';
 
 const SKIP_KEY = 'resumeforge_skip_goal_screen';
 
@@ -114,6 +114,13 @@ export default function GoalScreen({
           href="/tailor"
           cta="Tailor Now"
           primary
+        />
+        <GoalCard
+          icon={<Diamond className="w-5 h-5 text-foreground" />}
+          title="Create a polished general-use resume"
+          description="A strong standalone resume for recruiters, networking, and broad applications"
+          href="/polished-resume"
+          cta="Create"
         />
         <GoalCard
           icon={<FileEdit className="w-5 h-5 text-foreground" />}
