@@ -22,15 +22,17 @@ export default function ContextSelector({ onLoadBackground, onAdditionalContextC
     fetch('/api/resumes')
       .then(r => r.ok ? r.json() : [])
       .then((data: ResumeItem[]) => {
-        setItems(data);
+        // Exclude base_resume from context selector — handled separately in tailor page
+        const filtered = data.filter(i => i.item_type !== 'base_resume');
+        setItems(filtered);
         setLoaded(true);
-        const defaultItem = data.find(i => i.is_default) ?? data[0] ?? null;
+        const defaultItem = filtered.find(i => i.is_default) ?? filtered[0] ?? null;
         if (defaultItem) {
           setSelectedId(defaultItem.id);
           onLoadBackground(defaultItem.content.text);
         }
         // Pre-select all non-default items as additional context
-        const nonDefault = data.filter(i => !i.is_default);
+        const nonDefault = filtered.filter(i => !i.is_default);
         if (nonDefault.length > 0) {
           setAdditionalIds(new Set(nonDefault.map(i => i.id)));
           setExpanded(true);

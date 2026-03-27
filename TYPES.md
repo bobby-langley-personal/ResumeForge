@@ -22,16 +22,18 @@ Main Supabase schema interface (`types/supabase.ts`). All table Row/Insert/Updat
 | `user_id` | string | Clerk user ID |
 | `title` | string | Display name |
 | `content` | Json | `{ text: string, fileName?: string }` — stored as JSONB |
-| `item_type` | ItemType | `'resume' \| 'cover_letter' \| 'portfolio' \| 'other'` |
+| `item_type` | ItemType | `'resume' \| 'cover_letter' \| 'portfolio' \| 'other' \| 'base_resume'` |
 | `is_default` | boolean | Only one per user (partial unique index) |
 | `created_at` | string | ISO timestamp |
 | `updated_at` | string | ISO timestamp |
 
 ### `ItemType`
-`'resume' | 'cover_letter' | 'portfolio' | 'other'`
+`'resume' | 'cover_letter' | 'portfolio' | 'other' | 'base_resume'`
+
+`base_resume` is the user's master resume — always `is_default: true`, stored with title `'Base Resume'`. Not shown in ContextSelector or document list; managed separately via `/base-resume` page.
 
 ### `ITEM_TYPE_LABELS`
-Display labels map: `{ resume: 'Resume', cover_letter: 'Cover Letter', portfolio: 'Portfolio', other: 'Other' }`
+Display labels map: `{ resume: 'Resume', cover_letter: 'Cover Letter', portfolio: 'Portfolio', other: 'Other', base_resume: 'Base Resume' }`
 
 ### `ResumeItem`
 ```typescript

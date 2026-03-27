@@ -1,10 +1,11 @@
-export type ItemType = 'resume' | 'cover_letter' | 'portfolio' | 'other'
+export type ItemType = 'resume' | 'cover_letter' | 'portfolio' | 'other' | 'base_resume'
 
 export const ITEM_TYPE_LABELS: Record<ItemType, string> = {
   resume: 'Resume',
   cover_letter: 'Cover Letter Example',
   portfolio: 'Portfolio / Work Sample',
   other: 'Other',
+  base_resume: 'Base Resume',
 }
 
 export interface ResumeContent {

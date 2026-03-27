@@ -24,6 +24,14 @@ export default async function ResumesPage() {
 
   if (error) console.error('[resumes page]', error.message);
 
+  const allItems = (data ?? []).map((item: any) => ({
+    ...item,
+    content: typeof item.content === 'string' ? JSON.parse(item.content) : item.content,
+  })) as ResumeItem[];
+
+  const baseResume = allItems.find(i => i.item_type === 'base_resume') ?? null;
+  const regularItems = allItems.filter(i => i.item_type !== 'base_resume');
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -34,9 +42,9 @@ export default async function ResumesPage() {
         </Link>
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">My Documents</h2>
+            <h2 className="text-2xl font-bold text-foreground">My Profile</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Saved resumes, cover letter examples, and other context artifacts
+              Your base resume and context documents
             </p>
           </div>
           <Link href="/interview">
@@ -48,7 +56,7 @@ export default async function ResumesPage() {
             </Button>
           </Link>
         </div>
-        <ResumeLibrary initialItems={(data ?? []) as unknown as ResumeItem[]} />
+        <ResumeLibrary initialItems={regularItems} baseResume={baseResume} />
       </main>
     </div>
   );
