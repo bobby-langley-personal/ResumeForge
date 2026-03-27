@@ -2,17 +2,35 @@
 
 This file contains important guidelines and rules for working with the ResumeForge codebase.
 
+## Definition of Done
+
+Every feature is not complete until ALL of the following are done:
+1. Code works and `npx tsc --noEmit` passes
+2. **`CLAUDE.md` updated** — routes, components, terminology, architecture decisions
+3. **`README.md` updated** — user-facing feature descriptions and project structure
+4. **`TYPES.md` updated** — if any types or DB columns changed
+5. **GitHub issue comment posted** summarising what was built
+6. **Issue closed**
+
+Do not skip any of these steps. If you finish coding but haven't updated docs and closed the issue, you are not done.
+
+---
+
 ## UI Terminology
 
 Use these terms consistently in all user-facing text:
 
 | Concept | Term to use |
 |---------|------------|
+| The page at `/` | "Home" (goal selection / welcome screen) |
+| The page at `/tailor` | "Tailor New Resume" (generation form) |
 | The page at `/dashboard` | "AI Resumes" |
-| The page at `/resumes` | "My Documents" |
+| The page at `/resumes` | "My Profile" (nav label) / "My Documents" (page heading) |
+| The page at `/base-resume` | "Base Resume" |
 | A generated resume record | "resume" (not "application") |
-| Creating a new tailored resume | "Tailor New Resume" |
 | The library context picker | "Load from My Documents" |
+
+Nav labels (hamburger menu): "Tailor New Resume" → `/tailor`, "AI Resumes" → `/dashboard`, "My Profile" → `/resumes`.
 
 Never use "Dashboard", "Library", "application/s" (in UI copy), or "New Application" — these were replaced.
 
@@ -42,11 +60,12 @@ Current valid columns:
 
 **Status editing is intentionally removed from the UI** — do not re-add it.
 
-### Resumes Table (My Documents library)
+### Resumes Table (My Profile / library)
 Current valid columns:
 - `id`, `user_id`, `title`, `content` (JSONB: `{ text: string, fileName?: string }`), `item_type`, `is_default`, `created_at`, `updated_at`
-- `item_type` values: `'resume' | 'cover_letter' | 'portfolio' | 'other'`
+- `item_type` values: `'resume' | 'cover_letter' | 'portfolio' | 'other' | 'base_resume'`
 - Only one item per user can have `is_default = true` (enforced by partial unique index)
+- `base_resume` items are always `is_default: true`, titled `'Base Resume'`, managed via `/base-resume` page — **never shown in `ContextSelector` dropdown or the regular documents list**; auto-loaded as background in the tailor page
 
 **If a new column is genuinely needed:**
 1. Add it to TYPES.md FIRST
@@ -194,9 +213,9 @@ These rules are baked into the generation prompt and must be preserved whenever 
 - **No hedging on leadership** — words like "Informally", "Somewhat", "Partially", "Helped with", "Assisted in leading" undermine the candidate. If they led, they led. Reframe confidently: "Informally led a team" → "Managed a team of 2 engineers"; "Helped lead" → "Co-led" or just "Led"
 
 ## PDF Page Overflow Policy
-2-page resumes are acceptable and normal for candidates with 
-4+ years of experience. The PDF template should never truncate 
-content to force single-page output. Spacing optimizations 
+2-page resumes are acceptable and normal for candidates with
+4+ years of experience. The PDF template should never truncate
+content to force single-page output. Spacing optimizations
 should only target unnecessary whitespace — never content.
 
 ## PDF Preview
@@ -208,11 +227,12 @@ should only target unnecessary whitespace — never content.
 
 ---
 
-## My Documents / ContextSelector
+## My Profile / ContextSelector
 
-- `ContextSelector` auto-loads the default item as primary background on mount; if no item has `is_default = true`, falls back to `data[0]` so a single document always auto-loads
+- `ContextSelector` filters out `item_type === 'base_resume'` items — the base resume is auto-loaded separately in `/tailor`
+- Auto-loads the first non-base-resume default item as primary background; falls back to `data[0]` if none is marked default
 - Pre-selects all non-default items as additional context; accordion auto-expands
-- `key={resetKey}` on `<ContextSelector>` in `app/page.tsx` — incrementing remounts and re-fetches
+- `key={resetKey}` on `<ContextSelector>` in `app/tailor/page.tsx` — incrementing remounts and re-fetches
 - Additional context items appear in both analyze-fit and generate-documents prompts with source attribution
 
 ---
@@ -226,6 +246,30 @@ should only target unnecessary whitespace — never content.
 
 ---
 
+## Home Page Routing (`/`)
+
+The home page is a server component that detects user state and routes accordingly:
+
+| State | Condition | Screen shown |
+|-------|-----------|-------------|
+| First-time user | No documents at all | `WelcomeScreen` — 3 onboarding paths |
+| Returning user | Has ≥1 document | `GoalScreen` — 5 goal cards |
+| Skip flag set | `resumeforge_skip_goal_screen = 'true'` in localStorage | Redirect to `/tailor` |
+
+**`WelcomeScreen`** — 3 options: Upload resume (extract → save as default `is_default: true` → `/tailor`), AI interview (`/interview`), Write yourself (save text → `/tailor`)
+
+**`GoalScreen`** — 5 cards: Tailor Now (`/tailor`), Update Base Resume (`/resumes`), Add More Experience (`/interview`), Prep for Interview (`/dashboard`), View Applications (`/dashboard`)
+
+**State banners in GoalScreen:**
+- State 2 (has docs, no `is_default` item): amber "set a base resume" warning
+- State 3 (base resume >30 days old): dismissable blue staleness tip
+
+**`HomeRouter`** is a client component that reads localStorage and renders the right screen. Home page state is fetched server-side (documents + applications count from Supabase) on every visit.
+
+**Generation form** lives at `/tailor` — protected by Clerk middleware. The logo link in the Navbar goes to `/` (goal screen), not `/tailor`.
+
+---
+
 ## Onboarding Tour (`driver.js`)
 
 - `components/TourGuide.tsx` — `'use client'` component; auto-starts the tour for first-time users; exports `startTour()` for replay
@@ -233,14 +277,15 @@ should only target unnecessary whitespace — never content.
 - Tour auto-starts 800ms after mount to allow the page to fully render
 - Tour replay appears in the Navbar hamburger dropdown (as "Take the Tour") — only shown after the tour has been completed once
 - Step 2 (Job Search) is **backlogged** — the job search feature is not yet implemented; tour skips from Welcome directly to Job Details
-- Tour targets use `id` attributes: `tour-heading`, `tour-job-details`, `tour-background`, `tour-context`, `tour-questions`, `tour-generate`, `tour-my-documents`
+- Tour targets use `id` attributes on the `/tailor` page: `tour-heading`, `tour-job-details`, `tour-background`, `tour-context`, `tour-questions`, `tour-generate`, `tour-my-documents`
 - `ContextSelector` shows a dashed empty-state callout with a link to `/resumes` when the user has no library documents; the callout also carries `id="tour-context"` so the tour step targets it regardless of whether documents exist
+- **Tour only runs on `/tailor`** — the generation form page. It does not auto-start on `/` (the goal/welcome screen)
 - Dark theme CSS override in `app/globals.css` under `.resumeforge-tour` class
 
 ## Navbar
 
 - Hamburger menu (`Menu` icon) is visible on **all screen sizes** for signed-in users — no always-visible nav links on desktop
-- Hamburger dropdown contains: Tailor New Resume (`/`), AI Resumes (`/dashboard`), My Documents (`/resumes`), divider, Take the Tour, Light/Dark Mode toggle, divider, Feedback
+- Hamburger dropdown contains: Tailor New Resume (`/tailor`), AI Resumes (`/dashboard`), My Profile (`/resumes`), divider, Take the Tour, Light/Dark Mode toggle, divider, Feedback
 - Signed-out users see a persistent Sun/Moon toggle + Sign In button (no hamburger)
 - `FeedbackModal` is `dynamic` imported with `ssr: false` in both `Navbar.tsx` and `Footer.tsx`
 
@@ -249,6 +294,21 @@ should only target unnecessary whitespace — never content.
 - `components/Footer.tsx` — rendered in `app/layout.tsx` for all pages
 - Shows "Built by Bobby Langley" attribution (left) and a Feedback button (right)
 - `body` in `layout.tsx` uses `flex flex-col min-h-screen` so footer sticks to bottom
+
+---
+
+## Base Resume (`/base-resume`)
+
+- `item_type: 'base_resume'` — stored in `resumes` table; always `is_default: true`; title always `'Base Resume'`
+- **Never show in ContextSelector dropdown or My Profile document list** — managed via the dedicated `/base-resume` page
+- **`BaseResumeCreator`** — 3-step flow:
+  1. **Select** — checkboxes of user's non-base-resume docs; pre-selects `resume` + `other` types
+  2. **Generate** — calls `POST /api/generate-base-resume` with selected IDs; shows animated progress
+  3. **Review** — inline PDF + "Edit text" textarea toggle + AI chat panel + "Save as Base Resume" button
+- **Edit mode** — `/base-resume?id=<resumeId>` skips to review step with existing text loaded (linked from My Profile "Edit & Refine" button)
+- **Saving** — `POST /api/resumes` (`item_type: 'base_resume'`, `is_default: true`); previous base resume is demoted by the existing API logic; redirects to `/resumes`
+- **Tailor page** — auto-fetches `/api/resumes` on mount, finds `base_resume` item, sets as background; shows "Using base resume" badge; clears if user switches to another doc via ContextSelector
+- **`POST /api/base-resume-chat`** — Sonnet CHANGE/ANSWER; does NOT save to DB; caller holds text in state until explicit save
 
 ---
 
@@ -263,7 +323,8 @@ All feature/fix branches: `claude/issue-{number}-{YYYYMMDD}-{HHMM}` — Vercel s
 - Read TYPES.md before any database changes
 - Run `npx tsc --noEmit` before committing — all PRs must be type-clean
 - Use `gh issue comment` to post progress updates on GitHub issues
-- Dev mode: `[Dev] Fill Test Data` button on home page pre-fills sample job + resume data
+- Dev mode: `[Dev] Fill Test Data` button on the tailor page (`/tailor`) pre-fills sample job + resume data
+- **After every feature: update CLAUDE.md, README.md, TYPES.md, post GitHub issue comment, close the issue** — see Definition of Done at the top of this file
 
 ## AI Experience Interview (`/interview`)
 
