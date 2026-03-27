@@ -27,7 +27,7 @@ export default async function DashboardPage() {
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="mb-8">
-          <Link href="/" className="flex items-center gap-1.5 w-fit text-sm text-muted-foreground hover:text-foreground transition-colors mb-3">
+          <Link href="/tailor" className="flex items-center gap-1.5 w-fit text-sm text-muted-foreground hover:text-foreground transition-colors mb-3">
             <ArrowLeft className="w-4 h-4" />
             Back to resume generator
           </Link>
@@ -41,7 +41,7 @@ export default async function DashboardPage() {
             <p className="text-sm text-muted-foreground max-w-xs">
               Generate your first tailored resume to see it here.
             </p>
-            <Link href="/"><Button>Tailor Your First Resume</Button></Link>
+            <Link href="/tailor"><Button>Tailor Your First Resume</Button></Link>
           </div>
         ) : (
           <ApplicationList initialItems={(applications ?? []) as ApplicationItem[]} />

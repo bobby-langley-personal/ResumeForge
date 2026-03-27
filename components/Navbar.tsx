@@ -87,7 +87,7 @@ export default function Navbar() {
                 {menuOpen && (
                   <div className="absolute right-0 top-full mt-1 w-52 bg-background border border-border rounded-lg shadow-lg py-1 z-50">
                     <Link
-                      href="/"
+                      href="/tailor"
                       onClick={close}
                       className="flex items-center justify-between w-full px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
                     >
@@ -108,7 +108,7 @@ export default function Navbar() {
                       onClick={close}
                       className="flex items-center justify-between w-full px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                     >
-                      <span>My Documents</span>
+                      <span>My Profile</span>
                       <FolderOpen className="w-4 h-4" />
                     </Link>
 

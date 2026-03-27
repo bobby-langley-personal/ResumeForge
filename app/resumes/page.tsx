@@ -28,7 +28,7 @@ export default async function ResumesPage() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <Link href="/" className="flex items-center gap-1.5 w-fit text-sm text-muted-foreground hover:text-foreground transition-colors mb-3">
+        <Link href="/tailor" className="flex items-center gap-1.5 w-fit text-sm text-muted-foreground hover:text-foreground transition-colors mb-3">
           <ArrowLeft className="w-4 h-4" />
           Back to resume generator
         </Link>
