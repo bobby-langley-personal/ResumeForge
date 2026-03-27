@@ -9,10 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { readSSEStream } from '@/lib/sse-reader';
-import { Upload, FileText, ChevronDown, ChevronUp, Loader2, Eye } from 'lucide-react';
+import { ChevronDown, Loader2, Eye } from 'lucide-react';
 import { FitAnalysis } from '@/types/fit-analysis';
 import { ResumeItem } from '@/types/resume';
-import ContextSelector from '@/components/ContextSelector';
+import ExperiencePanel from '@/components/ExperiencePanel';
 import TourGuide from '@/components/TourGuide';
 import FitAnalysisModal from '@/components/FitAnalysisModal';
 import { InterviewPrepSection } from '@/components/InterviewPrepPanel';
@@ -97,7 +97,6 @@ interface FormData {
   isFromUploadedFile?: boolean;
 }
 
-
 export default function Home() {
   const { user } = useUser();
   const candidateName = user?.fullName ?? user?.firstName ?? '';
@@ -108,11 +107,6 @@ export default function Home() {
   const [coverLetterContent, setCoverLetterContent] = useState('');
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
-  const [uploadedFileContent, setUploadedFileContent] = useState('');
-  const [uploadedFileName, setUploadedFileName] = useState('');
-  const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [inputMethod, setInputMethod] = useState<'upload' | 'manual'>('upload');
   const [fitAnalysis, setFitAnalysis] = useState<FitAnalysis | null>(null);
   const [pendingFormData, setPendingFormData] = useState<FormData | null>(null);
   const [additionalContext, setAdditionalContext] = useState<ResumeItem[]>([]);
@@ -135,11 +129,8 @@ export default function Home() {
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [previewType, setPreviewType] = useState<'resume' | 'cover-letter' | null>(null);
   const [showPdfView, setShowPdfView] = useState(true);
-  const [showSaveModal, setShowSaveModal] = useState(false);
-  const [pendingSaveFile, setPendingSaveFile] = useState<{ text: string; fileName: string } | null>(null);
   const [usingBaseResume, setUsingBaseResume] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const originalResumeRef = useRef('');
   const baseResumeLoadedRef = useRef(false);
 
@@ -152,7 +143,6 @@ export default function Home() {
         const base = items.find(i => i.item_type === 'base_resume');
         if (base && !manualExperience) {
           setManualExperience(base.content.text);
-          setInputMethod('manual');
           setUsingBaseResume(true);
           baseResumeLoadedRef.current = true;
         }
@@ -176,7 +166,6 @@ export default function Home() {
   const preGenBuffer = useRef({ resume: '', coverLetter: '', answers: [] as { question: string; answer: string }[], applicationId: null as string | null, lastStatus: '' });
 
   const fillTestData = () => {
-    setInputMethod('manual');
     setCompany('Kforce / Fintech Client');
     setJobTitle('Technical Support Specialist');
     setJobDescription(DEV_JD);
@@ -241,61 +230,6 @@ export default function Home() {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    setErrorMessage('');
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch('/api/extract-resume', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error);
-      }
-
-      const result = await response.json();
-      setUploadedFileContent(result.text);
-      setUploadedFileName(result.fileName);
-      setIsPreviewExpanded(true);
-      setPendingSaveFile({ text: result.text, fileName: result.fileName });
-      setShowSaveModal(true);
-
-    } catch (error) {
-      console.error('File upload failed:', error);
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to extract text from file');
-      setUIState('error');
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleSaveToDocuments = async () => {
-    if (!pendingSaveFile) return;
-    setShowSaveModal(false);
-    const title = pendingSaveFile.fileName.replace(/\.[^.]+$/, ''); // strip extension
-    await fetch('/api/resumes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title,
-        content: { text: pendingSaveFile.text, fileName: pendingSaveFile.fileName },
-        item_type: 'resume',
-        is_default: false,
-      }),
-    });
-    setPendingSaveFile(null);
-    setResetKey(k => k + 1); // re-mount ContextSelector so the new doc appears
-  };
-
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -303,14 +237,12 @@ export default function Home() {
       company,
       jobTitle,
       jobDescription,
-      backgroundExperience: inputMethod === 'upload' && uploadedFileContent
-        ? uploadedFileContent
-        : manualExperience,
-      isFromUploadedFile: inputMethod === 'upload' && !!uploadedFileContent,
+      backgroundExperience: manualExperience,
+      isFromUploadedFile: false,
     };
 
     if (!data.company || !data.jobTitle || !data.jobDescription || !data.backgroundExperience) {
-      setErrorMessage('Please fill in all fields and provide your background (upload a file, paste text, or load from My Documents)');
+      setErrorMessage('Please fill in all fields and provide your background experience (load from My Profile or upload a file)');
       setUIState('error');
       return;
     }
@@ -391,7 +323,6 @@ export default function Home() {
     setCoverLetterContent('');
     setQuestionAnswers([]);
 
-    // Pre-gen already finished — use buffer instantly
     if (preGenStatus.current === 'done') {
       setResumeContent(preGenBuffer.current.resume);
       setCoverLetterContent(preGenBuffer.current.coverLetter);
@@ -402,7 +333,6 @@ export default function Home() {
       return;
     }
 
-    // Pre-gen is mid-stream — poll buffer into state until done
     if (preGenStatus.current === 'running') {
       const poll = setInterval(() => {
         setResumeContent(preGenBuffer.current.resume);
@@ -423,7 +353,6 @@ export default function Home() {
       return;
     }
 
-    // Pre-gen not started or aborted — fall through to normal generation
     preGenStatus.current = 'aborted';
 
     try {
@@ -438,22 +367,15 @@ export default function Home() {
       for await (const chunk of readSSEStream(response)) {
         try {
           const event = JSON.parse(chunk);
-
           switch (event.type) {
-            case 'status':
-              setStatusMessage(event.message);
-              break;
-            case 'resume_chunk':
-              setResumeContent(prev => prev + event.content);
-              break;
+            case 'status': setStatusMessage(event.message); break;
+            case 'resume_chunk': setResumeContent(prev => prev + event.content); break;
             case 'resume_done':
               if (includeCoverLetter) setStatusMessage('Writing cover letter...');
               else if (questions.some(q => q.trim())) setStatusMessage('Answering questions...');
               else setStatusMessage('Saving...');
               break;
-            case 'cover_letter_chunk':
-              setCoverLetterContent(prev => prev + event.content);
-              break;
+            case 'cover_letter_chunk': setCoverLetterContent(prev => prev + event.content); break;
             case 'cover_letter_done':
               setStatusMessage(questions.some(q => q.trim()) ? 'Answering questions...' : 'Saving...');
               break;
@@ -464,9 +386,7 @@ export default function Home() {
             case 'done':
               setStatusMessage('Generation complete!');
               setUIState('done');
-              if (event.applicationId) {
-                setApplicationId(event.applicationId);
-              }
+              if (event.applicationId) setApplicationId(event.applicationId);
               break;
             case 'error':
               setErrorMessage(event.message || 'An error occurred');
@@ -504,12 +424,9 @@ export default function Home() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-
       const contentDisposition = response.headers.get('Content-Disposition');
       const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
-      const filename = filenameMatch?.[1] || `${type}.pdf`;
-
-      a.download = filename;
+      a.download = filenameMatch?.[1] || `${type}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -531,7 +448,6 @@ export default function Home() {
     preGenBuffer.current = { resume: '', coverLetter: '', answers: [], applicationId: null, lastStatus: '' };
     originalResumeRef.current = '';
     setShowPdfView(true);
-
     setResetKey(k => k + 1);
     setUIState('idle');
     setStatusMessage('');
@@ -550,10 +466,6 @@ export default function Home() {
     setUrlError('');
     setUrlImported(false);
     setManualExperience('');
-    setUploadedFileContent('');
-    setUploadedFileName('');
-    setIsPreviewExpanded(false);
-    setInputMethod('upload');
     setQuestions(['']);
     setShortResponse(false);
     setQuestionsExpanded(false);
@@ -561,44 +473,29 @@ export default function Home() {
     setAnswersExpanded(true);
     setCopiedIdx(null);
     setPreviewType(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
   };
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <SignedIn>
           <TourGuide />
-          <div className="max-w-6xl mx-auto">
+          <div className="space-y-8">
             {/* Header */}
-            <div id="tour-heading" className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-foreground mb-4">Get To Work</h2>
-              <p className="text-lg text-muted-foreground">
-                Paste a job description, upload your resume, and 
-get an AI-tailored, ATS-optimized resume and cover letter in seconds.
-              </p>
-              <p className="text-md text-muted-foreground">
-                *Note: For the best experience, use this on a PC browser.
+            <div id="tour-heading" className="text-center">
+              <h2 className="text-3xl font-bold text-foreground mb-3">Tailor Your Resume</h2>
+              <p className="text-muted-foreground">
+                Paste a job description and get an AI-tailored, ATS-optimized resume in seconds.
               </p>
             </div>
 
             {/* Error Toast */}
             {uiState === 'error' && (
-              <div className="mb-6 p-4 bg-destructive/10 border border-destructive text-destructive rounded-lg">
+              <div className="p-4 bg-destructive/10 border border-destructive text-destructive rounded-lg">
                 <p>{errorMessage}</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-2"
-                  onClick={resetForm}
-                  title="Clear the error and start over"
-                >
+                <Button variant="outline" size="sm" className="mt-2" onClick={resetForm}>
                   Try Again
                 </Button>
               </div>
@@ -613,10 +510,10 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                 onClose={resetForm}
                 actions={
                   <div id="tour-generate" className="flex flex-col sm:flex-row gap-3 pt-2">
-                    <Button size="lg" className="flex-1" onClick={handleGenerateDocuments} title="Generate your tailored resume based on the fit analysis">
+                    <Button size="lg" className="flex-1" onClick={handleGenerateDocuments}>
                       {includeCoverLetter ? 'Generate Resume & Cover Letter' : 'Generate Resume'}
                     </Button>
-                    <Button variant="outline" size="lg" onClick={resetForm} title="Discard and start over with a new job description">Start Over</Button>
+                    <Button variant="outline" size="lg" onClick={resetForm}>Start Over</Button>
                   </div>
                 }
               />
@@ -624,315 +521,192 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
 
             {/* Input Form */}
             {(uiState === 'idle' || uiState === 'analyzing' || uiState === 'error') && (
-              <form ref={formRef} onSubmit={handleFormSubmit}>
+              <form ref={formRef} onSubmit={handleFormSubmit} className="space-y-6">
                 {IS_DEV && (
-                  <div className="mb-6 flex justify-end">
+                  <div className="flex justify-end">
                     <Button type="button" variant="outline" size="sm" onClick={fillTestData}>
                       [Dev] Fill Test Data
                     </Button>
                   </div>
                 )}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                  {/* Left Column - Job Details */}
-                  <div id="tour-job-details" className="space-y-6">
-                    <h3 className="text-xl font-semibold text-foreground mb-4">Job Details</h3>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="company">Company Name</Label>
-                      <div className="relative">
-                        <Input
-                          id="company"
-                          placeholder="Enter company name"
-                          className="bg-background"
-                          disabled={uiState === 'analyzing'}
-                          required
-                          value={company}
-                          onChange={(e) => setCompany(e.target.value)}
-                        />
-                        {isParsingJD && (
-                          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
-                        )}
-                      </div>
+                {/* 1. Experience Panel */}
+                <div id="tour-background">
+                  {usingBaseResume && (
+                    <div className="mb-2 flex justify-end">
+                      <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">
+                        Using base resume
+                      </span>
                     </div>
+                  )}
+                  <ExperiencePanel
+                    key={resetKey}
+                    onBackgroundChange={(text) => { setManualExperience(text); setUsingBaseResume(false); }}
+                    onAdditionalContextChange={setAdditionalContext}
+                    disabled={uiState === 'analyzing'}
+                    usingBaseResume={usingBaseResume}
+                  />
+                </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="jobTitle">Job Title</Label>
-                      <div className="relative">
-                        <Input
-                          id="jobTitle"
-                          placeholder="Enter job title"
-                          className="bg-background"
-                          disabled={uiState === 'analyzing'}
-                          required
-                          value={jobTitle}
-                          onChange={(e) => setJobTitle(e.target.value)}
-                        />
-                        {isParsingJD && (
-                          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="jobDescription">Job Description</Label>
-                      <Textarea
-                        id="jobDescription"
-                        placeholder="Paste the full job description here..."
-                        className="min-h-[300px] bg-background"
-                        disabled={uiState === 'analyzing'}
-                        required
-                        value={jobDescription}
-                        onChange={(e) => setJobDescription(e.target.value)}
-                        onPaste={handleJDPaste}
-                      />
-                      <p className="text-xs text-muted-foreground">Company and job title will auto-fill from the pasted text — double-check before submitting.</p>
-                    </div>
-
-                    <details className="group">
-                      <summary className="text-xs text-muted-foreground hover:text-foreground cursor-pointer list-none flex items-center gap-1 select-none">
-                        <span className="group-open:rotate-90 transition-transform inline-block">›</span>
-                        Import from URL instead
-                      </summary>
-                      <div className="mt-3 space-y-2">
-                        <div className="flex gap-2">
-                          <Input
-                            id="jobUrl"
-                            type="url"
-                            placeholder="https://jobs.example.com/posting/123"
-                            className="bg-background flex-1"
-                            disabled={uiState === 'analyzing' || isFetchingUrl}
-                            value={jobUrl}
-                            onChange={(e) => { setJobUrl(e.target.value); setUrlError(''); setUrlImported(false); }}
-                            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleFetchUrl())}
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleFetchUrl}
-                            disabled={!jobUrl.trim() || uiState === 'analyzing' || isFetchingUrl}
-                            title="Fetch and extract the job description from this URL"
-                          >
-                            {isFetchingUrl ? (
-                              <span className="flex items-center gap-1.5">
-                                <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-muted-foreground/30 border-t-foreground" />
-                                Importing…
-                              </span>
-                            ) : 'Import'}
-                          </Button>
-                        </div>
-                        {urlError && <p className="text-xs text-destructive">{urlError}</p>}
-                        {urlImported
-                          ? <p className="text-xs text-green-600">Imported — always double-check auto-filled results for accuracy.</p>
-                          : <p className="text-xs text-muted-foreground">Works best with public job postings. Some sites may block automated requests.</p>
-                        }
-                      </div>
-                    </details>
-
-                    {/* Application Questions */}
-                    <div id="tour-questions" className="border border-border rounded-xl overflow-hidden">
-                      <button
-                        type="button"
-                        onClick={() => setQuestionsExpanded(e => !e)}
-                        disabled={uiState === 'analyzing'}
-                        title="Add optional application questions to get AI-generated answers"
-                        className="w-full flex items-center justify-between px-5 py-3.5 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
-                      >
-                        <span>
-                          {questionsExpanded ? '−' : '+'} Application Questions
-                          {!questionsExpanded && questions.some(q => q.trim()) && (
-                            <span className="ml-1.5 text-muted-foreground font-normal">
-                              ({questions.filter(q => q.trim()).length} added)
-                            </span>
-                          )}
-                        </span>
-                        <span className="text-xs text-muted-foreground font-normal">optional</span>
-                      </button>
-
-                      {questionsExpanded && (
-                        <div className="px-5 pb-5 pt-1 space-y-4 border-t border-border">
-                          <p className="text-xs text-muted-foreground pt-2">
-                            Paste application questions and get AI-generated answers grounded in your real experience and context documents.
-                          </p>
-
-                          <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                            <input
-                              type="checkbox"
-                              checked={shortResponse}
-                              onChange={(e) => setShortResponse(e.target.checked)}
-                              disabled={uiState === 'analyzing'}
-                              className="w-4 h-4 rounded border-border accent-primary"
-                            />
-                            <span className="text-sm text-muted-foreground">Short response (2–3 sentences)</span>
-                          </label>
-
-                          {questions.map((q, i) => (
-                            <div key={i} className="space-y-1.5">
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs font-medium text-muted-foreground">Question {i + 1}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => removeQuestion(i)}
-                                  disabled={uiState === 'analyzing'}
-                                  title={questions.length === 1 ? 'Clear this question' : 'Remove this question'}
-                                  className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-                                >
-                                  {questions.length === 1 ? 'Clear' : 'Remove'}
-                                </button>
-                              </div>
-                              <Textarea
-                                placeholder="Paste question here..."
-                                className="min-h-[72px] bg-background text-sm resize-none"
-                                disabled={uiState === 'analyzing'}
-                                value={q}
-                                onChange={(e) => updateQuestion(i, e.target.value)}
-                              />
-                            </div>
-                          ))}
-
-                          {questions.length < 5 && (
-                            <button
-                              type="button"
-                              onClick={addQuestion}
-                              disabled={uiState === 'analyzing'}
-                              title="Add another application question (max 5)"
-                              className="text-sm text-primary hover:underline"
-                            >
-                              + Add another question
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Right Column - Your Background */}
-                  <div id="tour-background" className="space-y-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-semibold text-foreground">Your Background</h3>
-                      {usingBaseResume && (
-                        <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">
-                          Using base resume
-                        </span>
-                      )}
-                    </div>
-
-                    <ContextSelector
-                      key={resetKey}
-                      onLoadBackground={text => { setInputMethod('manual'); setManualExperience(text); setUsingBaseResume(false); }}
-                      onAdditionalContextChange={setAdditionalContext}
-                      disabled={uiState === 'analyzing'}
+                {/* 2. Job URL import */}
+                <div id="tour-job-details" className="space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      type="url"
+                      placeholder="https://jobs.example.com/posting/123  — paste URL to import job"
+                      className="bg-background flex-1"
+                      disabled={uiState === 'analyzing' || isFetchingUrl}
+                      value={jobUrl}
+                      onChange={(e) => { setJobUrl(e.target.value); setUrlError(''); setUrlImported(false); }}
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleFetchUrl())}
                     />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleFetchUrl}
+                      disabled={!jobUrl.trim() || uiState === 'analyzing' || isFetchingUrl}
+                    >
+                      {isFetchingUrl ? (
+                        <span className="flex items-center gap-1.5">
+                          <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-muted-foreground/30 border-t-foreground" />
+                          Importing…
+                        </span>
+                      ) : 'Import'}
+                    </Button>
+                  </div>
+                  {urlError && <p className="text-xs text-destructive">{urlError}</p>}
+                  {urlImported
+                    ? <p className="text-xs text-green-600">Imported — double-check auto-filled results before submitting.</p>
+                    : <p className="text-xs text-muted-foreground">LinkedIn job pages cannot be imported automatically — paste the job description manually.</p>
+                  }
+                </div>
 
-                    <div id="tour-experience" className="flex space-x-4 mb-6">
-                      <Button
-                        id="tour-upload-btn"
-                        type="button"
-                        variant={inputMethod === 'upload' ? 'default' : 'outline'}
-                        onClick={() => { setInputMethod('upload'); fileInputRef.current?.click(); }}
-                        disabled={uiState === 'analyzing'}
-                        title="Upload a PDF or DOCX resume — text will be extracted automatically"
-                        className="flex items-center space-x-2"
-                      >
-                        <Upload className="w-4 h-4" />
-                        <span>Upload Resume</span>
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={inputMethod === 'manual' ? 'default' : 'outline'}
-                        onClick={() => setInputMethod('manual')}
-                        disabled={uiState === 'analyzing'}
-                        title="Paste your resume or work experience as plain text"
-                        className="flex items-center space-x-2"
-                      >
-                        <FileText className="w-4 h-4" />
-                        <span>Paste Text</span>
-                      </Button>
-                    </div>
+                {/* 3. Job Description */}
+                <div className="space-y-2">
+                  <Label htmlFor="jobDescription">Job Description</Label>
+                  <Textarea
+                    id="jobDescription"
+                    placeholder="Paste the full job description here..."
+                    className="min-h-[280px] bg-background"
+                    disabled={uiState === 'analyzing'}
+                    required
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    onPaste={handleJDPaste}
+                  />
+                  <p className="text-xs text-muted-foreground">Company and job title will auto-fill from the pasted text — double-check before submitting.</p>
+                </div>
 
-                    {inputMethod === 'upload' && (
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="resumeFile">Upload your existing resume</Label>
-                          <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 hover:border-muted-foreground/50 transition-colors">
-                            <input
-                              ref={fileInputRef}
-                              type="file"
-                              id="resumeFile"
-                              accept=".pdf,.docx"
-                              onChange={handleFileUpload}
-                              disabled={uiState === 'analyzing' || isUploading}
-                              className="hidden"
-                            />
-                            <label
-                              htmlFor="resumeFile"
-                              className="cursor-pointer flex flex-col items-center space-y-2"
-                            >
-                              <Upload className="w-8 h-8 text-muted-foreground" />
-                              <div className="text-center">
-                                <p className="text-sm font-medium">
-                                  {isUploading ? 'Processing file...' : 'Click to upload or drag and drop'}
-                                </p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  PDF or DOCX files up to 5MB
-                                </p>
-                              </div>
-                            </label>
-                          </div>
-                        </div>
-
-                        {uploadedFileName && uploadedFileContent && (
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label>Extracted content from {uploadedFileName}</Label>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setIsPreviewExpanded(!isPreviewExpanded)}
-                                className="flex items-center space-x-1"
-                                title={isPreviewExpanded ? 'Collapse extracted text' : 'Expand to view and edit extracted text'}
-                              >
-                                <span>{isPreviewExpanded ? 'Collapse' : 'Expand'}</span>
-                                {isPreviewExpanded ? (
-                                  <ChevronUp className="w-4 h-4" />
-                                ) : (
-                                  <ChevronDown className="w-4 h-4" />
-                                )}
-                              </Button>
-                            </div>
-                            {isPreviewExpanded && (
-                              <Textarea
-                                value={uploadedFileContent}
-                                onChange={(e) => setUploadedFileContent(e.target.value)}
-                                placeholder="Extracted text will appear here..."
-                                className="min-h-[300px] bg-background font-mono text-sm"
-                                disabled={uiState === 'analyzing'}
-                              />
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {inputMethod === 'manual' && (
-                      <div className="space-y-2">
-                        <Label htmlFor="experience">Or paste your experience manually</Label>
-                        <Textarea
-                          id="experience"
-                          placeholder="Paste your current resume or background experience here..."
-                          className="min-h-[400px] bg-background"
-                          disabled={uiState === 'analyzing'}
-                          required
-                          value={manualExperience}
-                          onChange={(e) => setManualExperience(e.target.value)}
-                        />
-                      </div>
+                {/* 4. Company Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="company">Company Name</Label>
+                  <div className="relative">
+                    <Input
+                      id="company"
+                      placeholder="Enter company name"
+                      className="bg-background"
+                      disabled={uiState === 'analyzing'}
+                      required
+                      value={company}
+                      onChange={(e) => setCompany(e.target.value)}
+                    />
+                    {isParsingJD && (
+                      <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
                     )}
                   </div>
                 </div>
 
-                <div className="flex flex-col items-center space-y-4 mb-6">
-                  {/* Summary toggle */}
+                {/* 5. Job Title */}
+                <div className="space-y-2">
+                  <Label htmlFor="jobTitle">Job Title</Label>
+                  <div className="relative">
+                    <Input
+                      id="jobTitle"
+                      placeholder="Enter job title"
+                      className="bg-background"
+                      disabled={uiState === 'analyzing'}
+                      required
+                      value={jobTitle}
+                      onChange={(e) => setJobTitle(e.target.value)}
+                    />
+                    {isParsingJD && (
+                      <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                    )}
+                  </div>
+                </div>
+
+                {/* 6. Application Questions */}
+                <div id="tour-questions" className="border border-border rounded-xl overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setQuestionsExpanded(e => !e)}
+                    disabled={uiState === 'analyzing'}
+                    className="w-full flex items-center justify-between px-5 py-3.5 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+                  >
+                    <span>
+                      {questionsExpanded ? '−' : '+'} Application Questions
+                      {!questionsExpanded && questions.some(q => q.trim()) && (
+                        <span className="ml-1.5 text-muted-foreground font-normal">
+                          ({questions.filter(q => q.trim()).length} added)
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-xs text-muted-foreground font-normal">optional</span>
+                  </button>
+
+                  {questionsExpanded && (
+                    <div className="px-5 pb-5 pt-1 space-y-4 border-t border-border">
+                      <p className="text-xs text-muted-foreground pt-2">
+                        Paste application questions and get AI-generated answers grounded in your real experience and context documents.
+                      </p>
+                      <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={shortResponse}
+                          onChange={(e) => setShortResponse(e.target.checked)}
+                          disabled={uiState === 'analyzing'}
+                          className="w-4 h-4 rounded border-border accent-primary"
+                        />
+                        <span className="text-sm text-muted-foreground">Short response (2–3 sentences)</span>
+                      </label>
+                      {questions.map((q, i) => (
+                        <div key={i} className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-muted-foreground">Question {i + 1}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeQuestion(i)}
+                              disabled={uiState === 'analyzing'}
+                              className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                            >
+                              {questions.length === 1 ? 'Clear' : 'Remove'}
+                            </button>
+                          </div>
+                          <Textarea
+                            placeholder="Paste question here..."
+                            className="min-h-[72px] bg-background text-sm resize-none"
+                            disabled={uiState === 'analyzing'}
+                            value={q}
+                            onChange={(e) => updateQuestion(i, e.target.value)}
+                          />
+                        </div>
+                      ))}
+                      {questions.length < 5 && (
+                        <button
+                          type="button"
+                          onClick={addQuestion}
+                          disabled={uiState === 'analyzing'}
+                          className="text-sm text-primary hover:underline"
+                        >
+                          + Add another question
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* 7. Toggles + Generate */}
+                <div className="flex flex-col items-center space-y-4">
                   <label className="flex items-center gap-3 cursor-pointer select-none">
                     <input
                       type="checkbox"
@@ -943,7 +717,6 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                     />
                     <span className="text-sm text-muted-foreground">Include a summary section</span>
                   </label>
-                  {/* Cover letter toggle */}
                   <label className="flex items-center gap-3 cursor-pointer select-none">
                     <input
                       type="checkbox"
@@ -956,18 +729,18 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                   </label>
 
                   <Button
+                    id="tour-generate"
                     type="submit"
                     size="lg"
-                    className="px-12 py-3 text-lg"
+                    className="w-full sm:w-auto px-12 py-3 text-lg"
                     disabled={uiState === 'analyzing'}
                   >
-                    {uiState === 'analyzing' ? 'Analyzing...' : 'Analyze Fit'}
+                    {uiState === 'analyzing' ? 'Analyzing…' : 'Tailor My Resume'}
                   </Button>
-                  <p className="text-sm text-muted-foreground">
-                    We&apos;ll analyze your fit before generating your documents
+                  <p className="text-sm text-muted-foreground text-center">
+                    Your resume will be rewritten to match this specific role using your real experience — we never invent anything.
                   </p>
 
-                  {/* Progress Indicator — analyzing phase */}
                   {uiState === 'analyzing' && (
                     <div className="w-full max-w-lg p-5 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
                       <div className="flex items-center gap-3">
@@ -980,13 +753,12 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                     </div>
                   )}
                 </div>
-
               </form>
             )}
 
             {/* Progress Indicator — generating phase */}
             {uiState === 'generating' && (
-              <div className="mb-6 p-5 bg-blue-50 border border-blue-200 rounded-lg space-y-4">
+              <div className="p-5 bg-blue-50 border border-blue-200 rounded-lg space-y-4">
                 {(() => {
                   const hasQs = questions.some(q => q.trim());
                   const steps = [
@@ -998,7 +770,6 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                   const doneCount = steps.filter(s => s.done).length;
                   const pct = Math.round((doneCount / steps.length) * 100);
                   const currentStep = Math.min(doneCount, steps.length - 1);
-
                   return (
                     <>
                       <div className="flex items-center gap-3">
@@ -1011,10 +782,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                           <span>{pct}%</span>
                         </div>
                         <div className="h-1.5 bg-blue-200 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-blue-600 rounded-full transition-all duration-700 ease-out"
-                            style={{ width: `${Math.max(pct, 20)}%` }}
-                          />
+                          <div className="h-full bg-blue-600 rounded-full transition-all duration-700 ease-out" style={{ width: `${Math.max(pct, 20)}%` }} />
                         </div>
                         <div className="flex gap-4 mt-1 flex-wrap">
                           {steps.map((s, i) => (
@@ -1032,7 +800,7 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
 
             {/* Live Preview Panels */}
             {(uiState === 'generating' || uiState === 'done') && (resumeContent || coverLetterContent) && (
-              <div className={`grid grid-cols-1 ${includeCoverLetter ? 'lg:grid-cols-2' : ''} gap-8 mb-8`}>
+              <div className={`grid grid-cols-1 ${includeCoverLetter ? 'lg:grid-cols-2' : ''} gap-8`}>
                 {resumeContent && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -1041,7 +809,6 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                         <button
                           onClick={() => setShowPdfView(v => !v)}
                           className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                          title={showPdfView ? 'Switch to editable text view' : 'Switch to rendered PDF view'}
                         >
                           {showPdfView ? 'Edit text' : 'PDF view'}
                         </button>
@@ -1065,7 +832,6 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                     )}
                   </div>
                 )}
-
                 {includeCoverLetter && coverLetterContent && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -1074,7 +840,6 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                         <button
                           onClick={() => setShowPdfView(v => !v)}
                           className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                          title={showPdfView ? 'Switch to editable text view' : 'Switch to rendered PDF view'}
                         >
                           {showPdfView ? 'Edit text' : 'PDF view'}
                         </button>
@@ -1106,85 +871,31 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
               <div className="text-center space-y-4">
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <div className="flex gap-2">
-                    <Button
-                      size="lg"
-                      onClick={() => handleDownload('resume')}
-                      className="px-8"
-                      title="Download your tailored resume as a PDF"
-                    >
+                    <Button size="lg" onClick={() => handleDownload('resume')} className="px-8">
                       Download Resume PDF
                     </Button>
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      onClick={() => setPreviewType('resume')}
-                      title="Preview Resume"
-                    >
+                    <Button size="lg" variant="outline" onClick={() => setPreviewType('resume')}>
                       <Eye className="w-4 h-4" />
                     </Button>
                   </div>
                   {includeCoverLetter && coverLetterContent && (
                     <div className="flex gap-2">
-                      <Button
-                        size="lg"
-                        onClick={() => handleDownload('cover-letter')}
-                        className="px-8"
-                        title="Download your cover letter as a PDF"
-                      >
+                      <Button size="lg" onClick={() => handleDownload('cover-letter')} className="px-8">
                         Download Cover Letter PDF
                       </Button>
-                      <Button
-                        size="lg"
-                        variant="outline"
-                        onClick={() => setPreviewType('cover-letter')}
-                        title="Preview Cover Letter"
-                      >
+                      <Button size="lg" variant="outline" onClick={() => setPreviewType('cover-letter')}>
                         <Eye className="w-4 h-4" />
                       </Button>
                     </div>
                   )}
                 </div>
-                <Button
-                  variant="outline"
-                  onClick={resetForm}
-                  className="mt-4"
-                  title="Clear all results and start a new resume from scratch"
-                >
+                <Button variant="outline" onClick={resetForm} className="mt-4">
                   Start Fresh
                 </Button>
               </div>
             )}
 
-            {/* Save to Documents Modal */}
-            {showSaveModal && pendingSaveFile && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                <div className="absolute inset-0 bg-black/50" onClick={() => setShowSaveModal(false)} />
-                <div className="relative bg-background border border-border rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
-                  <h2 className="text-base font-semibold text-foreground">Save to your profile?</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Save <span className="font-medium text-foreground">{pendingSaveFile.fileName}</span> to My Documents so it auto-loads next time.
-                  </p>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handleSaveToDocuments}
-                      className="flex-1 h-9 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-                      title="Save this document to My Documents for future use"
-                    >
-                      Yes, save it
-                    </button>
-                    <button
-                      onClick={() => { setShowSaveModal(false); setPendingSaveFile(null); }}
-                      className="flex-1 h-9 rounded-md border border-border text-sm text-foreground hover:bg-muted transition-colors"
-                      title="Skip saving — you can always download directly"
-                    >
-                      No thanks
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* PDF Preview Modal (home page) */}
+            {/* PDF Preview Modals */}
             {previewType === 'resume' && resumeContent && (
               <PDFPreviewModal
                 type="resume"
@@ -1213,12 +924,10 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                   type="button"
                   onClick={() => setAnswersExpanded(e => !e)}
                   className="w-full flex items-center justify-between px-5 py-3.5 text-sm font-semibold text-foreground hover:bg-muted/50 transition-colors"
-                  title={answersExpanded ? 'Collapse application answers' : 'Expand to view AI-generated application answers'}
                 >
                   <span>Application Answers ({questionAnswers.length})</span>
                   <span className="text-muted-foreground">{answersExpanded ? '▲' : '▼'}</span>
                 </button>
-
                 {answersExpanded && (
                   <div className="divide-y divide-border border-t border-border">
                     {questionAnswers.map((qa, i) => (
@@ -1234,7 +943,6 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
                           type="button"
                           onClick={() => copyAnswer(qa.answer, i)}
                           className="text-xs text-primary hover:underline"
-                          title="Copy this answer to clipboard"
                         >
                           {copiedIdx === i ? 'Copied!' : 'Copy Answer'}
                         </button>
