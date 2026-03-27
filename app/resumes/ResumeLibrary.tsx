@@ -1,21 +1,23 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ResumeItem, ItemType, ITEM_TYPE_LABELS } from '@/types/resume';
-import { Plus, Trash2, Star, Pencil, Upload, X, Check } from 'lucide-react';
+import { Plus, Trash2, Star, Pencil, Upload, X, Check, FileText, Sparkles } from 'lucide-react';
 import TipsPanel from '@/components/TipsPanel';
 
 interface Props {
   initialItems: ResumeItem[];
+  baseResume: ResumeItem | null;
 }
 
 type ModalMode = 'add' | 'edit' | null;
 
-export default function ResumeLibrary({ initialItems }: Props) {
+export default function ResumeLibrary({ initialItems, baseResume }: Props) {
   const [items, setItems] = useState<ResumeItem[]>(initialItems);
   const [modal, setModal] = useState<ModalMode>(null);
   const [editingItem, setEditingItem] = useState<ResumeItem | null>(null);
@@ -114,8 +116,52 @@ export default function ResumeLibrary({ initialItems }: Props) {
     setItems(prev => prev.filter(i => i.id !== item.id));
   };
 
+  const formattedDate = baseResume
+    ? new Date(baseResume.updated_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    : null;
+
   return (
-    <div>
+    <div className="space-y-8">
+      {/* Base Resume Section */}
+      <div>
+        <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
+          <FileText className="w-4 h-4" /> Base Resume
+        </h3>
+        {baseResume ? (
+          <div className="border border-border rounded-xl p-5 bg-card space-y-3">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-medium text-foreground">{baseResume.title}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Last updated {formattedDate} · {(baseResume.content?.text?.length ?? 0).toLocaleString()} chars
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Link href={`/base-resume?id=${baseResume.id}`}>
+                  <Button size="sm" variant="outline">Edit &amp; Refine</Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="border border-dashed border-border rounded-xl p-6 text-center space-y-3">
+            <Sparkles className="w-8 h-8 text-muted-foreground mx-auto" />
+            <div>
+              <p className="font-medium text-foreground">No base resume yet</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                A base resume is the master document all your tailored resumes are built from.
+                It takes about 2 minutes to create.
+              </p>
+            </div>
+            <Link href="/base-resume">
+              <Button>Create Base Resume →</Button>
+            </Link>
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h3 className="text-base font-semibold text-foreground mb-3">Context Documents</h3>
       <div className="flex items-center justify-between mb-6">
         <p className="text-sm text-muted-foreground">{items.length} saved item{items.length !== 1 ? 's' : ''}</p>
         <Button onClick={openAdd} title="Add a new resume or document to your library">
@@ -243,6 +289,7 @@ export default function ResumeLibrary({ initialItems }: Props) {
           </div>
         </div>
       )}
+      </div> {/* end Context Documents */}
     </div>
   );
 }

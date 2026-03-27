@@ -137,9 +137,29 @@ export default function Home() {
   const [showPdfView, setShowPdfView] = useState(true);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [pendingSaveFile, setPendingSaveFile] = useState<{ text: string; fileName: string } | null>(null);
+  const [usingBaseResume, setUsingBaseResume] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const originalResumeRef = useRef('');
+  const baseResumeLoadedRef = useRef(false);
+
+  // Auto-load base resume as background on mount
+  useEffect(() => {
+    if (baseResumeLoadedRef.current) return;
+    fetch('/api/resumes')
+      .then(r => r.ok ? r.json() : [])
+      .then((items: Array<{ item_type: string; content: { text: string } }>) => {
+        const base = items.find(i => i.item_type === 'base_resume');
+        if (base && !manualExperience) {
+          setManualExperience(base.content.text);
+          setInputMethod('manual');
+          setUsingBaseResume(true);
+          baseResumeLoadedRef.current = true;
+        }
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Capture original resume text the first time generation completes
   useEffect(() => {
@@ -787,11 +807,18 @@ get an AI-tailored, ATS-optimized resume and cover letter in seconds.
 
                   {/* Right Column - Your Background */}
                   <div id="tour-background" className="space-y-6">
-                    <h3 className="text-xl font-semibold text-foreground mb-4">Your Background</h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-xl font-semibold text-foreground">Your Background</h3>
+                      {usingBaseResume && (
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">
+                          Using base resume
+                        </span>
+                      )}
+                    </div>
 
                     <ContextSelector
                       key={resetKey}
-                      onLoadBackground={text => { setInputMethod('manual'); setManualExperience(text); }}
+                      onLoadBackground={text => { setInputMethod('manual'); setManualExperience(text); setUsingBaseResume(false); }}
                       onAdditionalContextChange={setAdditionalContext}
                       disabled={uiState === 'analyzing'}
                     />

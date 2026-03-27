@@ -74,6 +74,8 @@ Current valid columns:
 | `POST /api/interview-prep` | Node | Haiku — generates 8 interview questions across 6 categories; saves to `applications.interview_prep`; returns `InterviewPrep` |
 | `POST /api/log-event` | Node | Server-side event logging — writes JSON to Vercel function logs; always returns 200 |
 | `POST /api/resume-chat` | Node | Sonnet non-streaming — AI chat for refining a generated resume; parses `CHANGE:` vs `ANSWER:` response format; on change, updates `applications.resume_content` and `applications.chat_history` in Supabase |
+| `POST /api/generate-base-resume` | Node | Sonnet non-streaming — accepts `documentIds[]`, fetches documents from Supabase, builds comprehensive base resume; returns `{ resumeText: string }` |
+| `POST /api/base-resume-chat` | Node | Sonnet non-streaming — AI chat for refining base resume; parses `CHANGE:` vs `ANSWER:`; does NOT save to DB (caller saves explicitly); returns `{ type, content }` |
 | `POST /api/interview/generate` | Node | Sonnet non-streaming call — builds experience doc from interview transcript; returns `{ document: string }` |
 | `GET /api/interview/sessions` | Node | Fetch most recent `draft` session for current user; returns `{ session }` (null if none) |
 | `POST /api/interview/sessions` | Node | Create a new draft session; returns `{ id }` |
@@ -155,7 +157,8 @@ const { SONNET, HAIKU } = await getModels();
 - `ApplicationCard` shows a `Target` icon (primary color = prep exists, muted = not yet generated) — clicking triggers `POST /api/interview-prep` if null, then opens `InterviewPrepPanel` in a modal
 - `ApplicationCard` shows a `ScrollText` icon — opens a modal with the formatted job description (`FormattedJD` component)
 - `components/FitAnalysisModal.tsx` — reusable modal used on both home page (with `actions` slot for Generate/Start Over) and dashboard cards; handles Escape key, backdrop click, graceful fallback if data malformed; shows top 3 items per section by default with a chevron expand toggle; items are ranked most-impactful-first by the API prompt
-- `components/InlinePDFViewer.tsx` — inline PDF iframe (US Letter aspect ratio) rendered via `BlobProvider`; shown post-generation replacing the textarea; "Edit text" toggle switches back; auto-updates when `resumeContent` prop changes
+- `components/InlinePDFViewer.tsx` — inline PDF iframe (US Letter aspect ratio) rendered via `BlobProvider`; shown post-generation replacing the textarea; "Edit text" toggle switches back; auto-updates when `resumeContent` prop changes; reused in BaseResumeCreator (pass empty strings for company/jobTitle)
+- `components/BaseResumeCreator.tsx` — 3-step flow (select docs → generate → review); inline PDF + chat panel + explicit save; edit mode loaded via `?id=` query param from My Profile; saves to `resumes` table with `item_type: 'base_resume'`
 - `components/ResumeChatPanel.tsx` — post-generation resume chat; parses `CHANGE:` vs `ANSWER:` response format; "Fit to 1 page" and "Fit to 2 pages" quick-action chips; saves changes to `applications.resume_content` and `applications.chat_history`
 
 ## Resume Generation — Output Format
