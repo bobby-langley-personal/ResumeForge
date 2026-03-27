@@ -47,6 +47,8 @@ Also include a "plannedImprovements" array: 3-5 specific, concrete changes that 
 compared to the candidate's original. Examples: reframing a job title, surfacing a buried metric, adding missing keywords,
 restructuring bullet points, cutting irrelevant experience. Be specific — name real content from their background.
 
+Within each array, order items by importance — most impactful first. The first 3 items in each array are shown by default, so lead with the strongest signal.
+
 Output valid JSON only, no markdown fences:
 {
   "overallFit": "Strong Fit" | "Good Fit" | "Stretch Role",

@@ -13,24 +13,35 @@ Before generating anything, ResumeForge runs a fit analysis using Claude Haiku:
 - Generates 3–5 **Planned Improvements**: concrete changes that will be made to the resume (e.g. "surface the 50% ticket resolution metric", "add missing keyword: GraphQL")
 - Detects role type (technical, management, sales, customer success, research) to tailor the analysis tone
 - Fit analysis is **saved with each application** and viewable any time from the AI Resumes dashboard via a lightbulb icon on each card
+- Results are **ranked by importance** — most impactful items appear first in each section
+- Each section shows the **top 3 items by default** with a chevron toggle to expand and see all
 
 ### 2. Document Generation
 After reviewing the fit analysis, the user approves generation. Claude Sonnet streams back:
 - A fully tailored resume formatted for the specific role and company
 - An optional **summary section** (toggled before submission — off by default)
 - An optional **cover letter** (toggled before submission)
-- Both stream live to the page as they generate
+- Both stream live to the page as they generate; once complete, panels switch to an **inline PDF view** (US Letter aspect ratio iframe) — an "Edit text" toggle switches back to the raw textarea
+- The PDF view auto-updates when resume content is modified via AI chat
 - If application questions are provided, a third phase generates written answers grounded in the resume and background — displayed with word counts and copy buttons
 - A **"Start Fresh"** button resets the form after generation
 
-### 2a. Resume Bullet Point Rules
+### 2a. Post-Generation Resume Chat
+After a resume is generated, a chat panel lets users refine it conversationally:
+- Ask Claude to rewrite a bullet, change tone, trim to one page, add a skill, etc.
+- Claude responds with either a `CHANGE:` (updated resume content applied immediately) or `ANSWER:` (plain text reply shown in chat)
+- **Page fit quick actions** — "Fit to 1 page" and "Fit to 2 pages" chips send a one-click prompt; Claude trims or expands accordingly without suggesting external tools
+- Changes are saved to `applications.resume_content` in Supabase; chat history saved to `applications.chat_history`
+- The inline PDF view updates automatically as changes are applied
+
+### 2c. Resume Bullet Point Rules
 The generation prompt enforces strict quality rules:
 - **Tiered bullet counts** — most recent/primary role 8–10 bullets; supporting roles 6–8; early career/less relevant roles 4–5; hard ceiling of 10 per role; aim for the higher end — a candidate with 4+ years of experience should fill 2 pages
 - **180-character max per bullet** — long bullets are split rather than wrapped
 - **No repeated action verbs** — each bullet within a role must open with a unique verb
 - **No hedging on leadership** — "Informally led" becomes "Managed", "Helped lead" becomes "Co-led"
 
-### 2b. Application Questions
+### 2d. Application Questions
 Users can add up to 5 open-ended application questions before generating:
 - Questions can be entered manually or auto-populated from URL import
 - Toggle between short responses (2–3 sentences) and full paragraphs
@@ -53,7 +64,7 @@ A personal library of saved context artifacts:
 - Upload PDF or DOCX files — text is extracted server-side
 - **Save to profile prompt** — when uploading a file on the home page, a modal asks if you'd like to save it to My Documents so it auto-loads next time
 - Categorize items: Resume, Cover Letter, Portfolio, Other
-- Mark one item as **Default** — it auto-loads as the primary background on the home page
+- Mark one item as **Default** — it auto-loads as the primary background on the home page; if no item is marked default, the first document is used automatically
 - **All** non-default items are pre-selected as **additional context** for the AI, with the accordion expanded automatically
 - Additional context items are appended to both the fit analysis and generation prompts, with source attribution on every insight
 
@@ -192,7 +203,9 @@ components/
   Navbar.tsx                # Hamburger nav (all screen sizes) — navigation + theme + feedback + tour
   Footer.tsx                # Persistent footer — attribution + feedback shortcut
   ContextSelector.tsx       # Library picker — primary background + additional context (all docs pre-selected)
-  FitAnalysisModal.tsx      # Reusable fit analysis modal — used on home page and dashboard cards
+  FitAnalysisModal.tsx      # Reusable fit analysis modal — top 3 per section by default, expandable; used on home page and dashboard cards
+  InlinePDFViewer.tsx       # Inline PDF iframe (US Letter aspect ratio) shown post-generation; updates on chat edits
+  ResumeChatPanel.tsx       # Post-generation chat UI — page fit chips, CHANGE/ANSWER response parsing
   FeedbackModal.tsx         # Feedback form modal — general and bug report types
   PDFPreviewModal.tsx       # PDF preview modal — BlobProvider iframe, dynamically imported (ssr: false)
   TourGuide.tsx             # driver.js onboarding tour; exports startTour() for replay
