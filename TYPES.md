@@ -351,6 +351,19 @@ Claude ends adaptive chat messages with a `CHOICES: A | B | C` line. `InterviewC
 
 ---
 
+## Polished Resume Types (`app/api/generate-polished-resume/route.ts`)
+
+### `GeneratePolishedResumeRequest`
+```typescript
+{
+  documentIds: string[]   // IDs of source documents to build from
+  pageLimit: number       // 1–4 — hard page constraint passed to prompt
+  roleTypeHint?: string   // optional, e.g. "Software Engineer" — subtly weights relevant experience
+}
+```
+
+---
+
 ## Model Types (`lib/models.ts`)
 
 ### Current model IDs

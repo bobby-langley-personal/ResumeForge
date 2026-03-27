@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ResumeItem, ItemType, ITEM_TYPE_LABELS } from '@/types/resume';
-import { Plus, Trash2, Star, Pencil, Upload, X, Check, FileText, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Star, Pencil, Upload, X, Check, FileText, Sparkles, Diamond } from 'lucide-react';
 import TipsPanel from '@/components/TipsPanel';
 
 interface Props {
@@ -158,6 +158,24 @@ export default function ResumeLibrary({ initialItems, baseResume }: Props) {
             </Link>
           </div>
         )}
+      </div>
+
+      {/* Polished Resume CTA */}
+      <div className="border border-primary/20 rounded-xl p-5 bg-primary/5 space-y-2">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <Diamond className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+            <div>
+              <p className="font-medium text-foreground">Polished General-Use Resume</p>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                A strong standalone resume optimized for recruiters, networking, and broad applications — not tailored to a specific job.
+              </p>
+            </div>
+          </div>
+          <Link href="/polished-resume" className="shrink-0">
+            <Button size="sm" variant="outline">Create</Button>
+          </Link>
+        </div>
       </div>
 
       <div>
