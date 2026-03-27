@@ -141,7 +141,7 @@ export function startTour() {
         popover: {
           title: 'Navigate from here',
           description:
-            'Use this menu to get around — Tailor New Resume brings you back here, AI Resumes shows your saved applications, and My Documents is where you store your resume and other context files so they auto-load every time.',
+            'Use this menu to get around — Tailor New Resume brings you here to generate, AI Resumes shows your saved applications, and My Profile is where you store your resume and context files so they auto-load every time.',
           side: 'bottom',
           align: 'end',
         },

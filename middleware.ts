@@ -6,6 +6,7 @@ const isPublicRoute = createRouteMatcher([
   '/sign-up(.*)',
   '/api/webhooks/clerk'
 ]);
+// /tailor is auth-protected — Clerk middleware handles the redirect
 
 export default clerkMiddleware(async (auth, request) => {
   if (!isPublicRoute(request)) {
