@@ -154,7 +154,9 @@ const { SONNET, HAIKU } = await getModels();
 - `ApplicationCard` has Eye icon preview buttons alongside each download button — fetches application content via `GET /api/applications/[id]` on first click, caches for subsequent previews
 - `ApplicationCard` shows a `Target` icon (primary color = prep exists, muted = not yet generated) — clicking triggers `POST /api/interview-prep` if null, then opens `InterviewPrepPanel` in a modal
 - `ApplicationCard` shows a `ScrollText` icon — opens a modal with the formatted job description (`FormattedJD` component)
-- `components/FitAnalysisModal.tsx` — reusable modal used on both home page (with `actions` slot for Generate/Start Over) and dashboard cards; handles Escape key, backdrop click, graceful fallback if data malformed
+- `components/FitAnalysisModal.tsx` — reusable modal used on both home page (with `actions` slot for Generate/Start Over) and dashboard cards; handles Escape key, backdrop click, graceful fallback if data malformed; shows top 3 items per section by default with a chevron expand toggle; items are ranked most-impactful-first by the API prompt
+- `components/InlinePDFViewer.tsx` — inline PDF iframe (US Letter aspect ratio) rendered via `BlobProvider`; shown post-generation replacing the textarea; "Edit text" toggle switches back; auto-updates when `resumeContent` prop changes
+- `components/ResumeChatPanel.tsx` — post-generation resume chat; parses `CHANGE:` vs `ANSWER:` response format; "Fit to 1 page" and "Fit to 2 pages" quick-action chips; saves changes to `applications.resume_content` and `applications.chat_history`
 
 ## Resume Generation — Output Format
 
@@ -205,7 +207,7 @@ should only target unnecessary whitespace — never content.
 
 ## My Documents / ContextSelector
 
-- `ContextSelector` auto-loads the default item as primary background on mount
+- `ContextSelector` auto-loads the default item as primary background on mount; if no item has `is_default = true`, falls back to `data[0]` so a single document always auto-loads
 - Pre-selects all non-default items as additional context; accordion auto-expands
 - `key={resetKey}` on `<ContextSelector>` in `app/page.tsx` — incrementing remounts and re-fetches
 - Additional context items appear in both analyze-fit and generate-documents prompts with source attribution
