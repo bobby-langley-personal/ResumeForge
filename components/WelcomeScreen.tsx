@@ -4,7 +4,9 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Upload, ChevronDown, Loader2, ArrowRight, Lightbulb } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Upload, ChevronDown, Loader2, ArrowRight, Lightbulb, Check } from 'lucide-react';
 
 interface WhatToAddTip {
   icon: string;
@@ -67,37 +69,177 @@ function TipRow({ tip }: { tip: WhatToAddTip }) {
   );
 }
 
+interface ContactFields {
+  fullName: string;
+  email: string;
+  location: string;
+  linkedinUrl: string;
+}
+
+function extractContactFromText(text: string): ContactFields {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+
+  const emailMatch = text.match(/[\w.+\-]+@[\w\-]+\.[a-z]{2,}/i);
+  const linkedinMatch = text.match(/linkedin\.com\/in\/([\w\-]+)/i);
+  const locationMatch = text.match(/([A-Za-z][\w\s]{2,}),\s*([A-Z]{2})\b/);
+
+  // First line that looks like a full name (2–5 words, starts uppercase, no symbols/numbers)
+  const nameLine = lines.find(l =>
+    l.length >= 4 &&
+    l.length <= 50 &&
+    /^[A-Z]/.test(l) &&
+    !/[@|:\\/\d\(\)\[\]#]/.test(l) &&
+    l.split(/\s+/).length >= 2 &&
+    l.split(/\s+/).length <= 5
+  );
+
+  return {
+    fullName: nameLine ?? '',
+    email: emailMatch?.[0] ?? '',
+    location: locationMatch ? `${locationMatch[1].trim()}, ${locationMatch[2]}` : '',
+    linkedinUrl: linkedinMatch ? `linkedin.com/in/${linkedinMatch[1]}` : '',
+  };
+}
+
 export default function WelcomeScreen() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Upload step state
   const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState('');
+  const [uploadError, setUploadError] = useState('');
   const [tipsOpen, setTipsOpen] = useState(false);
+
+  // Contact step state
+  const [showContact, setShowContact] = useState(false);
+  const [contact, setContact] = useState<ContactFields>({ fullName: '', email: '', location: '', linkedinUrl: '' });
+  const [isSavingContact, setIsSavingContact] = useState(false);
+  const [contactError, setContactError] = useState('');
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setIsUploading(true);
-    setError('');
+    setUploadError('');
     try {
       const formData = new FormData();
       formData.append('file', file);
       const res = await fetch('/api/extract-resume', { method: 'POST', body: formData });
       if (!res.ok) throw new Error(await res.text());
       const { text, fileName } = await res.json();
+
+      // Save resume to library
       const title = fileName.replace(/\.[^.]+$/, '');
       await fetch('/api/resumes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, content: { text, fileName }, item_type: 'resume', is_default: true }),
       });
-      router.push('/tailor');
+
+      // Extract contact info and show confirmation step
+      setContact(extractContactFromText(text));
+      setShowContact(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
+      setUploadError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
+    } finally {
       setIsUploading(false);
+      e.target.value = '';
     }
   };
 
+  const handleSaveContact = async () => {
+    setIsSavingContact(true);
+    setContactError('');
+    try {
+      await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: contact.fullName,
+          email: contact.email,
+          location: contact.location,
+          linkedin_url: contact.linkedinUrl,
+        }),
+      });
+      router.push('/tailor');
+    } catch {
+      setContactError('Failed to save. Please try again.');
+      setIsSavingContact(false);
+    }
+  };
+
+  // ── Contact confirmation step ──────────────────────────────────────────────
+  if (showContact) {
+    return (
+      <div className="max-w-lg mx-auto space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Let&apos;s verify your contact info</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            This will appear on all generated resumes and documents. You can update it any time under <strong>My Profile</strong>.
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label>Full name</Label>
+            <Input
+              value={contact.fullName}
+              onChange={e => setContact(c => ({ ...c, fullName: e.target.value }))}
+              placeholder="Jane Smith"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Email</Label>
+            <Input
+              type="email"
+              value={contact.email}
+              onChange={e => setContact(c => ({ ...c, email: e.target.value }))}
+              placeholder="jane@example.com"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Location</Label>
+            <Input
+              value={contact.location}
+              onChange={e => setContact(c => ({ ...c, location: e.target.value }))}
+              placeholder="San Francisco, CA"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>LinkedIn URL</Label>
+            <Input
+              value={contact.linkedinUrl}
+              onChange={e => setContact(c => ({ ...c, linkedinUrl: e.target.value }))}
+              placeholder="linkedin.com/in/yourname"
+            />
+          </div>
+        </div>
+
+        {contactError && <p className="text-sm text-destructive">{contactError}</p>}
+
+        <div className="flex items-center gap-3">
+          <Button
+            className="flex-1"
+            onClick={handleSaveContact}
+            disabled={isSavingContact}
+          >
+            {isSavingContact
+              ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</>
+              : <><Check className="w-4 h-4 mr-2" />Looks good, let&apos;s go</>}
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => router.push('/tailor')}
+            disabled={isSavingContact}
+          >
+            Skip for now
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Upload step ────────────────────────────────────────────────────────────
   return (
     <div className="max-w-xl mx-auto space-y-6">
       <div>
@@ -138,7 +280,7 @@ export default function WelcomeScreen() {
               : <>Upload <ArrowRight className="w-3.5 h-3.5 ml-1.5" /></>}
           </Button>
         </div>
-        {error && <p className="text-sm text-destructive mt-3">{error}</p>}
+        {uploadError && <p className="text-sm text-destructive mt-3">{uploadError}</p>}
       </div>
 
       {/* What else can I add? */}

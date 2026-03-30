@@ -33,6 +33,36 @@ export interface Database {
         }
         Relationships: []
       }
+      user_profiles: {
+        Row: {
+          user_id: string
+          full_name: string
+          email: string
+          location: string
+          linkedin_url: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          full_name?: string
+          email?: string
+          location?: string
+          linkedin_url?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          full_name?: string
+          email?: string
+          location?: string
+          linkedin_url?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           id: string

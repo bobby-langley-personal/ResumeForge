@@ -65,7 +65,7 @@ export default function GoalScreen({ firstName, hasApplications }: Props) {
         <GoalCard
           icon={<Target className="w-5 h-5 text-foreground" />}
           title="Tailor a resume for a specific job"
-          description="Paste a job description and get a tailored, ATS-optimized resume in seconds"
+          description="Paste a job description and get a tailored resume in seconds"
           href="/tailor"
           cta="Tailor Now"
           primary

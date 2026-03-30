@@ -66,9 +66,9 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
 
           {/* Logo — always visible */}
-          <Link href="/" onClick={close}>
+          <a href="/" onClick={close}>
             <h1 className="text-2xl font-bold text-foreground">ResumeForge</h1>
-          </Link>
+          </a>
 
           {/* Right side */}
           <div className="flex items-center gap-2">

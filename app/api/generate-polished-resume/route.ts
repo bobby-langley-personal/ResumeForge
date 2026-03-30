@@ -19,11 +19,18 @@ export async function POST(req: NextRequest) {
     if (!pageLimit || pageLimit < 1 || pageLimit > 4) return new Response('pageLimit must be 1–4', { status: 400 });
 
     const supabase = supabaseServer();
-    const { data: docs, error } = await supabase
-      .from('resumes')
-      .select('title, content, item_type')
-      .eq('user_id', userId)
-      .in('id', documentIds);
+    const [{ data: docs, error }, { data: profileData }] = await Promise.all([
+      supabase
+        .from('resumes')
+        .select('title, content, item_type')
+        .eq('user_id', userId)
+        .in('id', documentIds),
+      supabase
+        .from('user_profiles')
+        .select('full_name, email, location, linkedin_url')
+        .eq('user_id', userId)
+        .single(),
+    ]);
 
     if (error || !docs?.length) return new Response('Documents not found', { status: 404 });
 
@@ -91,7 +98,7 @@ EDUCATION:
 [Degree]`,
       messages: [{
         role: 'user',
-        content: `Build a polished ${pageLimit}-page general-use resume from these documents${roleTypeHint ? ` — the candidate is targeting ${roleTypeHint} roles` : ''}:\n\n${combinedContext}`,
+        content: `Build a polished ${pageLimit}-page general-use resume from these documents${roleTypeHint ? ` — the candidate is targeting ${roleTypeHint} roles` : ''}:\n\n${combinedContext}${profileData && (profileData.full_name || profileData.email) ? `\n\n[Use this exact contact information in the resume header — do not change or omit these values:]\nName: ${profileData.full_name || ''}${profileData.email ? `\nEmail: ${profileData.email}` : ''}${profileData.location ? `\nLocation: ${profileData.location}` : ''}${profileData.linkedin_url ? `\nLinkedIn: ${profileData.linkedin_url}` : ''}` : ''}`,
       }],
     });
 

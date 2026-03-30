@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { createElement } from 'react';
+import { supabaseServer } from '@/lib/supabase';
 import ResumePDF from '@/lib/pdf/ResumePDF';
 
 export const runtime = 'nodejs';
@@ -14,8 +15,12 @@ export async function POST(request: NextRequest) {
     const { resumeText, fileName } = await request.json() as { resumeText: string; fileName?: string };
     if (!resumeText) return NextResponse.json({ error: 'resumeText is required' }, { status: 400 });
 
-    const user = await currentUser();
-    const fullName = user?.fullName || user?.firstName || 'User';
+    const supabase = supabaseServer();
+    const [user, profileResult] = await Promise.all([
+      currentUser(),
+      supabase.from('user_profiles').select('full_name').eq('user_id', userId).single(),
+    ]);
+    const fullName = profileResult.data?.full_name || user?.fullName || user?.firstName || 'User';
 
     const element = createElement(ResumePDF, {
       resumeText,

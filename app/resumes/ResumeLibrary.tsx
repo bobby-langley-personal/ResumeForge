@@ -7,19 +7,33 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ResumeItem, ItemType, ITEM_TYPE_LABELS } from '@/types/resume';
-import { Plus, Trash2, Star, Pencil, Upload, X, Check, Diamond } from 'lucide-react';
+import { Plus, Trash2, Star, Pencil, Upload, X, Check, Diamond, User, Loader2 } from 'lucide-react';
 import TipsPanel from '@/components/TipsPanel';
+
+interface UserProfile {
+  full_name: string;
+  email: string;
+  location: string;
+  linkedin_url: string;
+}
 
 interface Props {
   initialItems: ResumeItem[];
+  profile: UserProfile;
 }
 
 type ModalMode = 'add' | 'edit' | null;
 
-export default function ResumeLibrary({ initialItems }: Props) {
+export default function ResumeLibrary({ initialItems, profile: initialProfile }: Props) {
   const [items, setItems] = useState<ResumeItem[]>(initialItems);
   const [modal, setModal] = useState<ModalMode>(null);
   const [editingItem, setEditingItem] = useState<ResumeItem | null>(null);
+
+  // Contact info state
+  const [profileFields, setProfileFields] = useState<UserProfile>(initialProfile);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [profileError, setProfileError] = useState('');
 
   // Form state
   const [title, setTitle] = useState('');
@@ -29,6 +43,31 @@ export default function ResumeLibrary({ initialItems }: Props) {
   const [isUploading, setIsUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const handleProfileSave = async () => {
+    setProfileSaving(true);
+    setProfileError('');
+    setProfileSaved(false);
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: profileFields.full_name,
+          email: profileFields.email,
+          location: profileFields.location,
+          linkedin_url: profileFields.linkedin_url,
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 2500);
+    } catch {
+      setProfileError('Failed to save. Please try again.');
+    } finally {
+      setProfileSaving(false);
+    }
+  };
 
   const openAdd = () => {
     setTitle('');
@@ -117,6 +156,63 @@ export default function ResumeLibrary({ initialItems }: Props) {
 
   return (
     <div className="space-y-8">
+      {/* Contact Info */}
+      <div>
+        <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
+          <User className="w-4 h-4" /> Contact Information
+        </h3>
+        <div className="border border-border rounded-xl p-5 bg-card space-y-4">
+          <p className="text-xs text-muted-foreground">
+            Used on all generated resumes and documents.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Full name</Label>
+              <Input
+                value={profileFields.full_name}
+                onChange={e => setProfileFields(p => ({ ...p, full_name: e.target.value }))}
+                placeholder="Jane Smith"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={profileFields.email}
+                onChange={e => setProfileFields(p => ({ ...p, email: e.target.value }))}
+                placeholder="jane@example.com"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Location</Label>
+              <Input
+                value={profileFields.location}
+                onChange={e => setProfileFields(p => ({ ...p, location: e.target.value }))}
+                placeholder="San Francisco, CA"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>LinkedIn URL</Label>
+              <Input
+                value={profileFields.linkedin_url}
+                onChange={e => setProfileFields(p => ({ ...p, linkedin_url: e.target.value }))}
+                placeholder="linkedin.com/in/yourname"
+              />
+            </div>
+          </div>
+          {profileError && <p className="text-sm text-destructive">{profileError}</p>}
+          <div className="flex items-center gap-3">
+            <Button size="sm" onClick={handleProfileSave} disabled={profileSaving}>
+              {profileSaving
+                ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Saving...</>
+                : profileSaved
+                  ? <><Check className="w-3.5 h-3.5 mr-1.5" />Saved</>
+                  : 'Save'}
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* Polished Resume CTA */}
       <div className="border border-primary/20 rounded-xl p-5 bg-primary/5 space-y-2">
         <div className="flex items-start justify-between gap-4">

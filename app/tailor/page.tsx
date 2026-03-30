@@ -487,7 +487,7 @@ export default function Home() {
             <div id="tour-heading" className="text-center">
               <h2 className="text-3xl font-bold text-foreground mb-3">Tailor Your Resume</h2>
               <p className="text-muted-foreground">
-                Paste a job description and get an AI-tailored, ATS-optimized resume in seconds.
+                Paste a job description and get an AI-tailored resume in seconds.
               </p>
             </div>
 
@@ -577,7 +577,7 @@ export default function Home() {
                   {urlError && <p className="text-xs text-destructive">{urlError}</p>}
                   {urlImported
                     ? <p className="text-xs text-green-600">Imported — double-check auto-filled results before submitting.</p>
-                    : <p className="text-xs text-muted-foreground">LinkedIn job pages cannot be imported automatically — paste the job description manually.</p>
+                    : <p className="text-xs text-muted-foreground">This URL field really only works for greenhouse and a few others so far -- Linkedin, Indeed, and other major sites don't like to play well with others :( </p>
                   }
                 </div>
 

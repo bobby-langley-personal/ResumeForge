@@ -15,19 +15,28 @@ export default async function ResumesPage() {
   if (!userId) redirect('/sign-in');
 
   const supabase = supabaseServer();
-  const { data, error } = await supabase
-    .from('resumes')
-    .select('id, user_id, title, content, item_type, is_default, created_at, updated_at')
-    .eq('user_id', userId)
-    .order('is_default', { ascending: false })
-    .order('created_at', { ascending: false });
+  const [resumesResult, profileResult] = await Promise.all([
+    supabase
+      .from('resumes')
+      .select('id, user_id, title, content, item_type, is_default, created_at, updated_at')
+      .eq('user_id', userId)
+      .order('is_default', { ascending: false })
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('user_profiles')
+      .select('full_name, email, location, linkedin_url')
+      .eq('user_id', userId)
+      .single(),
+  ]);
 
-  if (error) console.error('[resumes page]', error.message);
+  if (resumesResult.error) console.error('[resumes page]', resumesResult.error.message);
 
-  const allItems = (data ?? []).map((item: any) => ({
+  const allItems = (resumesResult.data ?? []).map((item: any) => ({
     ...item,
     content: typeof item.content === 'string' ? JSON.parse(item.content) : item.content,
   })) as ResumeItem[];
+
+  const profile = profileResult.data ?? { full_name: '', email: '', location: '', linkedin_url: '' };
 
   return (
     <div className="min-h-screen bg-background">
@@ -53,7 +62,7 @@ export default async function ResumesPage() {
             </Button>
           </Link>
         </div>
-        <ResumeLibrary initialItems={allItems} />
+        <ResumeLibrary initialItems={allItems} profile={profile} />
       </main>
     </div>
   );
