@@ -13,6 +13,7 @@ import { Loader2, Eye } from 'lucide-react';
 import { FitAnalysis } from '@/types/fit-analysis';
 import { ResumeItem } from '@/types/resume';
 import ExperiencePanel from '@/components/ExperiencePanel';
+import JobSearchPanel from '@/components/JobSearchPanel';
 import TourGuide from '@/components/TourGuide';
 import FitAnalysisModal from '@/components/FitAnalysisModal';
 import { InterviewPrepSection } from '@/components/InterviewPrepPanel';
@@ -483,6 +484,14 @@ export default function Home() {
     setPreviewType(null);
   };
 
+  const handleJobSelect = ({ company, jobTitle, jobDescription, jobUrl: url }: { company: string; jobTitle: string; jobDescription: string; jobUrl: string }) => {
+    setCompany(company);
+    setJobTitle(jobTitle);
+    setJobDescription(jobDescription);
+    setJobUrl(url);
+    setUrlImported(true);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -538,7 +547,14 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* 1. Job Description */}
+                {/* 1. Job Search */}
+                <div className="space-y-2">
+                  <Label>Search for a job</Label>
+                  <JobSearchPanel onJobSelect={handleJobSelect} disabled={uiState === 'analyzing'} />
+                  <p className="text-xs text-muted-foreground">Or paste a job description directly below.</p>
+                </div>
+
+                {/* 2. Job Description */}
                 <div id="tour-job-details" className="space-y-2">
                   <Label htmlFor="jobDescription">Job Description</Label>
                   <Textarea

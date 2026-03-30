@@ -9,6 +9,33 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      api_usage: {
+        Row: {
+          id: string
+          api_name: string
+          month: string
+          call_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          api_name: string
+          month: string
+          call_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          api_name?: string
+          month?: string
+          call_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       feedback: {
         Row: {
           id: string
