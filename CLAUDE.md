@@ -26,7 +26,7 @@ Use these terms consistently in all user-facing text:
 | The page at `/tailor` | "Tailor New Resume" (generation form) |
 | The page at `/dashboard` | "AI Resumes" |
 | The page at `/resumes` | "My Profile" (nav label) / "My Documents" (page heading) |
-| The page at `/base-resume` | "Base Resume" |
+| The page at `/polished-resume` | "Polished Resume" |
 | A generated resume record | "resume" (not "application") |
 | The library context picker | "Load from My Documents" |
 
@@ -63,9 +63,9 @@ Current valid columns:
 ### Resumes Table (My Profile / library)
 Current valid columns:
 - `id`, `user_id`, `title`, `content` (JSONB: `{ text: string, fileName?: string }`), `item_type`, `is_default`, `created_at`, `updated_at`
-- `item_type` values: `'resume' | 'cover_letter' | 'portfolio' | 'other' | 'base_resume'`
+- `item_type` values: `'resume' | 'cover_letter' | 'portfolio' | 'other'`
 - Only one item per user can have `is_default = true` (enforced by partial unique index)
-- `base_resume` items are always `is_default: true`, titled `'Base Resume'`, managed via `/base-resume` page — **never shown in `ContextSelector` dropdown or the regular documents list**; auto-loaded as background in the tailor page
+- The default item is auto-loaded as primary background in the tailor page via `ExperiencePanel`
 
 **If a new column is genuinely needed:**
 1. Add it to TYPES.md FIRST
@@ -93,8 +93,9 @@ Current valid columns:
 | `POST /api/interview-prep` | Node | Haiku — generates 8 interview questions across 6 categories; saves to `applications.interview_prep`; returns `InterviewPrep` |
 | `POST /api/log-event` | Node | Server-side event logging — writes JSON to Vercel function logs; always returns 200 |
 | `POST /api/resume-chat` | Node | Sonnet non-streaming — AI chat for refining a generated resume; parses `CHANGE:` vs `ANSWER:` response format; on change, updates `applications.resume_content` and `applications.chat_history` in Supabase |
-| `POST /api/generate-base-resume` | Node | Sonnet non-streaming — accepts `documentIds[]`, fetches documents from Supabase, builds comprehensive base resume; returns `{ resumeText: string }` |
-| `POST /api/base-resume-chat` | Node | Sonnet non-streaming — AI chat for refining base resume; parses `CHANGE:` vs `ANSWER:`; does NOT save to DB (caller saves explicitly); returns `{ type, content }` |
+| `POST /api/base-resume-chat` | Node | Sonnet non-streaming — AI chat for refining a polished resume draft; parses `CHANGE:` vs `ANSWER:`; does NOT save to DB (caller saves explicitly); returns `{ type, content }` |
+| `POST /api/generate-polished-resume` | Node | Sonnet non-streaming — accepts `{ documentIds[], pageLimit, roleTypeHint? }`, builds standalone resume; returns `{ resumeText: string }` |
+| `POST /api/download-pdf/polished` | Node | PDF generation for polished resume — accepts `{ resumeText, fileName? }`; returns PDF blob |
 | `POST /api/interview/generate` | Node | Sonnet non-streaming call — builds experience doc from interview transcript; returns `{ document: string }` |
 | `GET /api/interview/sessions` | Node | Fetch most recent `draft` session for current user; returns `{ session }` (null if none) |
 | `POST /api/interview/sessions` | Node | Create a new draft session; returns `{ id }` |
@@ -176,8 +177,7 @@ const { SONNET, HAIKU } = await getModels();
 - `ApplicationCard` shows a `Target` icon (primary color = prep exists, muted = not yet generated) — clicking triggers `POST /api/interview-prep` if null, then opens `InterviewPrepPanel` in a modal
 - `ApplicationCard` shows a `ScrollText` icon — opens a modal with the formatted job description (`FormattedJD` component)
 - `components/FitAnalysisModal.tsx` — reusable modal used on both home page (with `actions` slot for Generate/Start Over) and dashboard cards; handles Escape key, backdrop click, graceful fallback if data malformed; shows top 3 items per section by default with a chevron expand toggle; items are ranked most-impactful-first by the API prompt
-- `components/InlinePDFViewer.tsx` — inline PDF iframe (US Letter aspect ratio) rendered via `BlobProvider`; shown post-generation replacing the textarea; "Edit text" toggle switches back; auto-updates when `resumeContent` prop changes; reused in BaseResumeCreator (pass empty strings for company/jobTitle)
-- `components/BaseResumeCreator.tsx` — 3-step flow (select docs → generate → review); inline PDF + chat panel + explicit save; edit mode loaded via `?id=` query param from My Profile; saves to `resumes` table with `item_type: 'base_resume'`
+- `components/InlinePDFViewer.tsx` — inline PDF iframe (US Letter aspect ratio) rendered via `BlobProvider`; shown post-generation replacing the textarea; "Edit text" toggle switches back; auto-updates when `resumeContent` prop changes; pass empty strings for `company`/`jobTitle` when used outside of a job application context
 - `components/ResumeChatPanel.tsx` — post-generation resume chat; parses `CHANGE:` vs `ANSWER:` response format; "Fit to 1 page" and "Fit to 2 pages" quick-action chips; saves changes to `applications.resume_content` and `applications.chat_history`
 
 ## Resume Generation — Output Format
@@ -227,12 +227,13 @@ should only target unnecessary whitespace — never content.
 
 ---
 
-## My Profile / ContextSelector
+## My Profile / ExperiencePanel
 
-- `ContextSelector` filters out `item_type === 'base_resume'` items — the base resume is auto-loaded separately in `/tailor`
-- Auto-loads the first non-base-resume default item as primary background; falls back to `data[0]` if none is marked default
-- Pre-selects all non-default items as additional context; accordion auto-expands
-- `key={resetKey}` on `<ContextSelector>` in `app/tailor/page.tsx` — incrementing remounts and re-fetches
+- `ExperiencePanel` (replaces old `ContextSelector`) — collapsible panel in the tailor form; fetches `/api/resumes`, auto-selects the default item as primary background doc; shows collapsed summary bar when loaded
+- Collapsed state: shows primary doc name + additional doc count with "Edit▾" button
+- Expanded state: primary doc dropdown, session-only upload (no save modal), additional context checkboxes, link to My Profile
+- Warning state when no docs loaded (amber icon + "No experience loaded")
+- `key={resetKey}` on `<ExperiencePanel>` in `app/tailor/page.tsx` — incrementing remounts and re-fetches
 - Additional context items appear in both analyze-fit and generate-documents prompts with source attribution
 
 ---
@@ -258,11 +259,7 @@ The home page is a server component that detects user state and routes according
 
 **`WelcomeScreen`** — 3 options: Upload resume (extract → save as default `is_default: true` → `/tailor`), AI interview (`/interview`), Write yourself (save text → `/tailor`)
 
-**`GoalScreen`** — 5 cards: Tailor Now (`/tailor`), Update Base Resume (`/resumes`), Add More Experience (`/interview`), Prep for Interview (`/dashboard`), View Applications (`/dashboard`)
-
-**State banners in GoalScreen:**
-- State 2 (has docs, no `is_default` item): amber "set a base resume" warning
-- State 3 (base resume >30 days old): dismissable blue staleness tip
+**`GoalScreen`** — 5 cards: Tailor Now (`/tailor`), Polished Resume (`/polished-resume`), Add More Experience (`/interview`), Prep for Interview (`/dashboard`, shown only if `hasApplications`), Manage My Documents (`/resumes`)
 
 **`HomeRouter`** is a client component that reads localStorage and renders the right screen. Home page state is fetched server-side (documents + applications count from Supabase) on every visit.
 
@@ -297,18 +294,15 @@ The home page is a server component that detects user state and routes according
 
 ---
 
-## Base Resume (`/base-resume`)
+## Polished Resume (`/polished-resume`)
 
-- `item_type: 'base_resume'` — stored in `resumes` table; always `is_default: true`; title always `'Base Resume'`
-- **Never show in ContextSelector dropdown or My Profile document list** — managed via the dedicated `/base-resume` page
-- **`BaseResumeCreator`** — 3-step flow:
-  1. **Select** — checkboxes of user's non-base-resume docs; pre-selects `resume` + `other` types
-  2. **Generate** — calls `POST /api/generate-base-resume` with selected IDs; shows animated progress
-  3. **Review** — inline PDF + "Edit text" textarea toggle + AI chat panel + "Save as Base Resume" button
-- **Edit mode** — `/base-resume?id=<resumeId>` skips to review step with existing text loaded (linked from My Profile "Edit & Refine" button)
-- **Saving** — `POST /api/resumes` (`item_type: 'base_resume'`, `is_default: true`); previous base resume is demoted by the existing API logic; redirects to `/resumes`
-- **Tailor page** — auto-fetches `/api/resumes` on mount, finds `base_resume` item, sets as background; shows "Using base resume" badge; clears if user switches to another doc via ContextSelector
-- **`POST /api/base-resume-chat`** — Sonnet CHANGE/ANSWER; does NOT save to DB; caller holds text in state until explicit save
+- **`PolishedResumeCreator`** — 4-step flow:
+  1. **Select** — checkbox list of user's documents; pre-selects `resume` + `other` types
+  2. **Configure** — page limit radio (1/2/custom, max 4) + optional role type hint
+  3. **Generate** — animated progress; calls `POST /api/generate-polished-resume`
+  4. **Review** — `InlinePDFViewer` + "Edit text" textarea toggle + AI chat panel (quick chips + free-form input using `POST /api/base-resume-chat`)
+- Save options: "Save to My Documents" (`item_type: 'resume'`), "Set as default document" (`is_default: true`), "Just download" via `POST /api/download-pdf/polished`
+- Diamond icon as visual marker throughout
 
 ---
 

@@ -32,7 +32,7 @@ export default function ExperiencePanel({
     fetch('/api/resumes')
       .then(r => r.ok ? r.json() : [])
       .then((data: ResumeItem[]) => {
-        const filtered = data.filter(i => i.item_type !== 'base_resume');
+        const filtered = data;
         setItems(filtered);
         setLoaded(true);
         const defaultItem = filtered.find(i => i.is_default) ?? filtered[0] ?? null;

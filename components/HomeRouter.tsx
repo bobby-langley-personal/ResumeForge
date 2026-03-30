@@ -10,26 +10,15 @@ const SKIP_KEY = 'resumeforge_skip_goal_screen';
 interface Props {
   firstName: string | null;
   hasDocuments: boolean;
-  hasBaseResume: boolean;
   hasApplications: boolean;
-  baseResumeStale: boolean;
-  baseResumeDaysOld: number;
 }
 
-export default function HomeRouter({
-  firstName,
-  hasDocuments,
-  hasBaseResume,
-  hasApplications,
-  baseResumeStale,
-  baseResumeDaysOld,
-}: Props) {
+export default function HomeRouter({ firstName, hasDocuments, hasApplications }: Props) {
   const router = useRouter();
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
     if (!hasDocuments) {
-      // First-time user — never skip to tailor
       setChecked(true);
       return;
     }
@@ -49,10 +38,7 @@ export default function HomeRouter({
   return (
     <GoalScreen
       firstName={firstName}
-      hasBaseResume={hasBaseResume}
       hasApplications={hasApplications}
-      baseResumeStale={baseResumeStale}
-      baseResumeDaysOld={baseResumeDaysOld}
     />
   );
 }

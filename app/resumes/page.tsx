@@ -29,9 +29,6 @@ export default async function ResumesPage() {
     content: typeof item.content === 'string' ? JSON.parse(item.content) : item.content,
   })) as ResumeItem[];
 
-  const baseResume = allItems.find(i => i.item_type === 'base_resume') ?? null;
-  const regularItems = allItems.filter(i => i.item_type !== 'base_resume');
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -44,7 +41,7 @@ export default async function ResumesPage() {
           <div>
             <h2 className="text-2xl font-bold text-foreground">My Profile</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Your base resume and context documents
+              Your documents and context files
             </p>
           </div>
           <Link href="/interview">
@@ -56,7 +53,7 @@ export default async function ResumesPage() {
             </Button>
           </Link>
         </div>
-        <ResumeLibrary initialItems={regularItems} baseResume={baseResume} />
+        <ResumeLibrary initialItems={allItems} />
       </main>
     </div>
   );
