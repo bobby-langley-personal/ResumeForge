@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
         const messageStream = anthropic.messages.stream({
           model: HAIKU,
           max_tokens: 512,
+          temperature: 0.3,
           system: `You are a real-time interview assistant helping a candidate during a live interview or meeting.
 
 CANDIDATE BACKGROUND:

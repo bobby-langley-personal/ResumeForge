@@ -18,6 +18,7 @@ export async function extractContactFields(text: string): Promise<ContactFields>
     const response = await anthropic.messages.create({
       model: HAIKU,
       max_tokens: 200,
+      temperature: 0.2,
       system: `Extract contact info from resume text. Return valid JSON only — no markdown, no fences.
 Schema: { "full_name": "", "email": "", "location": "", "linkedin_url": "" }
 - full_name: candidate's full name (first + last)

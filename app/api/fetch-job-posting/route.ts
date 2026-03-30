@@ -228,6 +228,7 @@ export async function POST(req: NextRequest) {
       const response = await anthropic.messages.create({
         model: HAIKU,
         max_tokens: 400,
+        temperature: 0.2,
         system: `Extract open-ended written-response questions from job application form text.
 
 INCLUDE questions that require a thoughtful written answer, e.g.:

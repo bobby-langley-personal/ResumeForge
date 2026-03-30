@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
     const response = await anthropic.messages.create({
       model: HAIKU,
       max_tokens: 4000,
+      temperature: 0.2,
       system: `You are a brutally honest but constructive career advisor.
 Analyze how well the candidate's background matches the job description. Be specific — name actual skills, tools, and experiences that match or are missing. Do not be generic.
 Adapt your analysis based on the role type (technical, management, sales, customer success, research).
