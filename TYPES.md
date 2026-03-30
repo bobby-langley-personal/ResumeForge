@@ -22,18 +22,16 @@ Main Supabase schema interface (`types/supabase.ts`). All table Row/Insert/Updat
 | `user_id` | string | Clerk user ID |
 | `title` | string | Display name |
 | `content` | Json | `{ text: string, fileName?: string }` — stored as JSONB |
-| `item_type` | ItemType | `'resume' \| 'cover_letter' \| 'portfolio' \| 'other' \| 'base_resume'` |
+| `item_type` | ItemType | `'resume' \| 'cover_letter' \| 'portfolio' \| 'other'` |
 | `is_default` | boolean | Only one per user (partial unique index) |
 | `created_at` | string | ISO timestamp |
 | `updated_at` | string | ISO timestamp |
 
 ### `ItemType`
-`'resume' | 'cover_letter' | 'portfolio' | 'other' | 'base_resume'`
-
-`base_resume` is the user's master resume — always `is_default: true`, stored with title `'Base Resume'`. Not shown in ContextSelector or document list; managed separately via `/base-resume` page.
+`'resume' | 'cover_letter' | 'portfolio' | 'other'`
 
 ### `ITEM_TYPE_LABELS`
-Display labels map: `{ resume: 'Resume', cover_letter: 'Cover Letter', portfolio: 'Portfolio', other: 'Other', base_resume: 'Base Resume' }`
+Display labels map: `{ resume: 'Resume', cover_letter: 'Cover Letter Example', portfolio: 'Portfolio / Work Sample', other: 'Other' }`
 
 ### `ResumeItem`
 ```typescript
@@ -346,6 +344,19 @@ Claude ends adaptive chat messages with a `CHOICES: A | B | C` line. `InterviewC
   useExistingDocs: boolean
   existingDocsContext: string
   resumeStep: 'role-setup' | 'interview'
+}
+```
+
+---
+
+## Polished Resume Types (`app/api/generate-polished-resume/route.ts`)
+
+### `GeneratePolishedResumeRequest`
+```typescript
+{
+  documentIds: string[]   // IDs of source documents to build from
+  pageLimit: number       // 1–4 — hard page constraint passed to prompt
+  roleTypeHint?: string   // optional, e.g. "Software Engineer" — subtly weights relevant experience
 }
 ```
 

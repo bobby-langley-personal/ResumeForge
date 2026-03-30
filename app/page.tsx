@@ -38,7 +38,7 @@ export default async function HomePage() {
   const [docsResult, appsResult] = await Promise.all([
     supabase
       .from('resumes')
-      .select('id, is_default, updated_at')
+      .select('id')
       .eq('user_id', userId),
     supabase
       .from('applications')
@@ -49,14 +49,7 @@ export default async function HomePage() {
 
   const documents = docsResult.data ?? [];
   const hasDocuments = documents.length > 0;
-  const baseResume = documents.find(d => d.is_default) ?? null;
-  const hasBaseResume = !!baseResume;
   const hasApplications = (appsResult.data?.length ?? 0) > 0;
-
-  const baseResumeDaysOld = baseResume
-    ? Math.floor((Date.now() - new Date(baseResume.updated_at).getTime()) / (24 * 60 * 60 * 1000))
-    : 0;
-  const baseResumeStale = baseResumeDaysOld >= 30;
 
   return (
     <div className="min-h-screen bg-background">
@@ -65,10 +58,7 @@ export default async function HomePage() {
         <HomeRouter
           firstName={firstName}
           hasDocuments={hasDocuments}
-          hasBaseResume={hasBaseResume}
           hasApplications={hasApplications}
-          baseResumeStale={baseResumeStale}
-          baseResumeDaysOld={baseResumeDaysOld}
         />
       </main>
     </div>

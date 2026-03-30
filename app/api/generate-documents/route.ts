@@ -33,16 +33,28 @@ export async function POST(req: NextRequest) {
 
     // Parse request body
     const { company, jobTitle, jobDescription, backgroundExperience, isFromUploadedFile, fitAnalysis: precomputedAnalysis, includeCoverLetter = false, includeSummary = false, additionalContext = [], jobUrl, questions = [], shortResponse = false } = await req.json();
-    console.log('[generate-documents] Parsed body:', { 
-      company, 
-      jobTitle, 
+    console.log('[generate-documents] Parsed body:', {
+      company,
+      jobTitle,
       jobDescriptionLength: jobDescription?.length,
-      backgroundLength: backgroundExperience?.length 
+      backgroundLength: backgroundExperience?.length
     });
-    
+
     if (!company || !jobTitle || !jobDescription || !backgroundExperience) {
       return new Response('Missing required fields', { status: 400 });
     }
+
+    // Fetch user profile for canonical contact info
+    const supabase = supabaseServer();
+    const { data: profileData } = await supabase
+      .from('user_profiles')
+      .select('full_name, email, location, linkedin_url')
+      .eq('user_id', userId)
+      .single();
+
+    const contactBlock = profileData && (profileData.full_name || profileData.email)
+      ? `\n[Use this exact contact information in the resume header â€” do not change or omit these values:]\nName: ${profileData.full_name || ''}${profileData.email ? `\nEmail: ${profileData.email}` : ''}${profileData.location ? `\nLocation: ${profileData.location}` : ''}${profileData.linkedin_url ? `\nLinkedIn: ${profileData.linkedin_url}` : ''}\n`
+      : '';
 
     // Create readable stream for SSE
     const stream = new ReadableStream({
@@ -125,7 +137,7 @@ Output the resume in EXACTLY this format. Do NOT put dates on the company line â
             messages: [
               {
                 role: 'user',
-                content: `Company: ${company}\nJob Title: ${jobTitle}\nJob Description: ${jobDescription}\n\n${isFromUploadedFile ? 'The following background was extracted from the candidate\'s existing resume. Use it as the source of truth for their experience, but reframe and tailor it specifically for the target role.\n\n' : ''}My Background:\n${backgroundExperience}${buildContextBlock(additionalContext)}\n\nPlease create a tailored resume.`
+                content: `Company: ${company}\nJob Title: ${jobTitle}\nJob Description: ${jobDescription}\n\n${isFromUploadedFile ? 'The following background was extracted from the candidate\'s existing resume. Use it as the source of truth for their experience, but reframe and tailor it specifically for the target role.\n\n' : ''}My Background:\n${backgroundExperience}${buildContextBlock(additionalContext)}${contactBlock}\n\nPlease create a tailored resume.`
               }
             ],
             stream: true

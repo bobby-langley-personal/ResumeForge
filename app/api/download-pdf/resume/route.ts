@@ -39,8 +39,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No resume content found' }, { status: 404 })
     }
 
-    const user = await currentUser()
-    const fullName = user?.fullName || user?.firstName || 'User'
+    const [user, profileResult] = await Promise.all([
+      currentUser(),
+      supabase.from('user_profiles').select('full_name').eq('user_id', userId).single(),
+    ]);
+    const fullName = profileResult.data?.full_name || user?.fullName || user?.firstName || 'User'
 
     const props = {
       resumeText: application.resume_content,

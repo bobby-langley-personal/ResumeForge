@@ -7,6 +7,7 @@ import ResumeLibrary from './ResumeLibrary';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { ResumeItem } from '@/types/resume';
+import { inferContactFromDocs } from '@/lib/extract-contact';
 
 export const metadata = { title: 'My Documents — ResumeForge' };
 
@@ -15,22 +16,38 @@ export default async function ResumesPage() {
   if (!userId) redirect('/sign-in');
 
   const supabase = supabaseServer();
-  const { data, error } = await supabase
-    .from('resumes')
-    .select('id, user_id, title, content, item_type, is_default, created_at, updated_at')
-    .eq('user_id', userId)
-    .order('is_default', { ascending: false })
-    .order('created_at', { ascending: false });
+  const [resumesResult, profileResult] = await Promise.all([
+    supabase
+      .from('resumes')
+      .select('id, user_id, title, content, item_type, is_default, created_at, updated_at')
+      .eq('user_id', userId)
+      .order('is_default', { ascending: false })
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('user_profiles')
+      .select('full_name, email, location, linkedin_url')
+      .eq('user_id', userId)
+      .single(),
+  ]);
 
-  if (error) console.error('[resumes page]', error.message);
+  if (resumesResult.error) console.error('[resumes page]', resumesResult.error.message);
 
-  const allItems = (data ?? []).map((item: any) => ({
+  const allItems = (resumesResult.data ?? []).map((item: any) => ({
     ...item,
     content: typeof item.content === 'string' ? JSON.parse(item.content) : item.content,
   })) as ResumeItem[];
 
-  const baseResume = allItems.find(i => i.item_type === 'base_resume') ?? null;
-  const regularItems = allItems.filter(i => i.item_type !== 'base_resume');
+  let profile = profileResult.data ?? { full_name: '', email: '', location: '', linkedin_url: '' };
+
+  // If profile is empty, try to infer from uploaded documents (most recent first)
+  const profileEmpty = !profile.full_name && !profile.email;
+  if (profileEmpty && allItems.length > 0) {
+    try {
+      profile = await inferContactFromDocs(allItems);
+    } catch {
+      // Non-fatal — leave empty for user to fill
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -44,7 +61,7 @@ export default async function ResumesPage() {
           <div>
             <h2 className="text-2xl font-bold text-foreground">My Profile</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Your base resume and context documents
+              Your documents and context files
             </p>
           </div>
           <Link href="/interview">
@@ -56,7 +73,7 @@ export default async function ResumesPage() {
             </Button>
           </Link>
         </div>
-        <ResumeLibrary initialItems={regularItems} baseResume={baseResume} />
+        <ResumeLibrary initialItems={allItems} profile={profile} />
       </main>
     </div>
   );

@@ -22,8 +22,7 @@ export default function ContextSelector({ onLoadBackground, onAdditionalContextC
     fetch('/api/resumes')
       .then(r => r.ok ? r.json() : [])
       .then((data: ResumeItem[]) => {
-        // Exclude base_resume from context selector — handled separately in tailor page
-        const filtered = data.filter(i => i.item_type !== 'base_resume');
+        const filtered = data;
         setItems(filtered);
         setLoaded(true);
         const defaultItem = filtered.find(i => i.is_default) ?? filtered[0] ?? null;

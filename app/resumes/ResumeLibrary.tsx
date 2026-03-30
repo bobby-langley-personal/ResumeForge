@@ -7,20 +7,34 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ResumeItem, ItemType, ITEM_TYPE_LABELS } from '@/types/resume';
-import { Plus, Trash2, Star, Pencil, Upload, X, Check, FileText, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Star, Pencil, Upload, X, Check, Diamond, User, Loader2, ChevronDown } from 'lucide-react';
 import TipsPanel from '@/components/TipsPanel';
+
+interface UserProfile {
+  full_name: string;
+  email: string;
+  location: string;
+  linkedin_url: string;
+}
 
 interface Props {
   initialItems: ResumeItem[];
-  baseResume: ResumeItem | null;
+  profile: UserProfile;
 }
 
 type ModalMode = 'add' | 'edit' | null;
 
-export default function ResumeLibrary({ initialItems, baseResume }: Props) {
+export default function ResumeLibrary({ initialItems, profile: initialProfile }: Props) {
   const [items, setItems] = useState<ResumeItem[]>(initialItems);
   const [modal, setModal] = useState<ModalMode>(null);
   const [editingItem, setEditingItem] = useState<ResumeItem | null>(null);
+
+  // Contact info state
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileFields, setProfileFields] = useState<UserProfile>(initialProfile);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [profileError, setProfileError] = useState('');
 
   // Form state
   const [title, setTitle] = useState('');
@@ -30,6 +44,31 @@ export default function ResumeLibrary({ initialItems, baseResume }: Props) {
   const [isUploading, setIsUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const handleProfileSave = async () => {
+    setProfileSaving(true);
+    setProfileError('');
+    setProfileSaved(false);
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: profileFields.full_name,
+          email: profileFields.email,
+          location: profileFields.location,
+          linkedin_url: profileFields.linkedin_url,
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 2500);
+    } catch {
+      setProfileError('Failed to save. Please try again.');
+    } finally {
+      setProfileSaving(false);
+    }
+  };
 
   const openAdd = () => {
     setTitle('');
@@ -116,48 +155,96 @@ export default function ResumeLibrary({ initialItems, baseResume }: Props) {
     setItems(prev => prev.filter(i => i.id !== item.id));
   };
 
-  const formattedDate = baseResume
-    ? new Date(baseResume.updated_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-    : null;
-
   return (
     <div className="space-y-8">
-      {/* Base Resume Section */}
-      <div>
-        <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
-          <FileText className="w-4 h-4" /> Base Resume
-        </h3>
-        {baseResume ? (
-          <div className="border border-border rounded-xl p-5 bg-card space-y-3">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="font-medium text-foreground">{baseResume.title}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Last updated {formattedDate} · {(baseResume.content?.text?.length ?? 0).toLocaleString()} chars
-                </p>
+      {/* Contact Info — collapsible */}
+      <div className="border border-border rounded-xl overflow-hidden">
+        <button
+          onClick={() => setProfileOpen(v => !v)}
+          className="flex items-center justify-between w-full px-5 py-4 text-left hover:bg-muted/30 transition-colors"
+        >
+          <span className="flex items-center gap-2">
+            <User className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">Contact Information</span>
+            {profileFields.full_name && (
+              <span className="text-sm text-muted-foreground">
+                · {profileFields.full_name}{profileFields.email ? ` · ${profileFields.email}` : ''}
+              </span>
+            )}
+          </span>
+          <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        <div className={`grid transition-all duration-200 ${profileOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+          <div className="overflow-hidden">
+            <div className="px-5 pb-5 pt-1 border-t border-border space-y-4">
+              <p className="text-xs text-muted-foreground pt-2">
+                Used on all generated resumes and documents.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>Full name</Label>
+                  <Input
+                    value={profileFields.full_name}
+                    onChange={e => setProfileFields(p => ({ ...p, full_name: e.target.value }))}
+                    placeholder="Jane Smith"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Email</Label>
+                  <Input
+                    type="email"
+                    value={profileFields.email}
+                    onChange={e => setProfileFields(p => ({ ...p, email: e.target.value }))}
+                    placeholder="jane@example.com"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Location</Label>
+                  <Input
+                    value={profileFields.location}
+                    onChange={e => setProfileFields(p => ({ ...p, location: e.target.value }))}
+                    placeholder="San Francisco, CA"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>LinkedIn URL</Label>
+                  <Input
+                    value={profileFields.linkedin_url}
+                    onChange={e => setProfileFields(p => ({ ...p, linkedin_url: e.target.value }))}
+                    placeholder="linkedin.com/in/yourname"
+                  />
+                </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <Link href={`/base-resume?id=${baseResume.id}`}>
-                  <Button size="sm" variant="outline">Edit &amp; Refine</Button>
-                </Link>
-              </div>
+              {profileError && <p className="text-sm text-destructive">{profileError}</p>}
+              <Button size="sm" onClick={handleProfileSave} disabled={profileSaving}>
+                {profileSaving
+                  ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Saving...</>
+                  : profileSaved
+                    ? <><Check className="w-3.5 h-3.5 mr-1.5" />Saved</>
+                    : 'Save'}
+              </Button>
             </div>
           </div>
-        ) : (
-          <div className="border border-dashed border-border rounded-xl p-6 text-center space-y-3">
-            <Sparkles className="w-8 h-8 text-muted-foreground mx-auto" />
+        </div>
+      </div>
+
+      {/* Polished Resume CTA */}
+      <div className="border border-primary/20 rounded-xl p-5 bg-primary/5 space-y-2">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <Diamond className="w-5 h-5 text-primary mt-0.5 shrink-0" />
             <div>
-              <p className="font-medium text-foreground">No base resume yet</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                A base resume is the master document all your tailored resumes are built from.
-                It takes about 2 minutes to create.
+              <p className="font-medium text-foreground">Polished General-Use Resume</p>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                A strong standalone resume optimized for recruiters, networking, and broad applications — not tailored to a specific job.
               </p>
             </div>
-            <Link href="/base-resume">
-              <Button>Create Base Resume →</Button>
-            </Link>
           </div>
-        )}
+          <Link href="/polished-resume" className="shrink-0">
+            <Button size="sm" variant="outline">Create</Button>
+          </Link>
+        </div>
       </div>
 
       <div>

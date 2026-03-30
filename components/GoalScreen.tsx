@@ -1,17 +1,13 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
-import { Target, FileEdit, Plus, Brain, LayoutList, ArrowRight, X } from 'lucide-react';
+import { Target, FileEdit, Plus, Brain, LayoutList, Diamond, ArrowRight } from 'lucide-react';
 
 const SKIP_KEY = 'resumeforge_skip_goal_screen';
 
 interface Props {
   firstName: string | null;
-  hasBaseResume: boolean;
   hasApplications: boolean;
-  baseResumeStale: boolean;
-  baseResumeDaysOld: number;
 }
 
 function GoalCard({
@@ -52,31 +48,7 @@ function GoalCard({
   );
 }
 
-function StaleBanner({ daysOld }: { daysOld: number }) {
-  const [dismissed, setDismissed] = useState(false);
-  if (dismissed) return null;
-  return (
-    <div className="flex items-start gap-3 p-4 border border-blue-500/30 bg-blue-500/5 rounded-xl text-sm">
-      <span className="text-blue-400 mt-0.5 shrink-0">💡</span>
-      <div className="flex-1">
-        <span className="text-foreground font-medium">Your base resume was last updated {daysOld} days ago. </span>
-        <span className="text-muted-foreground">Keep it current for the best tailored results. </span>
-        <Link href="/resumes" className="text-primary hover:underline font-medium">Update Now →</Link>
-      </div>
-      <button onClick={() => setDismissed(true)} className="text-muted-foreground hover:text-foreground transition-colors shrink-0">
-        <X className="w-4 h-4" />
-      </button>
-    </div>
-  );
-}
-
-export default function GoalScreen({
-  firstName,
-  hasBaseResume,
-  hasApplications,
-  baseResumeStale,
-  baseResumeDaysOld,
-}: Props) {
+export default function GoalScreen({ firstName, hasApplications }: Props) {
   const handleSkip = () => {
     localStorage.setItem(SKIP_KEY, 'true');
   };
@@ -89,38 +61,21 @@ export default function GoalScreen({
         </h2>
       </div>
 
-      {/* State 2 banner — has docs but no base resume */}
-      {!hasBaseResume && (
-        <div className="flex items-start gap-3 p-4 border border-amber-500/40 bg-amber-500/5 rounded-xl text-sm">
-          <span className="text-amber-500 mt-0.5 shrink-0">⚠</span>
-          <div className="flex-1">
-            <span className="text-foreground font-medium">You haven&apos;t set a base resume yet. </span>
-            <span className="text-muted-foreground">Your tailored resumes will be stronger with one. </span>
-            <Link href="/resumes" className="text-primary hover:underline font-medium">Set one in My Documents →</Link>
-          </div>
-        </div>
-      )}
-
-      {/* State 3 banner — base resume is stale */}
-      {hasBaseResume && baseResumeStale && (
-        <StaleBanner daysOld={baseResumeDaysOld} />
-      )}
-
       <div className="space-y-3">
         <GoalCard
           icon={<Target className="w-5 h-5 text-foreground" />}
           title="Tailor a resume for a specific job"
-          description="Paste a job description and get a tailored, ATS-optimized resume in seconds"
+          description="Paste a job description and get a tailored resume in seconds"
           href="/tailor"
           cta="Tailor Now"
           primary
         />
         <GoalCard
-          icon={<FileEdit className="w-5 h-5 text-foreground" />}
-          title="Update your base resume"
-          description="Refine the master profile that all your tailored resumes are built from"
-          href="/resumes"
-          cta="Update"
+          icon={<Diamond className="w-5 h-5 text-foreground" />}
+          title="Create a polished general-use resume"
+          description="A strong standalone resume for recruiters, networking, and broad applications"
+          href="/polished-resume"
+          cta="Create"
         />
         <GoalCard
           icon={<Plus className="w-5 h-5 text-foreground" />}
@@ -144,6 +99,13 @@ export default function GoalScreen({
           description="See past tailored resumes and re-download anytime"
           href="/dashboard"
           cta="View"
+        />
+        <GoalCard
+          icon={<FileEdit className="w-5 h-5 text-foreground" />}
+          title="Manage my documents"
+          description="Upload, edit, or organize your saved resumes and context files"
+          href="/resumes"
+          cta="Open"
         />
       </div>
 
