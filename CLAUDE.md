@@ -67,6 +67,15 @@ Current valid columns:
 - Only one item per user can have `is_default = true` (enforced by partial unique index)
 - The default item is auto-loaded as primary background in the tailor page via `ExperiencePanel`
 
+### User Profiles Table
+Added in migration 012. Stores contact info extracted from uploaded resumes.
+- `user_id` (string, PK) — Clerk user ID
+- `full_name` (string | null)
+- `email` (string | null)
+- `location` (string | null)
+- `linkedin_url` (string | null)
+- `created_at`, `updated_at`
+
 **If a new column is genuinely needed:**
 1. Add it to TYPES.md FIRST
 2. Write a migration in `/supabase/migrations/` (e.g. `006_add_column.sql`)
@@ -80,11 +89,11 @@ Current valid columns:
 | Route | Runtime | Purpose |
 |-------|---------|---------|
 | `POST /api/analyze-fit` | Node | Haiku fit analysis — returns JSON FitAnalysis |
-| `POST /api/generate-documents` | Edge | SSE stream — resume (+ optional cover letter) |
+| `POST /api/generate-documents` | Edge | SSE stream — resume (+ optional cover letter); fetches `user_profiles` and injects contact info into prompt if `full_name`/`email` are set |
 | `POST /api/fetch-job-posting` | Node | URL scrape — HTML extraction, company/title detection |
 | `POST /api/parse-job-details` | Node | Haiku extraction of company + job title from pasted JD text |
 | `POST /api/extract-resume` | Node | PDF/DOCX text extraction |
-| `POST /api/download-pdf/[type]` | Node | PDF generation and download |
+| `POST /api/download-pdf/[type]` | Node | PDF generation and download (`/resume`, `/cover-letter`, `/polished`); all three prefer `profile.full_name` over Clerk name for `candidateName` |
 | `GET /api/resumes` | Node | List My Documents (default first, then created_at desc) |
 | `POST /api/resumes` | Node | Save new document to library |
 | `GET /api/applications/[id]` | Node | Fetch application content + candidateName for PDF preview |
@@ -94,8 +103,10 @@ Current valid columns:
 | `POST /api/log-event` | Node | Server-side event logging — writes JSON to Vercel function logs; always returns 200 |
 | `POST /api/resume-chat` | Node | Sonnet non-streaming — AI chat for refining a generated resume; parses `CHANGE:` vs `ANSWER:` response format; on change, updates `applications.resume_content` and `applications.chat_history` in Supabase |
 | `POST /api/base-resume-chat` | Node | Sonnet non-streaming — AI chat for refining a polished resume draft; parses `CHANGE:` vs `ANSWER:`; does NOT save to DB (caller saves explicitly); returns `{ type, content }` |
-| `POST /api/generate-polished-resume` | Node | Sonnet non-streaming — accepts `{ documentIds[], pageLimit, roleTypeHint? }`, builds standalone resume; returns `{ resumeText: string }` |
-| `POST /api/download-pdf/polished` | Node | PDF generation for polished resume — accepts `{ resumeText, fileName? }`; returns PDF blob |
+| `POST /api/generate-polished-resume` | Node | Sonnet non-streaming — accepts `{ documentIds[], pageLimit, roleTypeHint? }`, builds standalone resume; fetches `user_profiles` and injects contact info into prompt; returns `{ resumeText: string }` |
+| `GET /api/profile` | Node | Fetch `user_profiles` row for current user; returns empty defaults if not found |
+| `PUT /api/profile` | Node | Upsert contact info (`full_name`, `email`, `location`, `linkedin_url`) for current user |
+| `POST /api/extract-contact` | Node | Haiku call — extracts name/email/location/LinkedIn from first 800 chars of resume text; returns `{ full_name, email, location, linkedin_url }` |
 | `POST /api/interview/generate` | Node | Sonnet non-streaming call — builds experience doc from interview transcript; returns `{ document: string }` |
 | `GET /api/interview/sessions` | Node | Fetch most recent `draft` session for current user; returns `{ session }` (null if none) |
 | `POST /api/interview/sessions` | Node | Create a new draft session; returns `{ id }` |
@@ -257,7 +268,7 @@ The home page is a server component that detects user state and routes according
 | Returning user | Has ≥1 document | `GoalScreen` — 5 goal cards |
 | Skip flag set | `resumeforge_skip_goal_screen = 'true'` in localStorage | Redirect to `/tailor` |
 
-**`WelcomeScreen`** — 3 options: Upload resume (extract → save as default `is_default: true` → `/tailor`), AI interview (`/interview`), Write yourself (save text → `/tailor`)
+**`WelcomeScreen`** — Heading: "Let's build your Experience Library". Primary upload card (upload resume PDF/DOCX — extract → save as default `is_default: true` → contact confirmation form → `/tailor`). Collapsible "What else can I add?" tips panel. Negative path: "Don't have a resume? Let's make one with AI →" links to `/interview`. After first resume upload, calls `/api/extract-contact` to pre-fill a contact confirmation form (name, email, location, LinkedIn); user reviews/edits and saves → `PUT /api/profile` → redirects to `/tailor`; "Skip for now" bypasses without saving.
 
 **`GoalScreen`** — 5 cards: Tailor Now (`/tailor`), Polished Resume (`/polished-resume`), Add More Experience (`/interview`), Prep for Interview (`/dashboard`, shown only if `hasApplications`), Manage My Documents (`/resumes`)
 
@@ -285,6 +296,7 @@ The home page is a server component that detects user state and routes according
 - Hamburger dropdown contains: Tailor New Resume (`/tailor`), AI Resumes (`/dashboard`), My Profile (`/resumes`), divider, Take the Tour, Light/Dark Mode toggle, divider, Feedback
 - Signed-out users see a persistent Sun/Moon toggle + Sign In button (no hamburger)
 - `FeedbackModal` is `dynamic` imported with `ssr: false` in both `Navbar.tsx` and `Footer.tsx`
+- **Logo link bug fix**: Logo uses `<a href="/">` (plain anchor) instead of Next.js `<Link href="/">` — forces a full page reload so the router cache does not serve a stale "no documents" WelcomeScreen to returning users
 
 ## Footer
 
@@ -303,6 +315,31 @@ The home page is a server component that detects user state and routes according
   4. **Review** — `InlinePDFViewer` + "Edit text" textarea toggle + AI chat panel (quick chips + free-form input using `POST /api/base-resume-chat`)
 - Save options: "Save to My Documents" (`item_type: 'resume'`), "Set as default document" (`is_default: true`), "Just download" via `POST /api/download-pdf/polished`
 - Diamond icon as visual marker throughout
+
+---
+
+## User Profile / Contact Info
+
+Contact info is stored in `user_profiles` (one row per user, upserted — not inserted) and surfaced in two places:
+
+**First-time user flow (WelcomeScreen)**
+- After first resume upload, `POST /api/extract-contact` is called with the first 800 chars of extracted text
+- Returns `{ full_name, email, location, linkedin_url }` — a pre-filled form is shown for the user to review/edit
+- "Save" → `PUT /api/profile` → redirect to `/tailor`; "Skip for now" bypasses without saving
+
+**My Profile page (`/resumes`) — Contact Information section**
+- Collapsed by default; header shows name + email as a summary
+- Click chevron to expand and edit all 4 fields
+- Server-side: if `user_profiles` is empty for the user, `inferContactFromDocs` runs over the two most recent uploaded documents to pre-fill the form (merges fields across docs, first non-empty value wins)
+
+**Shared helper — `lib/extract-contact.ts`**
+- `extractContactFields(text: string)` — calls Haiku, returns `{ full_name, email, location, linkedin_url }`
+- `inferContactFromDocs(docs, maxDocs = 2)` — iterates docs, calls `extractContactFields` on each, merges results; used by `resumes/page.tsx` server-side pre-fill
+- Used by both `POST /api/extract-contact` and `resumes/page.tsx` — do not duplicate this logic elsewhere
+
+**Document generation**
+- `generate-documents` and `generate-polished-resume` routes both fetch `user_profiles` for the current user; if `full_name` and `email` exist, an exact contact info block is injected into the generation prompt so the AI uses the saved details verbatim
+- All three download-pdf routes (`/resume`, `/cover-letter`, `/polished`) prefer `profile.full_name` over Clerk's display name for `candidateName`
 
 ---
 
