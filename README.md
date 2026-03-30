@@ -24,7 +24,7 @@ After reviewing the fit analysis, the user approves generation. Claude Sonnet st
 - Both stream live to the page as they generate; once complete, panels switch to an **inline PDF view** (US Letter aspect ratio iframe) — an "Edit text" toggle switches back to the raw textarea
 - The PDF view auto-updates when resume content is modified via AI chat
 - If application questions are provided, a third phase generates written answers grounded in the resume and background — displayed with word counts and copy buttons
-- A **"Start Fresh"** button resets the form after generation
+- **"Tailor New Resume"** button resets the form after generation — shown in a top action bar and at the bottom of the page alongside download buttons
 
 ### 2a. Post-Generation Resume Chat
 After a resume is generated, a chat panel lets users refine it conversationally:
@@ -48,7 +48,15 @@ Users can add up to 5 open-ended application questions before generating:
 - AI-generated answers are shown after generation with word count and one-click copy
 - Answers are saved and viewable from the AI Resumes dashboard via a chat icon modal
 
-### 3. Job URL Auto-Import
+### 3. Job Search
+Search for jobs directly within ResumeForge without leaving the page:
+- Keyword + optional location search powered by the JSearch API (RapidAPI)
+- Results show job title, company, location, salary range, and posting date
+- Expand any card to read the full job description before selecting
+- **One-click import** — clicking "Use this job" auto-populates the company, job title, job description, and URL fields
+- Monthly free-tier guard: usage tracked in Supabase `api_usage` table; calls stop at the configured limit (default 175/month)
+
+### 3a. Job URL Auto-Import
 Users can paste a job posting URL instead of copying text manually:
 - Server-side page fetch with HTML stripping (scripts, nav, footer, forms, `<head>`)
 - Seeks to where the job title appears in text to skip nav/menu noise in `<div>` elements
@@ -57,6 +65,7 @@ Users can paste a job posting URL instead of copying text manually:
 - Auto-detects company name from `og:site_name`, title patterns, and job board URLs (Greenhouse, Lever, Workday)
 - Auto-detects job title from `og:title`
 - Auto-extracts open-ended application questions from the form section (skips demographic/identity fields) — these pre-populate the Application Questions panel
+- **Paste extraction** — pasting a job description also triggers company/title/question extraction via Haiku; questions auto-populate the Application Questions panel
 - LinkedIn URLs are blocked with a helpful inline message
 
 ### 4. Polished General-Use Resume (`/polished-resume`)
@@ -199,7 +208,8 @@ app/
     analyze-fit/            # POST — Haiku fit analysis, returns FitAnalysis JSON
     generate-documents/     # POST — Sonnet streaming SSE (Edge runtime) + optional question answers; injects profile contact info
     fetch-job-posting/      # POST — URL scrape, HTML extraction, company/title/question detection
-    parse-job-details/      # POST — Haiku extraction of company + job title from pasted JD text
+    parse-job-details/      # POST — Haiku extraction of company, job title, and questions from pasted JD text
+    search-jobs/            # GET — JSearch job search with monthly usage guard
     extract-resume/         # POST — PDF/DOCX text extraction
     download-pdf/[type]/    # POST — PDF generation and download; all types prefer profile.full_name for candidateName
     generate-polished-resume/ # POST — Sonnet builds standalone resume from selected docs; injects profile contact info
@@ -231,6 +241,7 @@ components/
   ResumeChatPanel.tsx       # Post-generation chat UI — page fit chips, CHANGE/ANSWER response parsing
   FeedbackModal.tsx         # Feedback form modal — general and bug report types
   PDFPreviewModal.tsx       # PDF preview modal — BlobProvider iframe, dynamically imported (ssr: false)
+  JobSearchPanel.tsx        # Job search — keyword/location inputs, JSearch results with salary and expand/collapse
   TourGuide.tsx             # driver.js onboarding tour; exports startTour() for replay
   InterviewPrepPanel.tsx    # Interview prep UI — QuestionCard, SkeletonQuestionCard, InterviewPrepSection
 
@@ -246,7 +257,7 @@ types/
   database.ts               # Full Supabase Database interface (users, resumes, applications, interview_sessions, feedback)
   interview-prep.ts         # InterviewPrep, InterviewQuestion, InterviewQuestionCategory, InterviewPrepRequest
 
-supabase/migrations/        # SQL migration files (001–012)
+supabase/migrations/        # SQL migration files (001–013)
 
 .env.local.example          # All required environment variables with comments
 ```
@@ -269,6 +280,12 @@ Optional (for email delivery of feedback submissions):
 ```env
 RESEND_API_KEY=
 FEEDBACK_EMAIL=
+```
+
+Optional (for job search via JSearch / RapidAPI):
+```env
+RAPIDAPI_KEY=           # RapidAPI subscription key for JSearch
+JSEARCH_MONTHLY_LIMIT=  # Integer monthly call cap (default 175)
 ```
 
 ---

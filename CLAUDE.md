@@ -91,7 +91,8 @@ Added in migration 012. Stores contact info extracted from uploaded resumes.
 | `POST /api/analyze-fit` | Node | Haiku fit analysis — returns JSON FitAnalysis |
 | `POST /api/generate-documents` | Edge | SSE stream — resume (+ optional cover letter); fetches `user_profiles` and injects contact info into prompt if `full_name`/`email` are set |
 | `POST /api/fetch-job-posting` | Node | URL scrape — HTML extraction, company/title detection |
-| `POST /api/parse-job-details` | Node | Haiku extraction of company + job title from pasted JD text |
+| `POST /api/parse-job-details` | Node | Haiku extraction of company, job title, and open-ended application questions from pasted JD text; returns `{ company, jobTitle, questions: string[] }` |
+| `GET /api/search-jobs` | Node | JSearch (RapidAPI) job search; checks `api_usage` table before calling; returns `{ jobs: JobResult[] }`; 429 when monthly limit hit |
 | `POST /api/extract-resume` | Node | PDF/DOCX text extraction |
 | `POST /api/download-pdf/[type]` | Node | PDF generation and download (`/resume`, `/cover-letter`, `/polished`); all three prefer `profile.full_name` over Clerk name for `candidateName` |
 | `GET /api/resumes` | Node | List My Documents (default first, then created_at desc) |
@@ -231,10 +232,23 @@ should only target unnecessary whitespace — never content.
 
 ## PDF Preview
 
-- `components/PDFPreviewModal.tsx` — `'use client'` component, uses `BlobProvider` from `@react-pdf/renderer` to generate a blob URL and display it in an `<iframe>`
+- `components/PDFPreviewModal.tsx` — `'use client'` component, uses `BlobProvider` from `@react-pdf/renderer` to generate a blob URL and display it in an `<iframe>`; Download button in header derives filename from company + jobTitle slug
 - Always imported via `dynamic(() => import('@/components/PDFPreviewModal'), { ssr: false })` to avoid SSR issues with `@react-pdf/renderer`
 - Home page: preview buttons next to download buttons; uses `useUser()` from Clerk for `candidateName`
 - Dashboard: preview buttons on each card; content fetched lazily via `GET /api/applications/[id]`
+- `#navpanes=0` appended to blob URL in `<iframe src>` to suppress Chrome/Edge PDF sidebar
+
+---
+
+## Job Search (`JobSearchPanel`)
+
+- `components/JobSearchPanel.tsx` — keyword + location search inputs; results from `GET /api/search-jobs`; selecting a job populates company, jobTitle, jobDescription, and jobUrl in the tailor form
+- Each card shows job title, company, location, salary range (`Intl.NumberFormat`), posted date, and external link icon
+- Per-card expand/collapse description (one card expanded at a time via `expandedId` state)
+- Salary display: `formatSalary()` renders range, lower bound, or upper bound; falls back to "Salary n/a"
+- `app/api/search-jobs/route.ts` — checks `api_usage` table (`api_name='jsearch'`, `month='YYYY-MM'`) before calling JSearch API; increments counter on success; returns 429 with `{ error, code: 'RATE_LIMIT_REACHED' }` when `call_count >= JSEARCH_MONTHLY_LIMIT` (default 175, env override)
+- Migration `supabase/migrations/013_api_usage.sql` — creates `api_usage` table with unique constraint on `(api_name, month)`
+- Env vars: `RAPIDAPI_KEY` (RapidAPI subscription key), `JSEARCH_MONTHLY_LIMIT` (integer, default 175)
 
 ---
 

@@ -535,7 +535,10 @@ export default function Home() {
 
                 {/* 1. Job Search */}
                 <div className="space-y-2">
-                  <Label>Search for a job</Label>
+                  <Label className="flex items-center gap-2">
+                    Search for a job
+                    <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400">Beta</span>
+                  </Label>
                   <JobSearchPanel onJobSelect={handleJobSelect} disabled={uiState === 'analyzing'} />
                   <p className="text-xs text-muted-foreground">Or paste a job description directly below.</p>
                 </div>

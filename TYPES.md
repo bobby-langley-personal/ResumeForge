@@ -164,13 +164,17 @@ Company | Location
 ### `JobResult`
 ```typescript
 {
-  id: string          // job_id from JSearch
-  title: string       // job_title
-  company: string     // employer_name
-  location: string    // job_city + job_state joined
-  description: string // job_description
-  url: string         // job_apply_link
-  postedAt: string    // job_posted_at_datetime_utc (ISO)
+  id: string              // job_id from JSearch
+  title: string           // job_title
+  company: string         // employer_name
+  location: string        // job_city + job_state joined
+  description: string     // job_description
+  url: string             // job_apply_link
+  postedAt: string        // job_posted_at_datetime_utc (ISO)
+  salaryMin?: number      // job_min_salary (optional)
+  salaryMax?: number      // job_max_salary (optional)
+  salaryCurrency?: string // job_salary_currency (e.g. "USD")
+  salaryPeriod?: string   // job_salary_period (e.g. "YEAR", "MONTH", "HOUR")
 }
 ```
 
