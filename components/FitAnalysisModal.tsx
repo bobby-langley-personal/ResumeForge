@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { X, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FitAnalysis, FitPoint } from '@/types/fit-analysis';
@@ -66,11 +66,6 @@ function FitSection({
 }
 
 export default function FitAnalysisModal({ fitAnalysis, company, jobTitle, createdAt, onClose, actions }: Props) {
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [onClose]);
 
   const formattedDate = createdAt
     ? new Date(createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
@@ -79,10 +74,9 @@ export default function FitAnalysisModal({ fitAnalysis, company, jobTitle, creat
   const isValid = fitAnalysis?.strengths && fitAnalysis?.gaps && fitAnalysis?.suggestions;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
       <div
         className="bg-card border border-border rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-        onClick={e => e.stopPropagation()}
       >
         <div className="p-6 space-y-6">
           {/* Header */}
