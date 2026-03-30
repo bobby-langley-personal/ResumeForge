@@ -76,56 +76,24 @@ interface ContactFields {
   linkedinUrl: string;
 }
 
-function extractContactFromText(text: string): ContactFields {
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-
-  // Email — simple scan
-  const emailMatch = text.match(/[\w.+\-]+@[\w\-]+\.[a-z]{2,}/i);
-
-  // LinkedIn
-  const linkedinMatch = text.match(/linkedin\.com\/in\/([\w\-]+)/i);
-
-  // Location — find the contact line (contains email, phone, or linkedin), then
-  // split it by '|' and look for an exact "City, ST" segment. This avoids the
-  // greedy multi-word bleed issue when PDF extraction strips newlines.
-  let location = '';
-  const contactLineIdx = lines.findIndex(l =>
-    l.includes('@') || /\(\d{3}\)|\d{3}[-.\s]\d{3}/.test(l) || /linkedin\.com/i.test(l)
-  );
-  const locationCandidates = [
-    contactLineIdx >= 0 ? lines[contactLineIdx] : '',
-    contactLineIdx > 0 ? lines[contactLineIdx - 1] : '',
-  ].filter(Boolean);
-
-  for (const candidate of locationCandidates) {
-    for (const part of candidate.split('|').map(p => p.trim())) {
-      const m = part.match(/^([A-Z][a-z]+(?:\s[A-Z][a-z]+)*),\s*([A-Z]{2})$/);
-      if (m) { location = `${m[1].trim()}, ${m[2]}`; break; }
-    }
-    if (location) break;
+async function extractContactFromText(text: string): Promise<ContactFields> {
+  try {
+    const res = await fetch('/api/extract-contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) throw new Error('extraction failed');
+    const data = await res.json();
+    return {
+      fullName: data.full_name ?? '',
+      email: data.email ?? '',
+      location: data.location ?? '',
+      linkedinUrl: data.linkedin_url ?? '',
+    };
+  } catch {
+    return { fullName: '', email: '', location: '', linkedinUrl: '' };
   }
-  // Fallback: look after a newline or pipe for "City, ST"
-  if (!location) {
-    const m = text.match(/(?:\n|\|)\s*([A-Z][a-z]+(?:\s[A-Z][a-z]+)*),\s*([A-Z]{2})(?:\s|$|\|)/m);
-    if (m) location = `${m[1].trim()}, ${m[2]}`;
-  }
-
-  // Name — first line that looks like a full name (2–5 words, title case, no symbols)
-  const nameLine = lines.find(l =>
-    l.length >= 4 &&
-    l.length <= 50 &&
-    /^[A-Z]/.test(l) &&
-    !/[@|:\\/\d\(\)\[\]#]/.test(l) &&
-    l.split(/\s+/).length >= 2 &&
-    l.split(/\s+/).length <= 5
-  );
-
-  return {
-    fullName: nameLine ?? '',
-    email: emailMatch?.[0] ?? '',
-    location,
-    linkedinUrl: linkedinMatch ? `linkedin.com/in/${linkedinMatch[1]}` : '',
-  };
 }
 
 export default function WelcomeScreen() {
@@ -163,8 +131,9 @@ export default function WelcomeScreen() {
         body: JSON.stringify({ title, content: { text, fileName }, item_type: 'resume', is_default: true }),
       });
 
-      // Extract contact info and show confirmation step
-      setContact(extractContactFromText(text));
+      // Extract contact info via Haiku and show confirmation step
+      const extracted = await extractContactFromText(text);
+      setContact(extracted);
       setShowContact(true);
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
