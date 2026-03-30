@@ -131,6 +131,7 @@ export default function Home() {
   const [showPdfView, setShowPdfView] = useState(true);
   const [usingBaseResume, setUsingBaseResume] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const analyzingRef = useRef<HTMLDivElement>(null);
   const originalResumeRef = useRef('');
   const baseResumeLoadedRef = useRef(false);
 
@@ -157,6 +158,13 @@ export default function Home() {
       originalResumeRef.current = resumeContent;
     }
   }, [uiState, resumeContent]);
+
+  // Scroll to loading bar when analysis starts
+  useEffect(() => {
+    if (uiState === 'analyzing' && analyzingRef.current) {
+      analyzingRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [uiState]);
 
   // Pre-generation refs — background generation starts 500ms after fit analysis
   type PreGenStatus = 'idle' | 'pending' | 'running' | 'done' | 'aborted';
@@ -735,7 +743,7 @@ export default function Home() {
                   </div>
 
                   {uiState === 'analyzing' && (
-                    <div className="w-full max-w-lg p-5 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
+                    <div ref={analyzingRef} className="w-full max-w-lg p-5 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
                       <div className="flex items-center gap-3">
                         <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-300 border-t-blue-600 shrink-0" />
                         <p className="text-sm font-medium text-blue-900">Analyzing your fit for this role…</p>
