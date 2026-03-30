@@ -396,11 +396,12 @@ export default function ResumePDF({ resumeText, candidateName, company, jobTitle
     parsed.header.name = candidateName;
   }
 
-  // Build contact line parts — omit any empty fields, never show placeholders
+  // Build contact line — omit any empty fields, never show placeholders
   const contactParts = [
     parsed.header.location,
     parsed.header.phone,
     parsed.header.email,
+    parsed.header.linkedin,
   ].filter(Boolean);
 
   return (
@@ -412,11 +413,6 @@ export default function ResumePDF({ resumeText, candidateName, company, jobTitle
           {contactParts.length > 0 && (
             <Text style={styles.contact} wrap={true}>
               {contactParts.join(' | ')}
-            </Text>
-          )}
-          {parsed.header.linkedin && (
-            <Text style={styles.contact} wrap={true}>
-              {parsed.header.linkedin}
             </Text>
           )}
         </View>
