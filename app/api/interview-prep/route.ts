@@ -77,6 +77,7 @@ ${generatedResume}${toughQuestions?.length ? `\n\nTOUGH APPLICATION QUESTIONS TO
     const response = await anthropic.messages.create({
       model: HAIKU,
       max_tokens: 2000,
+      temperature: 0.4,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: userContent }],
     });

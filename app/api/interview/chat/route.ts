@@ -94,6 +94,7 @@ Always be warm, encouraging, and curious. Help them see the value in experiences
   const response = await client.messages.create({
     model: SONNET,
     max_tokens: 1024,
+    temperature: 0.5,
     system: systemPrompt,
     messages,
   });

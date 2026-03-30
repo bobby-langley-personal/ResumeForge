@@ -37,7 +37,11 @@ export async function POST(req: NextRequest) {
       company,
       jobTitle,
       jobDescriptionLength: jobDescription?.length,
-      backgroundLength: backgroundExperience?.length
+      backgroundLength: backgroundExperience?.length,
+      additionalContextCount: additionalContext?.length ?? 0,
+      includeCoverLetter,
+      includeSummary,
+      hasJobUrl: !!jobUrl,
     });
 
     if (!company || !jobTitle || !jobDescription || !backgroundExperience) {
@@ -73,6 +77,10 @@ export async function POST(req: NextRequest) {
 
           const { SONNET } = await getModels();
 
+          // Normalize inputs to reduce variation from formatting inconsistencies
+          const normalizedBackground = backgroundExperience.trim().replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').replace(/[ \t]+/g, ' ');
+          const normalizedJD = jobDescription.trim().replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').replace(/[ \t]+/g, ' ');
+
           // Phase 1: Generate resume
           sendEvent('status', { message: 'Analyzing job description...' });
           console.log('[generate-documents] Starting resume generation');
@@ -81,6 +89,7 @@ export async function POST(req: NextRequest) {
             const resumeStream = await anthropic.messages.create({
             model: SONNET,
             max_tokens: 4000,
+            temperature: 0.3,
             system: `You are an expert resume writer with 15+ years of experience helping candidates land roles at top companies. Your job is to deeply analyze the candidate's background and the job description, then produce a tailored, ATS-optimized resume that gives them the best possible chance of getting an interview.
 
 Rules:
@@ -96,6 +105,7 @@ Rules:
 - Keep each bullet point under 180 characters including spaces. If a bullet runs long, split it into two focused bullets rather than letting it wrap to a third line.
 - Never repeat the same action verb more than once within a single role's bullet list. Scan all bullets for that role before writing — maintain a mental list of verbs already used. Vary openers: Built → Engineered, Developed, Created, Designed, Shipped, Delivered, Launched, Implemented, Deployed, Authored; Led → Managed, Directed, Oversaw, Guided, Mentored, Headed; Improved → Reduced, Increased, Accelerated, Optimized, Streamlined, Elevated, Boosted
 - Never use hedging or diminishing language on leadership experience. Words like "Informally", "Somewhat", "Partially", "Helped with", "Assisted in leading" undermine the candidate. If they led, they led. Reframe confidently: "Informally led a team" → "Managed a team of 2 engineers"; "Helped lead" → "Co-led" or just "Led"
+- Be deterministic and consistent: do not vary structure, formatting, or section order between runs on the same input. Always follow the exact output format specified. Do not add creative flourishes or vary phrasing based on randomness — prioritize accuracy and repeatability over variety
 
 Output the resume in EXACTLY this format:
 
@@ -137,7 +147,7 @@ Output the resume in EXACTLY this format. Do NOT put dates on the company line �
             messages: [
               {
                 role: 'user',
-                content: `Company: ${company}\nJob Title: ${jobTitle}\nJob Description: ${jobDescription}\n\n${isFromUploadedFile ? 'The following background was extracted from the candidate\'s existing resume. Use it as the source of truth for their experience, but reframe and tailor it specifically for the target role.\n\n' : ''}My Background:\n${backgroundExperience}${buildContextBlock(additionalContext)}${contactBlock}\n\nPlease create a tailored resume.`
+                content: `Company: ${company}\nJob Title: ${jobTitle}\nJob Description: ${normalizedJD}\n\n${isFromUploadedFile ? 'The following background was extracted from the candidate\'s existing resume. Use it as the source of truth for their experience, but reframe and tailor it specifically for the target role.\n\n' : ''}My Background:\n${normalizedBackground}${buildContextBlock(additionalContext)}${contactBlock}\n\nPlease create a tailored resume.`
               }
             ],
             stream: true
@@ -176,6 +186,7 @@ Output the resume in EXACTLY this format. Do NOT put dates on the company line �
               const coverLetterStream = await anthropic.messages.create({
                 model: SONNET,
                 max_tokens: 2000,
+                temperature: 0.3,
                 system: `You are an expert cover letter writer. Write a professional 3-4 paragraph cover letter tailored to the role. Never invent experience. Use the generated resume content as context.`,
                 messages: [
                   {
@@ -220,6 +231,7 @@ Output the resume in EXACTLY this format. Do NOT put dates on the company line �
               const questionsResponse = await anthropic.messages.create({
                 model: SONNET,
                 max_tokens: 2000,
+                temperature: 0.4,
                 system: `You are an expert career coach helping a job applicant write their own application answers. Write every answer in FIRST PERSON ("I", "my", "me") — the applicant is speaking directly. Never refer to the candidate in third person by name or pronoun. Use ONLY the candidate's real experience from their background and any provided context documents. Never invent experience, companies, titles, or metrics.
 
 Rules for answers:
@@ -235,7 +247,7 @@ Output valid JSON only, no markdown fences:
                 messages: [
                   {
                     role: 'user',
-                    content: `Company: ${company}\nJob Title: ${jobTitle}\nJob Description: ${jobDescription}\n\nMy Background:\n${backgroundExperience}${buildContextBlock(additionalContext)}\n\nGenerated Resume:\n${resumeText}\n\nPlease answer these application questions:\n\n${questionsPrompt}`,
+                    content: `Company: ${company}\nJob Title: ${jobTitle}\nJob Description: ${normalizedJD}\n\nMy Background:\n${normalizedBackground}${buildContextBlock(additionalContext)}\n\nGenerated Resume:\n${resumeText}\n\nPlease answer these application questions:\n\n${questionsPrompt}`,
                   },
                 ],
               });

@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
     const response = await anthropic.messages.create({
       model: SONNET,
       max_tokens: pageLimit <= 1 ? 3000 : pageLimit <= 2 ? 5000 : 7000,
+      temperature: 0.3,
       system: `You are an expert resume writer creating a polished, standalone resume for general use — not tailored to any specific job description.
 
 This resume should be strong enough to send to a recruiter cold, use at a networking event, or attach to a broad application without modification.
