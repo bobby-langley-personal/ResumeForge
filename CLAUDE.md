@@ -174,6 +174,12 @@ Never hardcode model IDs. Use `getModels()` from `@/lib/models`:
 const { SONNET, HAIKU } = await getModels();
 ```
 
+**Every `messages.create` / `messages.stream` call must include an explicit `temperature`** — never rely on the API default (1.0). Standard values:
+- `0.2` — extraction/JSON (structured outputs, question parsing, contact extraction)
+- `0.3` — resume and cover letter generation (consistent structure, minimal variation)
+- `0.4` — chat and Q&A responses (some natural variation is acceptable)
+- `0.5` — interview chat (more conversational feel)
+
 ---
 
 ## AI Resumes Dashboard (`/dashboard`)
