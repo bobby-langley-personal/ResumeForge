@@ -49,7 +49,7 @@ export default function InlinePDFViewer({ type, text, candidateName, company, jo
         }
         return (
           <iframe
-            src={url}
+            src={`${url}#navpanes=0`}
             className="w-full rounded-lg border border-border"
             style={{ aspectRatio: '8.5 / 11' }}
             title={type === 'resume' ? 'Resume Preview' : 'Cover Letter Preview'}

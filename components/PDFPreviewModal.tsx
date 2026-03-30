@@ -105,7 +105,7 @@ export default function PDFPreviewModal(props: PDFPreviewModalProps) {
               }
               return (
                 <iframe
-                  src={url}
+                  src={`${url}#navpanes=0`}
                   className="w-full h-full rounded-b-xl"
                   title={props.type === 'resume' ? 'Resume Preview' : 'Cover Letter Preview'}
                 />
