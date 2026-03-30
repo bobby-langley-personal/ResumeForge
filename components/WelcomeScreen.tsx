@@ -107,6 +107,7 @@ export default function WelcomeScreen() {
 
   // Contact step state
   const [showContact, setShowContact] = useState(false);
+  const [isExtractingContact, setIsExtractingContact] = useState(false);
   const [contact, setContact] = useState<ContactFields>({ fullName: '', email: '', location: '', linkedinUrl: '' });
   const [isSavingContact, setIsSavingContact] = useState(false);
   const [contactError, setContactError] = useState('');
@@ -131,10 +132,13 @@ export default function WelcomeScreen() {
         body: JSON.stringify({ title, content: { text, fileName }, item_type: 'resume', is_default: true }),
       });
 
-      // Extract contact info via Haiku and show confirmation step
-      const extracted = await extractContactFromText(text);
-      setContact(extracted);
+      // Show the contact verification form immediately, then populate it
+      setIsExtractingContact(true);
       setShowContact(true);
+      extractContactFromText(text).then(extracted => {
+        setContact(extracted);
+        setIsExtractingContact(false);
+      });
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
     } finally {
@@ -169,47 +173,54 @@ export default function WelcomeScreen() {
     return (
       <div className="max-w-lg mx-auto space-y-6">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Let&apos;s verify your contact info</h2>
+          <h2 className="text-2xl font-bold text-foreground">Let&apos;s make sure we&apos;ve got the right info</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            This will appear on all generated resumes and documents. You can update it any time under <strong>My Profile</strong>.
+            We pulled this from your resume. Make sure it&apos;s up to date — it will appear on all generated documents. You can update it any time under <strong>My Profile</strong>.
           </p>
         </div>
 
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>Full name</Label>
-            <Input
-              value={contact.fullName}
-              onChange={e => setContact(c => ({ ...c, fullName: e.target.value }))}
-              placeholder="Jane Smith"
-            />
+        {isExtractingContact ? (
+          <div className="flex items-center gap-2 py-8 justify-center text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span className="text-sm">Reading your resume…</span>
           </div>
-          <div className="space-y-1.5">
-            <Label>Email</Label>
-            <Input
-              type="email"
-              value={contact.email}
-              onChange={e => setContact(c => ({ ...c, email: e.target.value }))}
-              placeholder="jane@example.com"
-            />
+        ) : (
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Full name</Label>
+              <Input
+                value={contact.fullName}
+                onChange={e => setContact(c => ({ ...c, fullName: e.target.value }))}
+                placeholder="Jane Smith"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={contact.email}
+                onChange={e => setContact(c => ({ ...c, email: e.target.value }))}
+                placeholder="jane@example.com"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Location</Label>
+              <Input
+                value={contact.location}
+                onChange={e => setContact(c => ({ ...c, location: e.target.value }))}
+                placeholder="San Francisco, CA"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>LinkedIn URL</Label>
+              <Input
+                value={contact.linkedinUrl}
+                onChange={e => setContact(c => ({ ...c, linkedinUrl: e.target.value }))}
+                placeholder="linkedin.com/in/yourname"
+              />
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label>Location</Label>
-            <Input
-              value={contact.location}
-              onChange={e => setContact(c => ({ ...c, location: e.target.value }))}
-              placeholder="San Francisco, CA"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>LinkedIn URL</Label>
-            <Input
-              value={contact.linkedinUrl}
-              onChange={e => setContact(c => ({ ...c, linkedinUrl: e.target.value }))}
-              placeholder="linkedin.com/in/yourname"
-            />
-          </div>
-        </div>
+        )}
 
         {contactError && <p className="text-sm text-destructive">{contactError}</p>}
 
@@ -217,16 +228,16 @@ export default function WelcomeScreen() {
           <Button
             className="flex-1"
             onClick={handleSaveContact}
-            disabled={isSavingContact}
+            disabled={isSavingContact || isExtractingContact}
           >
             {isSavingContact
               ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</>
-              : <><Check className="w-4 h-4 mr-2" />Looks good, let&apos;s go</>}
+              : <><Check className="w-4 h-4 mr-2" />Looks good, save &amp; continue</>}
           </Button>
           <Button
             variant="ghost"
             onClick={() => router.push('/tailor')}
-            disabled={isSavingContact}
+            disabled={isSavingContact || isExtractingContact}
           >
             Skip for now
           </Button>
