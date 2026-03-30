@@ -7,6 +7,7 @@ import ResumeLibrary from './ResumeLibrary';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { ResumeItem } from '@/types/resume';
+import { inferContactFromDocs } from '@/lib/extract-contact';
 
 export const metadata = { title: 'My Documents — ResumeForge' };
 
@@ -36,7 +37,17 @@ export default async function ResumesPage() {
     content: typeof item.content === 'string' ? JSON.parse(item.content) : item.content,
   })) as ResumeItem[];
 
-  const profile = profileResult.data ?? { full_name: '', email: '', location: '', linkedin_url: '' };
+  let profile = profileResult.data ?? { full_name: '', email: '', location: '', linkedin_url: '' };
+
+  // If profile is empty, try to infer from uploaded documents (most recent first)
+  const profileEmpty = !profile.full_name && !profile.email;
+  if (profileEmpty && allItems.length > 0) {
+    try {
+      profile = await inferContactFromDocs(allItems);
+    } catch {
+      // Non-fatal — leave empty for user to fill
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background">

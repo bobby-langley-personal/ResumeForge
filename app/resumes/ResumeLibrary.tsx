@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ResumeItem, ItemType, ITEM_TYPE_LABELS } from '@/types/resume';
-import { Plus, Trash2, Star, Pencil, Upload, X, Check, Diamond, User, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Star, Pencil, Upload, X, Check, Diamond, User, Loader2, ChevronDown } from 'lucide-react';
 import TipsPanel from '@/components/TipsPanel';
 
 interface UserProfile {
@@ -30,6 +30,7 @@ export default function ResumeLibrary({ initialItems, profile: initialProfile }:
   const [editingItem, setEditingItem] = useState<ResumeItem | null>(null);
 
   // Contact info state
+  const [profileOpen, setProfileOpen] = useState(false);
   const [profileFields, setProfileFields] = useState<UserProfile>(initialProfile);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
@@ -156,59 +157,74 @@ export default function ResumeLibrary({ initialItems, profile: initialProfile }:
 
   return (
     <div className="space-y-8">
-      {/* Contact Info */}
-      <div>
-        <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
-          <User className="w-4 h-4" /> Contact Information
-        </h3>
-        <div className="border border-border rounded-xl p-5 bg-card space-y-4">
-          <p className="text-xs text-muted-foreground">
-            Used on all generated resumes and documents.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>Full name</Label>
-              <Input
-                value={profileFields.full_name}
-                onChange={e => setProfileFields(p => ({ ...p, full_name: e.target.value }))}
-                placeholder="Jane Smith"
-              />
+      {/* Contact Info — collapsible */}
+      <div className="border border-border rounded-xl overflow-hidden">
+        <button
+          onClick={() => setProfileOpen(v => !v)}
+          className="flex items-center justify-between w-full px-5 py-4 text-left hover:bg-muted/30 transition-colors"
+        >
+          <span className="flex items-center gap-2">
+            <User className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">Contact Information</span>
+            {profileFields.full_name && (
+              <span className="text-sm text-muted-foreground">
+                · {profileFields.full_name}{profileFields.email ? ` · ${profileFields.email}` : ''}
+              </span>
+            )}
+          </span>
+          <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        <div className={`grid transition-all duration-200 ${profileOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+          <div className="overflow-hidden">
+            <div className="px-5 pb-5 pt-1 border-t border-border space-y-4">
+              <p className="text-xs text-muted-foreground pt-2">
+                Used on all generated resumes and documents.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>Full name</Label>
+                  <Input
+                    value={profileFields.full_name}
+                    onChange={e => setProfileFields(p => ({ ...p, full_name: e.target.value }))}
+                    placeholder="Jane Smith"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Email</Label>
+                  <Input
+                    type="email"
+                    value={profileFields.email}
+                    onChange={e => setProfileFields(p => ({ ...p, email: e.target.value }))}
+                    placeholder="jane@example.com"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Location</Label>
+                  <Input
+                    value={profileFields.location}
+                    onChange={e => setProfileFields(p => ({ ...p, location: e.target.value }))}
+                    placeholder="San Francisco, CA"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>LinkedIn URL</Label>
+                  <Input
+                    value={profileFields.linkedin_url}
+                    onChange={e => setProfileFields(p => ({ ...p, linkedin_url: e.target.value }))}
+                    placeholder="linkedin.com/in/yourname"
+                  />
+                </div>
+              </div>
+              {profileError && <p className="text-sm text-destructive">{profileError}</p>}
+              <Button size="sm" onClick={handleProfileSave} disabled={profileSaving}>
+                {profileSaving
+                  ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Saving...</>
+                  : profileSaved
+                    ? <><Check className="w-3.5 h-3.5 mr-1.5" />Saved</>
+                    : 'Save'}
+              </Button>
             </div>
-            <div className="space-y-1.5">
-              <Label>Email</Label>
-              <Input
-                type="email"
-                value={profileFields.email}
-                onChange={e => setProfileFields(p => ({ ...p, email: e.target.value }))}
-                placeholder="jane@example.com"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Location</Label>
-              <Input
-                value={profileFields.location}
-                onChange={e => setProfileFields(p => ({ ...p, location: e.target.value }))}
-                placeholder="San Francisco, CA"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>LinkedIn URL</Label>
-              <Input
-                value={profileFields.linkedin_url}
-                onChange={e => setProfileFields(p => ({ ...p, linkedin_url: e.target.value }))}
-                placeholder="linkedin.com/in/yourname"
-              />
-            </div>
-          </div>
-          {profileError && <p className="text-sm text-destructive">{profileError}</p>}
-          <div className="flex items-center gap-3">
-            <Button size="sm" onClick={handleProfileSave} disabled={profileSaving}>
-              {profileSaving
-                ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Saving...</>
-                : profileSaved
-                  ? <><Check className="w-3.5 h-3.5 mr-1.5" />Saved</>
-                  : 'Save'}
-            </Button>
           </div>
         </div>
       </div>
