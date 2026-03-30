@@ -12,6 +12,10 @@ export interface JobResult {
   description: string;
   url: string;
   postedAt: string;
+  salaryMin: number | null;
+  salaryMax: number | null;
+  salaryCurrency: string | null;
+  salaryPeriod: string | null;
 }
 
 async function checkAndIncrementUsage(supabase: ReturnType<typeof supabaseServer>): Promise<{ allowed: boolean }> {
@@ -81,7 +85,7 @@ export async function GET(req: NextRequest) {
   }
 
   const data = await response.json();
-  const jobs: JobResult[] = (data.data ?? []).slice(0, 5).map((j: Record<string, string>) => ({
+  const jobs: JobResult[] = (data.data ?? []).slice(0, 5).map((j: Record<string, unknown>) => ({
     id: j.job_id,
     title: j.job_title,
     company: j.employer_name,
@@ -89,6 +93,10 @@ export async function GET(req: NextRequest) {
     description: j.job_description,
     url: j.job_apply_link,
     postedAt: j.job_posted_at_datetime_utc,
+    salaryMin: (j.job_min_salary as number) ?? null,
+    salaryMax: (j.job_max_salary as number) ?? null,
+    salaryCurrency: (j.job_salary_currency as string) ?? null,
+    salaryPeriod: (j.job_salary_period as string) ?? null,
   }));
 
   return NextResponse.json({ jobs });
