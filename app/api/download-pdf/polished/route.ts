@@ -28,8 +28,7 @@ export async function POST(request: NextRequest) {
       company: '',
       jobTitle: '',
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pdfBuffer = await renderToBuffer(element as React.ReactElement<any>);
+    const pdfBuffer = await renderToBuffer(element as React.ReactElement);
 
     const safeName = (fileName || 'Polished_Resume').replace(/[^a-zA-Z0-9_-]/g, '_');
 

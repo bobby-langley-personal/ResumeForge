@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { readSSEStream } from '@/lib/sse-reader';
-import { ChevronDown, Loader2, Eye } from 'lucide-react';
+import { Loader2, Eye } from 'lucide-react';
 import { FitAnalysis } from '@/types/fit-analysis';
 import { ResumeItem } from '@/types/resume';
 import ExperiencePanel from '@/components/ExperiencePanel';
