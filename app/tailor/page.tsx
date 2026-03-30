@@ -618,16 +618,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* 5. Experience Panel */}
-                <div id="tour-background">
-                  <ExperiencePanel
-                    key={resetKey}
-                    onBackgroundChange={(text) => { setManualExperience(text); setUsingBaseResume(false); }}
-                    onAdditionalContextChange={setAdditionalContext}
-                    disabled={uiState === 'analyzing'}
-                    usingBaseResume={usingBaseResume}
-                  />
-                </div>
 
                 {/* 6. Application Questions */}
                 <div id="tour-questions" className="border border-border rounded-xl overflow-hidden">
@@ -701,26 +691,28 @@ export default function Home() {
 
                 {/* 7. Toggles + Generate */}
                 <div className="flex flex-col items-center space-y-4">
-                  <label className="flex items-center gap-3 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={includeSummary}
-                      onChange={(e) => setIncludeSummary(e.target.checked)}
-                      disabled={uiState === 'analyzing'}
-                      className="w-4 h-4 rounded border-border accent-primary"
-                    />
-                    <span className="text-sm text-muted-foreground">Include a summary section</span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={includeCoverLetter}
-                      onChange={(e) => setIncludeCoverLetter(e.target.checked)}
-                      disabled={uiState === 'analyzing'}
-                      className="w-4 h-4 rounded border-border accent-primary"
-                    />
-                    <span className="text-sm text-muted-foreground">Also generate a cover letter</span>
-                  </label>
+                  <div className="flex flex-wrap gap-x-8 gap-y-2 justify-center">
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={includeSummary}
+                        onChange={(e) => setIncludeSummary(e.target.checked)}
+                        disabled={uiState === 'analyzing'}
+                        className="w-4 h-4 rounded border-border accent-primary"
+                      />
+                      <span className="text-sm text-muted-foreground">Include a summary section</span>
+                    </label>
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={includeCoverLetter}
+                        onChange={(e) => setIncludeCoverLetter(e.target.checked)}
+                        disabled={uiState === 'analyzing'}
+                        className="w-4 h-4 rounded border-border accent-primary"
+                      />
+                      <span className="text-sm text-muted-foreground">Also generate a cover letter</span>
+                    </label>
+                  </div>
 
                   <Button
                     id="tour-generate"
@@ -731,9 +723,16 @@ export default function Home() {
                   >
                     {uiState === 'analyzing' ? 'Analyzing…' : 'Tailor My Resume'}
                   </Button>
-                  <p className="text-sm text-muted-foreground text-center">
-                    Your resume will be rewritten to match this specific role using your real experience — we never invent anything.
-                  </p>
+
+                  <div id="tour-background" className="w-full">
+                    <ExperiencePanel
+                      key={resetKey}
+                      onBackgroundChange={(text) => { setManualExperience(text); setUsingBaseResume(false); }}
+                      onAdditionalContextChange={setAdditionalContext}
+                      disabled={uiState === 'analyzing'}
+                      usingBaseResume={usingBaseResume}
+                    />
+                  </div>
 
                   {uiState === 'analyzing' && (
                     <div className="w-full max-w-lg p-5 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
