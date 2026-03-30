@@ -28,8 +28,11 @@ Use empty string for any field not found.`,
       messages: [{ role: 'user', content: text.slice(0, 800) }],
     });
 
-    const raw = response.content[0].type === 'text' ? response.content[0].text.trim() : '{}';
-    const parsed = JSON.parse(raw);
+    let raw = response.content[0].type === 'text' ? response.content[0].text.trim() : '{}';
+    // Haiku sometimes wraps JSON in markdown fences despite instructions — strip them
+    raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+    const match = raw.match(/\{[\s\S]*\}/);
+    const parsed = JSON.parse(match ? match[0] : '{}');
     return {
       full_name: parsed.full_name ?? '',
       email: parsed.email ?? '',
