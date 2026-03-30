@@ -30,8 +30,7 @@ export default function JobSearchPanel({ onJobSelect, disabled }: Props) {
   const [error, setError] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const handleSearch = async (e?: React.FormEvent) => {
-    e?.preventDefault();
+  const handleSearch = async () => {
     if (!query.trim()) return;
     setLoading(true);
     setError('');
@@ -68,11 +67,12 @@ export default function JobSearchPanel({ onJobSelect, disabled }: Props) {
 
   return (
     <div className="space-y-3">
-      <form onSubmit={handleSearch} className="flex gap-2">
+      <div className="flex gap-2">
         <Input
           placeholder="Job title or keywords"
           value={query}
           onChange={e => setQuery(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleSearch())}
           disabled={disabled || loading}
           className="flex-1"
         />
@@ -80,15 +80,16 @@ export default function JobSearchPanel({ onJobSelect, disabled }: Props) {
           placeholder="Location (optional)"
           value={location}
           onChange={e => setLocation(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleSearch())}
           disabled={disabled || loading}
           className="w-44"
         />
-        <Button type="submit" variant="outline" disabled={!query.trim() || disabled || loading}>
+        <Button type="button" variant="outline" onClick={() => handleSearch()} disabled={!query.trim() || disabled || loading}>
           {loading
             ? <Loader2 className="w-4 h-4 animate-spin" />
             : <Search className="w-4 h-4" />}
         </Button>
-      </form>
+      </div>
 
       {error && <p className="text-xs text-muted-foreground">{error}</p>}
 
