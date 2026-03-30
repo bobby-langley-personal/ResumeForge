@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { readSSEStream } from '@/lib/sse-reader';
-import { Loader2, Eye } from 'lucide-react';
+import { Loader2, Eye, Download, RotateCcw } from 'lucide-react';
 import { FitAnalysis } from '@/types/fit-analysis';
 import { ResumeItem } from '@/types/resume';
 import ExperiencePanel from '@/components/ExperiencePanel';
@@ -183,9 +183,13 @@ export default function Home() {
       body: JSON.stringify({ jobDescription: pastedText }),
     })
       .then((res) => (res.ok ? res.json() : null))
-      .then((data: { company?: string | null; jobTitle?: string | null } | null) => {
+      .then((data: { company?: string | null; jobTitle?: string | null; questions?: string[] } | null) => {
         if (data?.company) setCompany(data.company);
         if (data?.jobTitle) setJobTitle(data.jobTitle);
+        if (data?.questions && data.questions.length > 0) {
+          setQuestions(data.questions.slice(0, 5));
+          setQuestionsExpanded(true);
+        }
       })
       .catch(() => { /* silently ignore — user can fill manually */ })
       .finally(() => setIsParsingJD(false));
@@ -797,6 +801,25 @@ export default function Home() {
               </div>
             )}
 
+            {/* Top action bar — shown once generation is done */}
+            {uiState === 'done' && (resumeContent || coverLetterContent) && (
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex gap-2 flex-wrap">
+                  <Button size="sm" onClick={() => handleDownload('resume')}>
+                    <Download className="w-3.5 h-3.5 mr-1.5" />Download Resume
+                  </Button>
+                  {includeCoverLetter && coverLetterContent && (
+                    <Button size="sm" variant="outline" onClick={() => handleDownload('cover-letter')}>
+                      <Download className="w-3.5 h-3.5 mr-1.5" />Download Cover Letter
+                    </Button>
+                  )}
+                </div>
+                <Button size="sm" variant="outline" onClick={resetForm}>
+                  <RotateCcw className="w-3.5 h-3.5 mr-1.5" />Tailor New Resume
+                </Button>
+              </div>
+            )}
+
             {/* Live Preview Panels */}
             {(uiState === 'generating' || uiState === 'done') && (resumeContent || coverLetterContent) && (
               <div className={`grid grid-cols-1 ${includeCoverLetter ? 'lg:grid-cols-2' : ''} gap-8`}>
@@ -805,12 +828,17 @@ export default function Home() {
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold text-foreground">Resume</h3>
                       {uiState === 'done' && (
-                        <button
-                          onClick={() => setShowPdfView(v => !v)}
-                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          {showPdfView ? 'Edit text' : 'PDF view'}
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <Button size="sm" variant="outline" onClick={() => handleDownload('resume')}>
+                            <Download className="w-3.5 h-3.5 mr-1.5" />Download PDF
+                          </Button>
+                          <button
+                            onClick={() => setShowPdfView(v => !v)}
+                            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            {showPdfView ? 'Edit text' : 'PDF view'}
+                          </button>
+                        </div>
                       )}
                     </div>
                     {uiState === 'done' && showPdfView ? (
@@ -836,12 +864,17 @@ export default function Home() {
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold text-foreground">Cover Letter</h3>
                       {uiState === 'done' && (
-                        <button
-                          onClick={() => setShowPdfView(v => !v)}
-                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          {showPdfView ? 'Edit text' : 'PDF view'}
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <Button size="sm" variant="outline" onClick={() => handleDownload('cover-letter')}>
+                            <Download className="w-3.5 h-3.5 mr-1.5" />Download PDF
+                          </Button>
+                          <button
+                            onClick={() => setShowPdfView(v => !v)}
+                            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            {showPdfView ? 'Edit text' : 'PDF view'}
+                          </button>
+                        </div>
                       )}
                     </div>
                     {uiState === 'done' && showPdfView ? (
@@ -865,31 +898,29 @@ export default function Home() {
               </div>
             )}
 
-            {/* Download + Preview Buttons */}
+            {/* Bottom action bar */}
             {uiState === 'done' && (
-              <div className="text-center space-y-4">
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <div className="flex gap-2">
-                    <Button size="lg" onClick={() => handleDownload('resume')} className="px-8">
-                      Download Resume PDF
-                    </Button>
-                    <Button size="lg" variant="outline" onClick={() => setPreviewType('resume')}>
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                  </div>
+              <div className="flex flex-col items-center gap-4">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button size="lg" onClick={() => handleDownload('resume')} className="px-8">
+                    <Download className="w-4 h-4 mr-2" />Download Resume PDF
+                  </Button>
+                  <Button size="lg" variant="outline" onClick={() => setPreviewType('resume')}>
+                    <Eye className="w-4 h-4 mr-2" />Preview
+                  </Button>
                   {includeCoverLetter && coverLetterContent && (
-                    <div className="flex gap-2">
+                    <>
                       <Button size="lg" onClick={() => handleDownload('cover-letter')} className="px-8">
-                        Download Cover Letter PDF
+                        <Download className="w-4 h-4 mr-2" />Download Cover Letter PDF
                       </Button>
                       <Button size="lg" variant="outline" onClick={() => setPreviewType('cover-letter')}>
-                        <Eye className="w-4 h-4" />
+                        <Eye className="w-4 h-4 mr-2" />Preview
                       </Button>
-                    </div>
+                    </>
                   )}
                 </div>
-                <Button variant="outline" onClick={resetForm} className="mt-4">
-                  Start Fresh
+                <Button variant="outline" onClick={resetForm}>
+                  <RotateCcw className="w-4 h-4 mr-2" />Tailor New Resume
                 </Button>
               </div>
             )}

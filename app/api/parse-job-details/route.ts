@@ -24,19 +24,20 @@ export async function POST(req: NextRequest) {
 
     const response = await anthropic.messages.create({
       model: HAIKU,
-      max_tokens: 100,
-      system: `Extract the company name and job title from the job description text.
+      max_tokens: 1000,
+      system: `Extract the company name, job title, and application questions from job description text.
 Output valid JSON only — no markdown fences, no explanation, nothing else:
-{"company": "...", "jobTitle": "..."}
+{"company": "...", "jobTitle": "...", "questions": ["...", "..."]}
 
 Rules:
-- jobTitle is the specific position being hired for (e.g. "Customer Success Engineer", "Senior Software Engineer"). If the text uses a team/department name like "Customer Success Engineering" as a section header but the actual role is clearly an engineer/manager/etc, infer the correct singular title.
-- company is the name of the hiring company (e.g. "Hightouch", "ISE"). Ignore job board names.
-- Both fields are required. Make your best guess — do not return null.`,
+- jobTitle: the specific position being hired for (e.g. "Customer Success Engineer"). Infer the correct singular title if a department name is used as a header.
+- company: the hiring company name. Ignore job board names.
+- questions: open-ended application questions the candidate must answer in writing (e.g. "What excites you about this role?", "Describe a project where..."). Include at most 5. Strip leading asterisks, numbers, or bullet characters. Exclude identity/demographic/compliance fields (EEO, disability, veteran status, name, email, address, phone, LinkedIn URL, resume upload, availability, salary expectations, referral source). Return [] if none found.
+- company and jobTitle are required — make your best guess, do not return null.`,
       messages: [
         {
           role: 'user',
-          content: jobDescription.slice(0, 4000),
+          content: jobDescription.slice(0, 6000),
         },
       ],
     });
@@ -44,18 +45,22 @@ Rules:
     const text = response.content[0].type === 'text' ? response.content[0].text : '{}';
     console.log('[parse-job-details] Raw model response:', text);
 
-    let parsed: { company?: unknown; jobTitle?: unknown } = {};
+    let parsed: { company?: unknown; jobTitle?: unknown; questions?: unknown } = {};
     try {
-      // Strip markdown fences if model ignores instructions
       const clean = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
       parsed = JSON.parse(clean);
     } catch {
       console.warn('[parse-job-details] JSON parse failed, raw text:', text);
     }
 
+    const questions = Array.isArray(parsed.questions)
+      ? (parsed.questions as unknown[]).filter((q): q is string => typeof q === 'string' && q.trim().length > 0).slice(0, 5)
+      : [];
+
     return Response.json({
       company: typeof parsed.company === 'string' ? parsed.company : null,
       jobTitle: typeof parsed.jobTitle === 'string' ? parsed.jobTitle : null,
+      questions,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
