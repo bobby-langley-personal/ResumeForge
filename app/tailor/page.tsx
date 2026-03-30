@@ -485,9 +485,9 @@ export default function Home() {
           <div className="space-y-8">
             {/* Header */}
             <div id="tour-heading" className="text-center">
-              <h2 className="text-3xl font-bold text-foreground mb-3">Tailor Your Resume</h2>
+              <h2 className="text-3xl font-bold text-foreground mb-3">Tailor My Resume</h2>
               <p className="text-muted-foreground">
-                Paste a job description and get an AI-tailored resume in seconds.
+                We&apos;ll do a comprehensive fit analysis based on your experience and then tailor your resume to match this specific role using your real experience — we never invent anything.
               </p>
             </div>
 
@@ -530,59 +530,8 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* 1. Experience Panel */}
-                <div id="tour-background">
-                  {usingBaseResume && (
-                    <div className="mb-2 flex justify-end">
-                      <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">
-                        Using base resume
-                      </span>
-                    </div>
-                  )}
-                  <ExperiencePanel
-                    key={resetKey}
-                    onBackgroundChange={(text) => { setManualExperience(text); setUsingBaseResume(false); }}
-                    onAdditionalContextChange={setAdditionalContext}
-                    disabled={uiState === 'analyzing'}
-                    usingBaseResume={usingBaseResume}
-                  />
-                </div>
-
-                {/* 2. Job URL import */}
+                {/* 1. Job Description */}
                 <div id="tour-job-details" className="space-y-2">
-                  <div className="flex gap-2">
-                    <Input
-                      type="url"
-                      placeholder="https://jobs.example.com/posting/123  — paste URL to import job"
-                      className="bg-background flex-1"
-                      disabled={uiState === 'analyzing' || isFetchingUrl}
-                      value={jobUrl}
-                      onChange={(e) => { setJobUrl(e.target.value); setUrlError(''); setUrlImported(false); }}
-                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleFetchUrl())}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleFetchUrl}
-                      disabled={!jobUrl.trim() || uiState === 'analyzing' || isFetchingUrl}
-                    >
-                      {isFetchingUrl ? (
-                        <span className="flex items-center gap-1.5">
-                          <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-muted-foreground/30 border-t-foreground" />
-                          Importing…
-                        </span>
-                      ) : 'Import'}
-                    </Button>
-                  </div>
-                  {urlError && <p className="text-xs text-destructive">{urlError}</p>}
-                  {urlImported
-                    ? <p className="text-xs text-green-600">Imported — double-check auto-filled results before submitting.</p>
-                    : <p className="text-xs text-muted-foreground">This URL field really only works for greenhouse and a few others so far -- Linkedin, Indeed, and other major sites don't like to play well with others :( </p>
-                  }
-                </div>
-
-                {/* 3. Job Description */}
-                <div className="space-y-2">
                   <Label htmlFor="jobDescription">Job Description</Label>
                   <Textarea
                     id="jobDescription"
@@ -597,7 +546,41 @@ export default function Home() {
                   <p className="text-xs text-muted-foreground">Company and job title will auto-fill from the pasted text — double-check before submitting.</p>
                 </div>
 
-                {/* 4. Company Name */}
+                {/* 2. Job URL import */}
+                <div className="space-y-1.5">
+                  <div className="flex gap-2">
+                    <Input
+                      type="url"
+                      placeholder="Or paste a job posting URL to import"
+                      className="bg-background flex-1 h-9 text-sm"
+                      disabled={uiState === 'analyzing' || isFetchingUrl}
+                      value={jobUrl}
+                      onChange={(e) => { setJobUrl(e.target.value); setUrlError(''); setUrlImported(false); }}
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleFetchUrl())}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleFetchUrl}
+                      disabled={!jobUrl.trim() || uiState === 'analyzing' || isFetchingUrl}
+                    >
+                      {isFetchingUrl ? (
+                        <span className="flex items-center gap-1.5">
+                          <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-muted-foreground/30 border-t-foreground" />
+                          Importing…
+                        </span>
+                      ) : 'Import'}
+                    </Button>
+                  </div>
+                  {urlError && <p className="text-xs text-destructive">{urlError}</p>}
+                  {urlImported
+                    ? <p className="text-xs text-green-600">Imported — double-check auto-filled results before submitting.</p>
+                    : <p className="text-xs text-muted-foreground">Works with Greenhouse, Lever, Workday, and a few others — LinkedIn and Indeed don&apos;t allow it.</p>
+                  }
+                </div>
+
+                {/* 3. Company Name */}
                 <div className="space-y-2">
                   <Label htmlFor="company">Company Name</Label>
                   <div className="relative">
@@ -616,7 +599,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* 5. Job Title */}
+                {/* 4. Job Title */}
                 <div className="space-y-2">
                   <Label htmlFor="jobTitle">Job Title</Label>
                   <div className="relative">
@@ -633,6 +616,17 @@ export default function Home() {
                       <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
                     )}
                   </div>
+                </div>
+
+                {/* 5. Experience Panel */}
+                <div id="tour-background">
+                  <ExperiencePanel
+                    key={resetKey}
+                    onBackgroundChange={(text) => { setManualExperience(text); setUsingBaseResume(false); }}
+                    onAdditionalContextChange={setAdditionalContext}
+                    disabled={uiState === 'analyzing'}
+                    usingBaseResume={usingBaseResume}
+                  />
                 </div>
 
                 {/* 6. Application Questions */}

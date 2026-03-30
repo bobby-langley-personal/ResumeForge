@@ -129,7 +129,7 @@ export default function ExperiencePanel({
           )}
           <div className="text-left min-w-0">
             <span className="font-medium text-foreground">
-              {hasBackground ? 'Your Experience' : 'No experience loaded'}
+              {hasBackground ? 'Using' : 'No experience loaded'}
             </span>
             {hasBackground && primaryLabel && (
               <span className="ml-2 text-muted-foreground font-normal truncate">
