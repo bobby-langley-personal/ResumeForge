@@ -9,10 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { readSSEStream } from '@/lib/sse-reader';
-import { Loader2, Eye } from 'lucide-react';
+import { Loader2, Eye, Download, RotateCcw } from 'lucide-react';
 import { FitAnalysis } from '@/types/fit-analysis';
 import { ResumeItem } from '@/types/resume';
 import ExperiencePanel from '@/components/ExperiencePanel';
+import JobSearchPanel from '@/components/JobSearchPanel';
 import TourGuide from '@/components/TourGuide';
 import FitAnalysisModal from '@/components/FitAnalysisModal';
 import { InterviewPrepSection } from '@/components/InterviewPrepPanel';
@@ -133,24 +134,6 @@ export default function Home() {
   const formRef = useRef<HTMLFormElement>(null);
   const analyzingRef = useRef<HTMLDivElement>(null);
   const originalResumeRef = useRef('');
-  const baseResumeLoadedRef = useRef(false);
-
-  // Auto-load base resume as background on mount
-  useEffect(() => {
-    if (baseResumeLoadedRef.current) return;
-    fetch('/api/resumes')
-      .then(r => r.ok ? r.json() : [])
-      .then((items: Array<{ item_type: string; content: { text: string } }>) => {
-        const base = items.find(i => i.item_type === 'base_resume');
-        if (base && !manualExperience) {
-          setManualExperience(base.content.text);
-          setUsingBaseResume(true);
-          baseResumeLoadedRef.current = true;
-        }
-      })
-      .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Capture original resume text the first time generation completes
   useEffect(() => {
@@ -200,9 +183,13 @@ export default function Home() {
       body: JSON.stringify({ jobDescription: pastedText }),
     })
       .then((res) => (res.ok ? res.json() : null))
-      .then((data: { company?: string | null; jobTitle?: string | null } | null) => {
+      .then((data: { company?: string | null; jobTitle?: string | null; questions?: string[] } | null) => {
         if (data?.company) setCompany(data.company);
         if (data?.jobTitle) setJobTitle(data.jobTitle);
+        if (data?.questions && data.questions.length > 0) {
+          setQuestions(data.questions.slice(0, 5));
+          setQuestionsExpanded(true);
+        }
       })
       .catch(() => { /* silently ignore — user can fill manually */ })
       .finally(() => setIsParsingJD(false));
@@ -483,6 +470,14 @@ export default function Home() {
     setPreviewType(null);
   };
 
+  const handleJobSelect = ({ company, jobTitle, jobDescription, jobUrl: url }: { company: string; jobTitle: string; jobDescription: string; jobUrl: string }) => {
+    setCompany(company);
+    setJobTitle(jobTitle);
+    setJobDescription(jobDescription);
+    setJobUrl(url);
+    setUrlImported(true);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -538,7 +533,17 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* 1. Job Description */}
+                {/* 1. Job Search */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    Search for a job
+                    <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400">Beta</span>
+                  </Label>
+                  <JobSearchPanel onJobSelect={handleJobSelect} disabled={uiState === 'analyzing'} />
+                  <p className="text-xs text-muted-foreground">Or paste a job description directly below.</p>
+                </div>
+
+                {/* 2. Job Description */}
                 <div id="tour-job-details" className="space-y-2">
                   <Label htmlFor="jobDescription">Job Description</Label>
                   <Textarea
@@ -799,6 +804,25 @@ export default function Home() {
               </div>
             )}
 
+            {/* Top action bar — shown once generation is done */}
+            {uiState === 'done' && (resumeContent || coverLetterContent) && (
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex gap-2 flex-wrap">
+                  <Button size="sm" onClick={() => handleDownload('resume')}>
+                    <Download className="w-3.5 h-3.5 mr-1.5" />Download Resume
+                  </Button>
+                  {includeCoverLetter && coverLetterContent && (
+                    <Button size="sm" variant="outline" onClick={() => handleDownload('cover-letter')}>
+                      <Download className="w-3.5 h-3.5 mr-1.5" />Download Cover Letter
+                    </Button>
+                  )}
+                </div>
+                <Button size="sm" variant="outline" onClick={resetForm}>
+                  <RotateCcw className="w-3.5 h-3.5 mr-1.5" />Tailor New Resume
+                </Button>
+              </div>
+            )}
+
             {/* Live Preview Panels */}
             {(uiState === 'generating' || uiState === 'done') && (resumeContent || coverLetterContent) && (
               <div className={`grid grid-cols-1 ${includeCoverLetter ? 'lg:grid-cols-2' : ''} gap-8`}>
@@ -807,12 +831,17 @@ export default function Home() {
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold text-foreground">Resume</h3>
                       {uiState === 'done' && (
-                        <button
-                          onClick={() => setShowPdfView(v => !v)}
-                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          {showPdfView ? 'Edit text' : 'PDF view'}
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <Button size="sm" variant="outline" onClick={() => handleDownload('resume')}>
+                            <Download className="w-3.5 h-3.5 mr-1.5" />Download PDF
+                          </Button>
+                          <button
+                            onClick={() => setShowPdfView(v => !v)}
+                            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            {showPdfView ? 'Edit text' : 'PDF view'}
+                          </button>
+                        </div>
                       )}
                     </div>
                     {uiState === 'done' && showPdfView ? (
@@ -838,12 +867,17 @@ export default function Home() {
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold text-foreground">Cover Letter</h3>
                       {uiState === 'done' && (
-                        <button
-                          onClick={() => setShowPdfView(v => !v)}
-                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          {showPdfView ? 'Edit text' : 'PDF view'}
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <Button size="sm" variant="outline" onClick={() => handleDownload('cover-letter')}>
+                            <Download className="w-3.5 h-3.5 mr-1.5" />Download PDF
+                          </Button>
+                          <button
+                            onClick={() => setShowPdfView(v => !v)}
+                            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            {showPdfView ? 'Edit text' : 'PDF view'}
+                          </button>
+                        </div>
                       )}
                     </div>
                     {uiState === 'done' && showPdfView ? (
@@ -867,31 +901,29 @@ export default function Home() {
               </div>
             )}
 
-            {/* Download + Preview Buttons */}
+            {/* Bottom action bar */}
             {uiState === 'done' && (
-              <div className="text-center space-y-4">
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <div className="flex gap-2">
-                    <Button size="lg" onClick={() => handleDownload('resume')} className="px-8">
-                      Download Resume PDF
-                    </Button>
-                    <Button size="lg" variant="outline" onClick={() => setPreviewType('resume')}>
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                  </div>
+              <div className="flex flex-col items-center gap-4">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button size="lg" onClick={() => handleDownload('resume')} className="px-8">
+                    <Download className="w-4 h-4 mr-2" />Download Resume PDF
+                  </Button>
+                  <Button size="lg" variant="outline" onClick={() => setPreviewType('resume')}>
+                    <Eye className="w-4 h-4 mr-2" />Preview
+                  </Button>
                   {includeCoverLetter && coverLetterContent && (
-                    <div className="flex gap-2">
+                    <>
                       <Button size="lg" onClick={() => handleDownload('cover-letter')} className="px-8">
-                        Download Cover Letter PDF
+                        <Download className="w-4 h-4 mr-2" />Download Cover Letter PDF
                       </Button>
                       <Button size="lg" variant="outline" onClick={() => setPreviewType('cover-letter')}>
-                        <Eye className="w-4 h-4" />
+                        <Eye className="w-4 h-4 mr-2" />Preview
                       </Button>
-                    </div>
+                    </>
                   )}
                 </div>
-                <Button variant="outline" onClick={resetForm} className="mt-4">
-                  Start Fresh
+                <Button variant="outline" onClick={resetForm}>
+                  <RotateCcw className="w-4 h-4 mr-2" />Tailor New Resume
                 </Button>
               </div>
             )}

@@ -30,7 +30,7 @@ export default function PDFPreviewModal(props: PDFPreviewModalProps) {
   const { onClose } = props;
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
 
-  const slug = (s: string) => s.replace(/[^a-zA-Z0-9]/g, '_');
+  const slug = (s: string) => s.replace(/\bat\b/gi, '').replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
   const filename =
     props.type === 'resume'
       ? `Resume_${slug(props.company)}_${slug(props.jobTitle)}.pdf`

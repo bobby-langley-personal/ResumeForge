@@ -55,8 +55,9 @@ export async function POST(request: NextRequest) {
     const element = createElement(ResumePDF, props)
     const pdfBuffer = await renderToBuffer(element as React.ReactElement<any>)
 
-    const companyName = application.company.replace(/[^a-zA-Z0-9]/g, '_')
-    const role = application.job_title.replace(/[^a-zA-Z0-9]/g, '_')
+    const slugify = (s: string) => s.replace(/\bat\b/gi, '').replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')
+    const companyName = slugify(application.company)
+    const role = slugify(application.job_title)
     const filename = `Resume_${companyName}_${role}.pdf`
 
     return new NextResponse(new Uint8Array(pdfBuffer), {

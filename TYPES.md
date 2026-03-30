@@ -159,6 +159,40 @@ Company | Location
 
 ---
 
+## Job Search Types (`components/JobSearchPanel.tsx`, `app/api/search-jobs/route.ts`)
+
+### `JobResult`
+```typescript
+{
+  id: string              // job_id from JSearch
+  title: string           // job_title
+  company: string         // employer_name
+  location: string        // job_city + job_state joined
+  description: string     // job_description
+  url: string             // job_apply_link
+  postedAt: string        // job_posted_at_datetime_utc (ISO)
+  salaryMin?: number      // job_min_salary (optional)
+  salaryMax?: number      // job_max_salary (optional)
+  salaryCurrency?: string // job_salary_currency (e.g. "USD")
+  salaryPeriod?: string   // job_salary_period (e.g. "YEAR", "MONTH", "HOUR")
+}
+```
+
+### `ApiUsage` (table: `api_usage`)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | string | UUID PK |
+| `api_name` | string | e.g. `'jsearch'` |
+| `month` | string | `'YYYY-MM'` format |
+| `call_count` | number | incremented per successful call |
+| `created_at` | string | ISO timestamp |
+| `updated_at` | string | ISO timestamp |
+
+Unique constraint on `(api_name, month)`. Checked before every JSearch call; returns `RATE_LIMIT_REACHED` (429) when `call_count >= JSEARCH_MONTHLY_LIMIT`.
+
+---
+
 ## Fit Analysis Types (`types/fit-analysis.ts`)
 
 ### `OverallFit`
