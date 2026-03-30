@@ -79,11 +79,38 @@ interface ContactFields {
 function extractContactFromText(text: string): ContactFields {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
+  // Email — simple scan
   const emailMatch = text.match(/[\w.+\-]+@[\w\-]+\.[a-z]{2,}/i);
-  const linkedinMatch = text.match(/linkedin\.com\/in\/([\w\-]+)/i);
-  const locationMatch = text.match(/([A-Za-z][\w\s]{2,}),\s*([A-Z]{2})\b/);
 
-  // First line that looks like a full name (2–5 words, starts uppercase, no symbols/numbers)
+  // LinkedIn
+  const linkedinMatch = text.match(/linkedin\.com\/in\/([\w\-]+)/i);
+
+  // Location — find the contact line (contains email, phone, or linkedin), then
+  // split it by '|' and look for an exact "City, ST" segment. This avoids the
+  // greedy multi-word bleed issue when PDF extraction strips newlines.
+  let location = '';
+  const contactLineIdx = lines.findIndex(l =>
+    l.includes('@') || /\(\d{3}\)|\d{3}[-.\s]\d{3}/.test(l) || /linkedin\.com/i.test(l)
+  );
+  const locationCandidates = [
+    contactLineIdx >= 0 ? lines[contactLineIdx] : '',
+    contactLineIdx > 0 ? lines[contactLineIdx - 1] : '',
+  ].filter(Boolean);
+
+  for (const candidate of locationCandidates) {
+    for (const part of candidate.split('|').map(p => p.trim())) {
+      const m = part.match(/^([A-Z][a-z]+(?:\s[A-Z][a-z]+)*),\s*([A-Z]{2})$/);
+      if (m) { location = `${m[1].trim()}, ${m[2]}`; break; }
+    }
+    if (location) break;
+  }
+  // Fallback: look after a newline or pipe for "City, ST"
+  if (!location) {
+    const m = text.match(/(?:\n|\|)\s*([A-Z][a-z]+(?:\s[A-Z][a-z]+)*),\s*([A-Z]{2})(?:\s|$|\|)/m);
+    if (m) location = `${m[1].trim()}, ${m[2]}`;
+  }
+
+  // Name — first line that looks like a full name (2–5 words, title case, no symbols)
   const nameLine = lines.find(l =>
     l.length >= 4 &&
     l.length <= 50 &&
@@ -96,7 +123,7 @@ function extractContactFromText(text: string): ContactFields {
   return {
     fullName: nameLine ?? '',
     email: emailMatch?.[0] ?? '',
-    location: locationMatch ? `${locationMatch[1].trim()}, ${locationMatch[2]}` : '',
+    location,
     linkedinUrl: linkedinMatch ? `linkedin.com/in/${linkedinMatch[1]}` : '',
   };
 }
