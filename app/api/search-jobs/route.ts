@@ -16,7 +16,7 @@ export interface JobResult {
 
 async function checkAndIncrementUsage(supabase: ReturnType<typeof supabaseServer>): Promise<{ allowed: boolean }> {
   const currentMonth = new Date().toISOString().slice(0, 7);
-  const limit = parseInt(process.env.JSEARCH_MONTHLY_LIMIT || '100');
+  const limit = parseInt(process.env.JSEARCH_MONTHLY_LIMIT || '175');
 
   const { data: usage } = await supabase
     .from('api_usage')
