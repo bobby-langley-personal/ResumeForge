@@ -134,24 +134,6 @@ export default function Home() {
   const formRef = useRef<HTMLFormElement>(null);
   const analyzingRef = useRef<HTMLDivElement>(null);
   const originalResumeRef = useRef('');
-  const baseResumeLoadedRef = useRef(false);
-
-  // Auto-load base resume as background on mount
-  useEffect(() => {
-    if (baseResumeLoadedRef.current) return;
-    fetch('/api/resumes')
-      .then(r => r.ok ? r.json() : [])
-      .then((items: Array<{ item_type: string; content: { text: string } }>) => {
-        const base = items.find(i => i.item_type === 'base_resume');
-        if (base && !manualExperience) {
-          setManualExperience(base.content.text);
-          setUsingBaseResume(true);
-          baseResumeLoadedRef.current = true;
-        }
-      })
-      .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Capture original resume text the first time generation completes
   useEffect(() => {

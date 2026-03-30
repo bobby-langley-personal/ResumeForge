@@ -38,7 +38,7 @@ export default function ExperiencePanel({
         const defaultItem = filtered.find(i => i.is_default) ?? filtered[0] ?? null;
         if (defaultItem) {
           setSelectedId(defaultItem.id);
-          // Don't call onBackgroundChange here — base resume auto-load in tailor page handles primary
+          onBackgroundChange(defaultItem.content.text, defaultItem.title);
         }
         const nonDefault = filtered.filter(i => !i.is_default);
         if (nonDefault.length > 0) {
