@@ -56,11 +56,9 @@ export default function PDFPreviewModal(props: PDFPreviewModalProps) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      onClick={onClose}
     >
       <div
         className="bg-card border border-border rounded-xl shadow-xl w-full max-w-4xl h-[85vh] flex flex-col"
-        onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
           <h3 className="font-semibold text-foreground">
