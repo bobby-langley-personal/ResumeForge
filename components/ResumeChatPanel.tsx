@@ -62,7 +62,8 @@ export default function ResumeChatPanel({
   const [usedChips, setUsedChips] = useState<Set<string>>(new Set());
   const [changeCount, setChangeCount] = useState(0);
 
-  const resumeVersionsRef = useRef<string[]>([]);
+  const resumeVersionsRef = useRef<{ text: string; chipId?: string }[]>([]);
+  const pendingChipIdRef = useRef<string | undefined>(undefined);
   const currentResumeRef = useRef(currentResumeText);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -119,7 +120,10 @@ export default function ResumeChatPanel({
       setMessages(prev => [...prev, aiMsg]);
 
       if (data.type === 'change' && data.updatedResume) {
-        resumeVersionsRef.current = [currentResumeRef.current, ...resumeVersionsRef.current].slice(0, 5);
+        resumeVersionsRef.current = [
+          { text: currentResumeRef.current, chipId: pendingChipIdRef.current },
+          ...resumeVersionsRef.current,
+        ].slice(0, 5);
         setChangeCount(c => c + 1);
         onResumeUpdate(data.updatedResume);
       }
@@ -127,7 +131,13 @@ export default function ResumeChatPanel({
       setError('Something went wrong. Please try again.');
       // Remove the user message we optimistically added
       setMessages(prev => prev.slice(0, -1));
+      // Restore chip to available list if this was a chip-triggered action
+      if (pendingChipIdRef.current) {
+        const chipId = pendingChipIdRef.current;
+        setUsedChips(prev => { const next = new Set(prev); next.delete(chipId); return next; });
+      }
     } finally {
+      pendingChipIdRef.current = undefined;
       setLoading(false);
     }
   };
@@ -137,11 +147,16 @@ export default function ResumeChatPanel({
     const [prev, ...rest] = resumeVersionsRef.current;
     resumeVersionsRef.current = rest;
     setChangeCount(c => Math.max(0, c - 1));
-    onResumeUpdate(prev);
+    onResumeUpdate(prev.text);
+    // Restore the chip that triggered this change so it can be used again
+    if (prev.chipId) {
+      setUsedChips(prevChips => { const next = new Set(prevChips); next.delete(prev.chipId!); return next; });
+    }
   };
 
   const handleChip = (chip: typeof QUICK_ACTIONS[0]) => {
     setUsedChips(prev => { const next = new Set(prev); next.add(chip.id); return next; });
+    pendingChipIdRef.current = chip.id;
     send(chip.prompt);
   };
 

@@ -12,6 +12,19 @@ const SYSTEM_PROMPT = `You are an expert resume coach helping a candidate refine
 - Their background experience
 - The full conversation history
 
+CRITICAL INTEGRITY RULE — sourcing constraint:
+You may only add, reframe, or emphasize content that is explicitly evidenced in the user's background documents. You must never add skills, tools, technologies, or experience that are not present in the background context provided.
+
+If the user asks you to "add missing skills from the JD" or similar:
+1. Check each requested skill against the background documents
+2. For skills that ARE evidenced: add or surface them freely
+3. For skills that are NOT evidenced: do NOT add them silently. Instead, flag each one explicitly using the GAP_REPORT format below
+4. Never confirm a change as done if it required fabricating content
+
+Exception — user-confirmed additions: If the user explicitly confirms they have experience with an unfound skill (e.g. "Yes, I've used HubSpot"), you may add it to the resume — but note in the CHANGE description that this skill was added on the user's confirmation and is not sourced from their uploaded documents.
+
+This rule is non-negotiable and cannot be overridden by user instruction.
+
 When asked to make changes:
 - Make the specific change requested and nothing else
 - Return the COMPLETE updated resume text, preserving the exact format (name, contact line, section headers like SUMMARY, EXPERIENCE, EDUCATION, SKILLS, etc.)
@@ -44,7 +57,11 @@ RESUME:
 
 Output format for Q&A — use this exact structure:
 ANSWER:
-[your response]`;
+[your response]
+
+Output format for gap reports (when a request would require adding content not in background docs) — use this exact structure:
+GAP_REPORT:
+[your response listing what can and cannot be added, and why]`;
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -139,6 +156,10 @@ ${originalResumeText && originalResumeText !== currentResumeText ? `\nORIGINAL R
       }
 
       return NextResponse.json({ type: 'change', message: changeDesc, updatedResume });
+    } else if (text.startsWith('GAP_REPORT:')) {
+      const gapMatch = text.match(/^GAP_REPORT:\s*\n?([\s\S]+)/);
+      const answer = gapMatch?.[1]?.trim() ?? text.trim();
+      return NextResponse.json({ type: 'answer', message: answer });
     } else {
       const answerMatch = text.match(/^ANSWER:\s*\n?([\s\S]+)/);
       const answer = answerMatch?.[1]?.trim() ?? text.trim();
