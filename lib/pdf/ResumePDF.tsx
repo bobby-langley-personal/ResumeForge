@@ -419,7 +419,7 @@ export default function ResumePDF({ resumeText, candidateName, company, jobTitle
 
         {/* Summary — only rendered when non-empty */}
         {parsed.summary && parsed.summary.trim().length > 0 && (
-          <View style={{ flexShrink: 1, width: '100%' }}>
+          <View wrap={false} style={{ flexShrink: 1, width: '100%' }}>
             <Text style={styles.sectionTitle}>Summary</Text>
             <Text style={styles.text} wrap={true}>{parsed.summary}</Text>
           </View>
@@ -428,13 +428,21 @@ export default function ResumePDF({ resumeText, candidateName, company, jobTitle
         {/* Experience */}
         {parsed.experience.length > 0 && (
           <View style={{ flexShrink: 1, width: '100%' }}>
-            <Text style={styles.sectionTitle}>Experience</Text>
+            {/* Header + first company line kept together — prevents orphaned section title */}
+            <View wrap={false}>
+              <Text style={styles.sectionTitle}>Experience</Text>
+              <Text style={styles.companyLine} wrap={true}>
+                {parsed.experience[0].company}{parsed.experience[0].location ? ` | ${parsed.experience[0].location}` : ''}
+              </Text>
+            </View>
             {parsed.experience.map((group, groupIndex) => (
               <View key={groupIndex} style={styles.experienceGroup}>
-                {/* Company name + location — bold, no dates */}
-                <Text style={styles.companyLine} wrap={true}>
-                  {group.company}{group.location ? ` | ${group.location}` : ''}
-                </Text>
+                {/* Company line: already rendered above for first group */}
+                {groupIndex > 0 && (
+                  <Text style={styles.companyLine} wrap={true}>
+                    {group.company}{group.location ? ` | ${group.location}` : ''}
+                  </Text>
+                )}
                 {/* Roles — each with title + dates on same line */}
                 {group.roles.map((role, roleIndex) => (
                   <View key={roleIndex} style={roleIndex === 0 ? styles.roleEntry : styles.additionalRoleEntry}>
@@ -459,15 +467,27 @@ export default function ResumePDF({ resumeText, candidateName, company, jobTitle
         {/* Projects */}
         {parsed.projects.length > 0 && (
           <View style={{ flexShrink: 1, width: '100%' }}>
-            <Text style={styles.sectionTitle}>Projects</Text>
+            {/* Header + first project name kept together — prevents orphaned section title */}
+            <View wrap={false}>
+              <Text style={styles.sectionTitle}>Projects</Text>
+              <View style={styles.projectHeader}>
+                <Text style={styles.projectName}>{parsed.projects[0].name}</Text>
+                {parsed.projects[0].techStack && (
+                  <Text style={styles.projectTechStack} wrap={true}> | {parsed.projects[0].techStack}</Text>
+                )}
+              </View>
+            </View>
             {parsed.projects.map((project, index) => (
               <View key={index} style={styles.projectGroup}>
-                <View style={styles.projectHeader}>
-                  <Text style={styles.projectName}>{project.name}</Text>
-                  {project.techStack && (
-                    <Text style={styles.projectTechStack} wrap={true}> | {project.techStack}</Text>
-                  )}
-                </View>
+                {/* Project header: already rendered above for first project */}
+                {index > 0 && (
+                  <View style={styles.projectHeader}>
+                    <Text style={styles.projectName}>{project.name}</Text>
+                    {project.techStack && (
+                      <Text style={styles.projectTechStack} wrap={true}> | {project.techStack}</Text>
+                    )}
+                  </View>
+                )}
                 {project.description && (
                   <Text style={styles.projectDescription} wrap={true}>{project.description}</Text>
                 )}
@@ -484,9 +504,15 @@ export default function ResumePDF({ resumeText, candidateName, company, jobTitle
         {/* Skills */}
         {parsed.skills.length > 0 && (
           <View style={{ flexShrink: 1, width: '100%' }}>
-            <Text style={styles.sectionTitle}>Skills</Text>
-            {parsed.skills.map((skillGroup, index) => (
-              <Text key={index} style={styles.skillsList} wrap={true}>
+            {/* Header + first skills line kept together — prevents orphaned section title */}
+            <View wrap={false}>
+              <Text style={styles.sectionTitle}>Skills</Text>
+              <Text style={styles.skillsList} wrap={true}>
+                <Text style={styles.jobTitle}>{parsed.skills[0].category}:</Text> {parsed.skills[0].items.join(', ')}
+              </Text>
+            </View>
+            {parsed.skills.slice(1).map((skillGroup, index) => (
+              <Text key={index + 1} style={styles.skillsList} wrap={true}>
                 <Text style={styles.jobTitle}>{skillGroup.category}:</Text> {skillGroup.items.join(', ')}
               </Text>
             ))}
@@ -496,9 +522,18 @@ export default function ResumePDF({ resumeText, candidateName, company, jobTitle
         {/* Education */}
         {parsed.education.length > 0 && (
           <View style={{ flexShrink: 1, width: '100%' }}>
-            <Text style={styles.sectionTitle}>Education</Text>
-            {parsed.education.map((edu, index) => (
-              <View key={index} style={styles.educationItem}>
+            {/* Header + first degree kept together — prevents orphaned section title */}
+            <View wrap={false}>
+              <Text style={styles.sectionTitle}>Education</Text>
+              <View style={styles.educationItem}>
+                <Text style={styles.degree} wrap={true}>{parsed.education[0].degree}</Text>
+                <Text style={styles.institution} wrap={true}>
+                  {parsed.education[0].institution}{parsed.education[0].location ? ` | ${parsed.education[0].location}` : ''}
+                </Text>
+              </View>
+            </View>
+            {parsed.education.slice(1).map((edu, index) => (
+              <View key={index + 1} style={styles.educationItem}>
                 <Text style={styles.degree} wrap={true}>{edu.degree}</Text>
                 <Text style={styles.institution} wrap={true}>
                   {edu.institution}{edu.location ? ` | ${edu.location}` : ''}
