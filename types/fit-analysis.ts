@@ -13,6 +13,11 @@ export interface FitPoint {
   source?: string  // artifact title the insight was derived from, omitted if general
 }
 
+export interface KeywordTranslation {
+  jdTerm: string        // keyword from the job description
+  candidatePhrase: string // original phrase from the candidate's background documents
+}
+
 export interface FitAnalysis {
   overallFit: OverallFit
   strengths: FitPoint[]
@@ -20,4 +25,5 @@ export interface FitAnalysis {
   suggestions: FitPoint[]
   plannedImprovements: string[]
   roleType: RoleType
+  keywordTranslations?: KeywordTranslation[]
 }

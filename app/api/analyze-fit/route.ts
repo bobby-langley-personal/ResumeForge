@@ -48,6 +48,15 @@ Also include a "plannedImprovements" array: 3-5 specific, concrete changes that 
 compared to the candidate's original. Examples: reframing a job title, surfacing a buried metric, adding missing keywords,
 restructuring bullet points, cutting irrelevant experience. Be specific — name real content from their background.
 
+Also include a "keywordTranslations" array: cases where the candidate's background uses different language for a concept
+the JD uses. These are honest translations — the candidate has the experience, but described it differently.
+Rules for keywordTranslations:
+- Only include entries where the candidate's phrase is genuinely different from the JD term (not just a word match)
+- Do NOT include a term if the candidate already used that exact word or phrase verbatim
+- Do NOT fabricate — only include a translation if the candidate's phrase clearly maps to the JD term
+- If there are no genuine translations (candidate already matched JD language), return an empty array []
+- Maximum 6 entries
+
 Within each array, order items by importance — most impactful first. The first 3 items in each array are shown by default, so lead with the strongest signal.
 
 Output valid JSON only, no markdown fences:
@@ -57,7 +66,8 @@ Output valid JSON only, no markdown fences:
   "gaps": [{"point": "string", "source": "artifact name"}, ...],
   "suggestions": [{"point": "string", "source": "artifact name"}, ...],
   "plannedImprovements": ["string", "string", "string"],
-  "roleType": "technical" | "management" | "sales" | "customer_success" | "research" | "other"
+  "roleType": "technical" | "management" | "sales" | "customer_success" | "research" | "other",
+  "keywordTranslations": [{"jdTerm": "string", "candidatePhrase": "string"}, ...]
 }`,
       messages: [
         {

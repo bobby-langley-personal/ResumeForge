@@ -144,6 +144,7 @@ Added in migration 012. Stores contact info extracted from uploaded resumes.
 - `plannedImprovements` — `string[]` of 3–5 concrete resume changes
 - `overallFit` — `"Strong Fit" | "Good Fit" | "Stretch Role"`
 - `roleType` — `"technical" | "management" | "sales" | "customer_success" | "research" | "other"`
+- `keywordTranslations` — `KeywordTranslation[]` (optional) where `KeywordTranslation = { jdTerm: string, candidatePhrase: string }`; honest mappings of candidate language to JD terminology; empty array if candidate already matched JD language verbatim; never fabricated
 
 ---
 
@@ -194,7 +195,7 @@ const { SONNET, HAIKU } = await getModels();
 - `ApplicationCard` has Eye icon preview buttons alongside each download button — fetches application content via `GET /api/applications/[id]` on first click, caches for subsequent previews
 - `ApplicationCard` shows a `Target` icon (primary color = prep exists, muted = not yet generated) — clicking triggers `POST /api/interview-prep` if null, then opens `InterviewPrepPanel` in a modal
 - `ApplicationCard` shows a `ScrollText` icon — opens a modal with the formatted job description (`FormattedJD` component)
-- `components/FitAnalysisModal.tsx` — reusable modal used on both home page (with `actions` slot for Generate/Start Over) and dashboard cards; handles Escape key, backdrop click, graceful fallback if data malformed; shows top 3 items per section by default with a chevron expand toggle; items are ranked most-impactful-first by the API prompt
+- `components/FitAnalysisModal.tsx` — reusable modal used on both home page (with `actions` slot for Generate/Start Over) and dashboard cards; handles Escape key, backdrop click, graceful fallback if data malformed; shows top 3 items per section by default with a chevron expand toggle; items are ranked most-impactful-first by the API prompt; includes a collapsible Keyword Translations section (collapsed by default) showing JD term → candidate phrase mappings; empty state shown if candidate already matched JD language verbatim
 - `components/InlinePDFViewer.tsx` — inline PDF iframe (US Letter aspect ratio) rendered via `BlobProvider`; shown post-generation replacing the textarea; "Edit text" toggle switches back; auto-updates when `resumeContent` prop changes; uses a `blobKey` state (incremented on every `text` change) as `key` on `BlobProvider` to force a clean remount and prevent stuck error states after undo or rapid updates; pass empty strings for `company`/`jobTitle` when used outside of a job application context
 - `components/ResumeChatPanel.tsx` — post-generation resume chat; parses `CHANGE:` vs `ANSWER:` response format; "Fit to 1 page" and "Fit to 2 pages" quick-action chips; saves changes to `applications.resume_content` and `applications.chat_history`
 

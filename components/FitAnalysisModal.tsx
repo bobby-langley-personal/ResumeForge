@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { X, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { FitAnalysis, FitPoint } from '@/types/fit-analysis';
+import { FitAnalysis, FitPoint, KeywordTranslation } from '@/types/fit-analysis';
 
 const FIT_COLORS: Record<string, string> = {
   'Strong Fit':  'text-green-700 bg-green-50 border-green-200',
@@ -60,6 +60,50 @@ function FitSection({
             <><ChevronDown className="w-3 h-3" /> Show {items.length - PREVIEW_COUNT} more</>
           )}
         </button>
+      )}
+    </div>
+  );
+}
+
+function KeywordTranslationsSection({ translations }: { translations: KeywordTranslation[] | undefined }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div>
+      <button
+        onClick={() => setExpanded(e => !e)}
+        className="flex items-center justify-between w-full text-left group"
+      >
+        <h3 className="text-sm font-semibold text-purple-700">Keyword Translations</h3>
+        <span className="flex items-center gap-1 text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+          {expanded ? (
+            <><ChevronUp className="w-3 h-3" /> Hide</>
+          ) : (
+            <><ChevronDown className="w-3 h-3" /> Show</>
+          )}
+        </span>
+      </button>
+      {expanded && (
+        <div className="mt-2">
+          {!translations || translations.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic">
+              Your language already matched this role&apos;s terminology.
+            </p>
+          ) : (
+            <ul className="space-y-1.5">
+              {translations.map((t, i) => (
+                <li key={i} className="text-sm text-muted-foreground flex gap-2">
+                  <span className="text-purple-500 mt-0.5 shrink-0">⇄</span>
+                  <span>
+                    <span className="font-medium text-foreground">{t.jdTerm}</span>
+                    {' '}— sourced from{' '}
+                    <span className="italic">&quot;{t.candidatePhrase}&quot;</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
     </div>
   );
@@ -174,6 +218,8 @@ export default function FitAnalysisModal({ fitAnalysis, company, jobTitle, creat
                     )}
                   />
                 )}
+
+                <KeywordTranslationsSection translations={fitAnalysis.keywordTranslations} />
               </div>
 
               {/* Actions slot (home page) or default close button (dashboard) */}

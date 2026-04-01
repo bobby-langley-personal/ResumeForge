@@ -209,6 +209,14 @@ Unique constraint on `(api_name, month)`. Checked before every JSearch call; ret
 }
 ```
 
+### `KeywordTranslation`
+```typescript
+{
+  jdTerm: string         // keyword from the job description
+  candidatePhrase: string // candidate's original phrase that maps to the JD term
+}
+```
+
 ### `FitAnalysis`
 ```typescript
 {
@@ -216,8 +224,9 @@ Unique constraint on `(api_name, month)`. Checked before every JSearch call; ret
   strengths: FitPoint[]
   gaps: FitPoint[]
   suggestions: FitPoint[]
-  plannedImprovements: string[]   // 3–5 concrete resume changes the generator will make
+  plannedImprovements: string[]        // 3–5 concrete resume changes the generator will make
   roleType: RoleType
+  keywordTranslations?: KeywordTranslation[]  // honest mappings of candidate language → JD terminology; empty if candidate already matched JD language verbatim
 }
 ```
 
