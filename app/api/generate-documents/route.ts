@@ -161,6 +161,7 @@ Output the resume in EXACTLY this format. Do NOT put dates on the company line â
                 sendEvent('resume_chunk', { content: text });
               }
             }
+            resumeText = resumeText.trim().replace(/\n+$/, '');
             console.log('[generate-documents] Resume generation completed, length:', resumeText.length);
 
           } catch (resumeError) {
@@ -205,6 +206,7 @@ Output the resume in EXACTLY this format. Do NOT put dates on the company line â
                   sendEvent('cover_letter_chunk', { content: text });
                 }
               }
+              coverLetterText = coverLetterText.trim().replace(/\n+$/, '');
               console.log('[generate-documents] Cover letter generation completed, length:', coverLetterText.length);
 
             } catch (coverLetterError) {

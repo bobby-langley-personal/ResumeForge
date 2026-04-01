@@ -103,7 +103,7 @@ EDUCATION:
       }],
     });
 
-    const resumeText = response.content[0].type === 'text' ? response.content[0].text : '';
+    const resumeText = (response.content[0].type === 'text' ? response.content[0].text : '').trim().replace(/\n+$/, '');
     return Response.json({ resumeText });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

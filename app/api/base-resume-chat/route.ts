@@ -55,7 +55,7 @@ Rules:
     const text = response.content[0].type === 'text' ? response.content[0].text : '';
 
     if (text.startsWith('CHANGE:')) {
-      return Response.json({ type: 'change', content: text.slice('CHANGE:'.length).trim() });
+      return Response.json({ type: 'change', content: text.slice('CHANGE:'.length).trim().replace(/\n+$/, '') });
     } else {
       const content = text.startsWith('ANSWER:') ? text.slice('ANSWER:'.length).trim() : text;
       return Response.json({ type: 'answer', content });
