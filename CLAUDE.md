@@ -236,6 +236,10 @@ These rules are baked into the generation prompt and must be preserved whenever 
 content to force single-page output. Spacing optimizations
 should only target unnecessary whitespace — never content.
 
+**Trailing whitespace** — all generated resume and cover letter text is trimmed (`.trim().replace(/\n+$/, '')`) after stream completion in `generate-documents`, before return in `generate-polished-resume`, and on CHANGE responses in `base-resume-chat`. This prevents trailing blank lines from pushing content onto a near-empty second page.
+
+**Orphan protection** — in `lib/pdf/ResumePDF.tsx`, each section's title + first content line are wrapped in a `<View wrap={false}>`. This prevents a section header (e.g. Skills) from appearing as the last element on a page with no content below it. Remaining items after the first render normally and may span pages.
+
 ## PDF Preview
 
 - `components/PDFPreviewModal.tsx` — `'use client'` component, uses `BlobProvider` from `@react-pdf/renderer` to generate a blob URL and display it in an `<iframe>`; Download button in header derives filename from company + jobTitle slug
