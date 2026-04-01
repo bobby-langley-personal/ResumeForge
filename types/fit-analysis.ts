@@ -16,6 +16,7 @@ export interface FitPoint {
 export interface KeywordTranslation {
   jdTerm: string        // keyword from the job description
   candidatePhrase: string // original phrase from the candidate's background documents
+  confidence: 'high' | 'medium' | 'low'
 }
 
 export interface FitAnalysis {

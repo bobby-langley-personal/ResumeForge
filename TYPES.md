@@ -212,8 +212,9 @@ Unique constraint on `(api_name, month)`. Checked before every JSearch call; ret
 ### `KeywordTranslation`
 ```typescript
 {
-  jdTerm: string         // keyword from the job description
+  jdTerm: string          // keyword from the job description
   candidatePhrase: string // candidate's original phrase that maps to the JD term
+  confidence: 'high' | 'medium' | 'low'  // Sonnet's assessment of mapping strength; only 'high' entries are shown in the UI
 }
 ```
 

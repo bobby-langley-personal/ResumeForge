@@ -144,7 +144,7 @@ Added in migration 012. Stores contact info extracted from uploaded resumes.
 - `plannedImprovements` — `string[]` of 3–5 concrete resume changes
 - `overallFit` — `"Strong Fit" | "Good Fit" | "Stretch Role"`
 - `roleType` — `"technical" | "management" | "sales" | "customer_success" | "research" | "other"`
-- `keywordTranslations` — `KeywordTranslation[]` (optional) where `KeywordTranslation = { jdTerm: string, candidatePhrase: string }`; honest mappings of candidate language to JD terminology; empty array if candidate already matched JD language verbatim; never fabricated
+- `keywordTranslations` — `KeywordTranslation[]` (optional) where `KeywordTranslation = { jdTerm: string, candidatePhrase: string, confidence: 'high' | 'medium' | 'low' }`; extracted by a separate Sonnet call running in parallel with the Haiku fit analysis via `Promise.all`; only `confidence === 'high'` entries are returned to the client; medium/low entries are logged to Vercel function logs for monitoring; prompt enforces activity equivalence (not just domain proximity) — never fabricated
 
 ---
 
