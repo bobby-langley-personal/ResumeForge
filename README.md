@@ -32,7 +32,7 @@ After a resume is generated, a chat panel lets users refine it conversationally:
 - Claude responds with either a `CHANGE:` (updated resume content applied immediately) or `ANSWER:` (plain text reply shown in chat)
 - **Page fit quick actions** — "Fit to 1 page" and "Fit to 2 pages" chips send a one-click prompt; Claude trims or expands accordingly without suggesting external tools
 - Changes are saved to `applications.resume_content` in Supabase; chat history saved to `applications.chat_history`
-- The inline PDF view updates automatically as changes are applied
+- The inline PDF view updates automatically as changes are applied; **Undo last change** restores the previous resume version and the PDF re-renders cleanly
 
 ### 2c. Resume Bullet Point Rules
 The generation prompt enforces strict quality rules:
