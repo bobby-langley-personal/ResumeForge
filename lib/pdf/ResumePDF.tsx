@@ -250,22 +250,28 @@ function parseResumeText(resumeText: string): ParsedResume {
       }
     }
 
-    // Section headers
-    if (line === 'SUMMARY:') { currentSection = 'summary'; continue; }
-    if (line === 'EXPERIENCE:') { currentSection = 'experience'; continue; }
-    if (line === 'PROJECTS:') {
+    // Section headers — normalize to handle AI format drift (missing colon, markdown
+    // bold, alternate names like "Professional Experience", etc.)
+    const sectionKey = line.replace(/[*#`_~]/g, '').replace(/:+$/, '').trim().toUpperCase();
+    if (sectionKey === 'SUMMARY' || sectionKey === 'PROFESSIONAL SUMMARY') {
+      currentSection = 'summary'; continue;
+    }
+    if (sectionKey === 'EXPERIENCE' || sectionKey === 'PROFESSIONAL EXPERIENCE' || sectionKey === 'WORK EXPERIENCE') {
+      currentSection = 'experience'; continue;
+    }
+    if (sectionKey === 'PROJECTS' || sectionKey === 'PERSONAL PROJECTS' || sectionKey === 'SIDE PROJECTS') {
       if (currentGroup) { parsed.experience.push(currentGroup); currentGroup = null; }
       if (currentProject) { parsed.projects.push(currentProject); currentProject = null; }
       currentSection = 'projects';
       continue;
     }
-    if (line === 'SKILLS:') {
+    if (sectionKey === 'SKILLS' || sectionKey === 'TECHNICAL SKILLS' || sectionKey === 'CORE SKILLS' || sectionKey === 'SKILLS & EXPERTISE') {
       if (currentGroup) { parsed.experience.push(currentGroup); currentGroup = null; }
       if (currentProject) { parsed.projects.push(currentProject); currentProject = null; }
       currentSection = 'skills';
       continue;
     }
-    if (line === 'EDUCATION:') {
+    if (sectionKey === 'EDUCATION') {
       if (currentGroup) { parsed.experience.push(currentGroup); currentGroup = null; }
       currentSection = 'education';
       continue;
