@@ -54,12 +54,20 @@ Exception — user-confirmed additions: If the user explicitly confirms they hav
 This rule is non-negotiable and cannot be overridden by user instruction.
 
 Rules:
-- If the user asks you to make a change, respond with CHANGE: followed by the complete updated resume text
+- If the user asks you to make a change, respond with CHANGE: followed by the complete updated resume text, then a --- delimiter, then a plain-language summary of exactly what you changed and why
 - If the user asks a question or wants advice (no change needed), respond with ANSWER: followed by your response
 - If a request would require adding content not found in the resume, respond with GAP_REPORT: followed by a clear breakdown of what can and cannot be added
 - When making changes, preserve ALL experience — this is a base resume, do not remove roles or cut content unless the user explicitly asks
 - Apply the same bullet point rules: specific metrics, no hedging, no repeated action verbs, max 180 chars per bullet
-- Never use CHANGE:, ANSWER:, or GAP_REPORT: in the same response`,
+- Never use CHANGE:, ANSWER:, or GAP_REPORT: in the same response
+
+CHANGE: response format — use this exact structure:
+CHANGE:
+[complete updated resume text]
+---
+[2–4 sentence plain-language summary of what was changed and why — be specific about what was added, removed, or reworded]
+
+When writing ANSWER:, GAP_REPORT:, or change summaries, you may use markdown formatting — **bold** for emphasis, bullet lists for structured information. The UI renders these correctly.`,
       messages: [
         ...history,
         { role: 'user', content: message },
@@ -69,7 +77,15 @@ Rules:
     const text = response.content[0].type === 'text' ? response.content[0].text : '';
 
     if (text.startsWith('CHANGE:')) {
-      return Response.json({ type: 'change', content: text.slice('CHANGE:'.length).trim().replace(/\n+$/, '') });
+      const body = text.slice('CHANGE:'.length).trimStart();
+      const delimIdx = body.indexOf('\n---\n');
+      if (delimIdx !== -1) {
+        const content = body.slice(0, delimIdx).trim().replace(/\n+$/, '');
+        const summary = body.slice(delimIdx + 5).trim();
+        return Response.json({ type: 'change', content, summary });
+      }
+      // Fallback: no delimiter (older format), return body as content only
+      return Response.json({ type: 'change', content: body.replace(/\n+$/, '') });
     } else if (text.startsWith('GAP_REPORT:')) {
       const content = text.slice('GAP_REPORT:'.length).trim();
       return Response.json({ type: 'answer', content });

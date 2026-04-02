@@ -75,6 +75,13 @@ Rules:
 - If you need to cut content to hit the page limit, cut the least impactful bullets first
 - Consolidate skills into compact categories
 
+Data preservation — non-negotiable:
+- Include graduation years for every degree exactly as they appear in the source documents — never omit them
+- Role start and end dates must match the source — do not approximate, collapse, or duplicate date ranges across roles
+- If a date appears in multiple source documents with different specificity, use the most specific version
+- Never omit verifiable facts (dates, graduation years, named entities, metrics) to save space
+- If space is tight, trim bullet content — never header data (company names, job titles, dates, degree names, graduation years)
+
 Output in EXACTLY this format — no markdown, no fences, no commentary:
 
 NAME: [Full Name]

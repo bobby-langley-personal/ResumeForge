@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ResumeItem, ITEM_TYPE_LABELS } from '@/types/resume';
 import { Diamond, ArrowLeft, ArrowRight, Loader2, MessageSquare, Send, Download } from 'lucide-react';
+import { MarkdownText } from '@/lib/render-markdown';
 
 const InlinePDFViewer = dynamic(() => import('@/components/InlinePDFViewer'), { ssr: false });
 
@@ -129,7 +130,7 @@ export default function PolishedResumeCreator({ sourceDocuments }: Props) {
         }),
       });
       if (!res.ok) throw new Error(await res.text());
-      const data = await res.json() as { type: 'change' | 'answer'; content: string };
+      const data = await res.json() as { type: 'change' | 'answer'; content: string; summary?: string };
 
       if (data.type === 'change' && data.content) {
         setResumeText(data.content);
@@ -137,7 +138,11 @@ export default function PolishedResumeCreator({ sourceDocuments }: Props) {
 
       setChatMessages(prev => [
         ...prev,
-        { role: 'assistant', type: data.type, content: data.type === 'change' ? 'Resume updated.' : data.content },
+        {
+          role: 'assistant',
+          type: data.type,
+          content: data.type === 'change' ? (data.summary ?? 'Resume updated.') : data.content,
+        },
       ]);
     } catch (err) {
       setChatError(err instanceof Error ? err.message : 'Chat failed');
@@ -409,9 +414,12 @@ export default function PolishedResumeCreator({ sourceDocuments }: Props) {
               {chatMessages.map((msg, i) => (
                 <div key={i} className={`text-sm px-3 py-2 rounded-lg ${msg.role === 'user' ? 'bg-muted ml-8' : 'bg-primary/5 border border-primary/20 mr-8'}`}>
                   {msg.role === 'assistant' && msg.type === 'change' && (
-                    <span className="text-xs text-primary font-medium block mb-1">Resume updated</span>
+                    <span className="text-xs text-green-500 font-semibold block mb-1">✓ Resume updated</span>
                   )}
-                  <p className="text-muted-foreground">{msg.content}</p>
+                  {msg.role === 'assistant'
+                    ? <MarkdownText text={msg.content} className="text-muted-foreground space-y-1.5" />
+                    : <p className="text-muted-foreground">{msg.content}</p>
+                  }
                 </div>
               ))}
               {isChatting && (
