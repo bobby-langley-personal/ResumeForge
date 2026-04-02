@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, Send, RotateCcw, ChevronDown, Bot, User } from 'lucide-react';
+import { MarkdownText } from '@/lib/render-markdown';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -208,7 +209,10 @@ export default function ResumeChatPanel({
                   {msg.type === 'change' && msg.role === 'assistant' && (
                     <span className="text-xs font-semibold text-green-500 block mb-1">✓ Resume updated</span>
                   )}
-                  <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                  {msg.role === 'assistant'
+                    ? <MarkdownText text={msg.content} />
+                    : <p className="leading-relaxed">{msg.content}</p>
+                  }
                 </div>
               </div>
             ))}

@@ -61,7 +61,9 @@ ANSWER:
 
 Output format for gap reports (when a request would require adding content not in background docs) — use this exact structure:
 GAP_REPORT:
-[your response listing what can and cannot be added, and why]`;
+[your response listing what can and cannot be added, and why]
+
+When writing ANSWER: or GAP_REPORT: responses, you may use markdown formatting — **bold** for emphasis, bullet lists for structured information, and --- as a section divider. The UI renders these correctly.`;
 
 interface ChatMessage {
   role: 'user' | 'assistant';
