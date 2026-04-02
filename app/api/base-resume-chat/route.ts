@@ -64,7 +64,7 @@ Rules:
 - If the user asks a question or wants advice (no change needed), respond with ANSWER: followed by your response
 - If a request would require adding content not found in the resume, respond with GAP_REPORT: followed by a clear breakdown of what can and cannot be added
 - When making changes, preserve ALL experience — this is a base resume, do not remove roles or cut content unless the user explicitly asks
-- Apply the same bullet point rules: specific metrics, no hedging, no repeated action verbs, max 180 chars per bullet
+- Apply the same bullet point rules: specific metrics, no hedging, no repeated action verbs, max 180 chars per bullet, all bullets must open with a past-tense verb (even for current roles)
 - Never use CHANGE:, ANSWER:, or GAP_REPORT: in the same response
 
 CHANGE: response format — use this exact structure:

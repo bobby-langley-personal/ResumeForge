@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { X, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { FitAnalysis, FitPoint } from '@/types/fit-analysis';
+import { FitAnalysis, FitPoint, KeywordTranslation, TenseCorrection } from '@/types/fit-analysis';
 
 const FIT_COLORS: Record<string, string> = {
   'Strong Fit':  'text-green-700 bg-green-50 border-green-200',
@@ -60,6 +60,61 @@ function FitSection({
             <><ChevronDown className="w-3 h-3" /> Show {items.length - PREVIEW_COUNT} more</>
           )}
         </button>
+      )}
+    </div>
+  );
+}
+
+function KeywordTranslationsSection({ translations }: { translations: KeywordTranslation[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+      >
+        {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        Keyword Translations {translations.length > 0 && <span className="text-xs font-normal">({translations.length})</span>}
+      </button>
+      {open && (
+        <ul className="mt-2 space-y-1">
+          {translations.length === 0 ? (
+            <li className="text-sm text-muted-foreground italic">Your language already matched this role&apos;s terminology.</li>
+          ) : translations.map((t, i) => (
+            <li key={i} className="text-sm text-muted-foreground flex gap-1">
+              <span className="font-medium text-foreground">{t.jdTerm}</span>
+              <span className="opacity-50">—</span>
+              <span>sourced from &ldquo;{t.candidatePhrase}&rdquo;</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function TenseCorrectionSection({ corrections }: { corrections: TenseCorrection[] }) {
+  const [open, setOpen] = useState(false);
+  if (corrections.length === 0) return null;
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+      >
+        {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        Corrections Applied <span className="text-xs font-normal">({corrections.length})</span>
+      </button>
+      {open && (
+        <ul className="mt-2 space-y-2">
+          {corrections.map((c, i) => (
+            <li key={i} className="text-sm text-muted-foreground">
+              <span className="line-through opacity-50">{c.original}</span>
+              <span className="mx-1 opacity-40">→</span>
+              <span className="text-foreground">{c.corrected}</span>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );
@@ -173,6 +228,14 @@ export default function FitAnalysisModal({ fitAnalysis, company, jobTitle, creat
                       </li>
                     )}
                   />
+                )}
+
+                {fitAnalysis.keywordTranslations !== undefined && (
+                  <KeywordTranslationsSection translations={fitAnalysis.keywordTranslations} />
+                )}
+
+                {fitAnalysis.tenseCorrections && fitAnalysis.tenseCorrections.length > 0 && (
+                  <TenseCorrectionSection corrections={fitAnalysis.tenseCorrections} />
                 )}
               </div>
 

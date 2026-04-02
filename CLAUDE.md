@@ -91,7 +91,7 @@ Added in migration 012. Stores contact info extracted from uploaded resumes.
 | `POST /api/analyze-fit` | Node | Haiku fit analysis — returns JSON FitAnalysis |
 | `POST /api/generate-documents` | Edge | SSE stream — resume (+ optional cover letter); fetches `user_profiles` and injects contact info into prompt if `full_name`/`email` are set |
 | `POST /api/fetch-job-posting` | Node | URL scrape — HTML extraction, company/title detection |
-| `POST /api/parse-job-details` | Node | Haiku extraction of company, job title, and open-ended application questions from pasted JD text; returns `{ company, jobTitle, questions: string[] }` |
+| `POST /api/parse-job-details` | Node | Haiku extraction of company, job title, and open-ended application questions from pasted JD text; returns `{ company, jobTitle, questions: string[] }`; strict prompt — only extracts explicit applicant-directed questions, not role requirements or section headings |
 | `GET /api/search-jobs` | Node | JSearch (RapidAPI) job search; checks `api_usage` table before calling; returns `{ jobs: JobResult[] }`; 429 when monthly limit hit |
 | `POST /api/extract-resume` | Node | PDF/DOCX text extraction |
 | `POST /api/download-pdf/[type]` | Node | PDF generation and download (`/resume`, `/cover-letter`, `/polished`); all three prefer `profile.full_name` over Clerk name for `candidateName` |
@@ -136,7 +136,7 @@ Added in migration 012. Stores contact info extracted from uploaded resumes.
 - Backstop: removes trailing noise by finding the last substantive line (>25 chars)
 - Detects company: `og:site_name` → title "at Company" pattern → Greenhouse/Lever/Workday URL patterns
 - Detects job title: `og:title` (stripped) → `<title>` tag fallback
-- Extracts open-ended application questions from the form section using Haiku (skips identity/demographic/compliance fields)
+- Extracts open-ended application questions from the form section using Haiku with strict criteria — only explicit applicant-directed questions; role requirements, section headings, and company values are excluded; returns `[]` when uncertain
 - Returns `{ jobDescription, company?, jobTitle?, detectedQuestions: string[] }`
 
 ### analyze-fit response shape (FitAnalysis)
@@ -144,6 +144,8 @@ Added in migration 012. Stores contact info extracted from uploaded resumes.
 - `plannedImprovements` — `string[]` of 3–5 concrete resume changes
 - `overallFit` — `"Strong Fit" | "Good Fit" | "Stretch Role"`
 - `roleType` — `"technical" | "management" | "sales" | "customer_success" | "research" | "other"`
+- `keywordTranslations?` — `KeywordTranslation[]` (high-confidence only); Sonnet call parallel to Haiku; surfaced in FitAnalysisModal as "Keyword Translations" (collapsed by default)
+- `tenseCorrections?` — `TenseCorrection[]`; Haiku scans source for present-tense bullet openers; surfaced in FitAnalysisModal as "Corrections Applied" (collapsed by default)
 
 ---
 
@@ -229,6 +231,7 @@ These rules are baked into the generation prompt and must be preserved whenever 
 - **Max 180 chars per bullet** — if it runs long, split into two bullets rather than wrapping to a third line
 - **No repeated action verbs** — never use the same opening verb more than once within a single role's bullets. Scan all bullets for that role before writing. Synonyms: Built → Engineered, Developed, Created, Designed, Shipped, Delivered, Launched, Implemented, Deployed, Authored; Led → Managed, Directed, Oversaw, Guided, Mentored, Headed; Improved → Reduced, Increased, Accelerated, Optimized, Streamlined, Elevated, Boosted
 - **No hedging on leadership** — words like "Informally", "Somewhat", "Partially", "Helped with", "Assisted in leading" undermine the candidate. If they led, they led. Reframe confidently: "Informally led a team" → "Managed a team of 2 engineers"; "Helped lead" → "Co-led" or just "Led"
+- **Past-tense leading verbs** — all bullets must open with a past-tense verb, even for current roles. "Manage" → "Managed", "Lead" → "Led", "Build" → "Built", "Drive" → "Drove", "Own" → "Owned". Applies to all generation routes and chat bots.
 
 ## PDF Page Overflow Policy
 2-page resumes are acceptable and normal for candidates with

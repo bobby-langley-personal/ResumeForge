@@ -229,22 +229,28 @@ export async function POST(req: NextRequest) {
         model: HAIKU,
         max_tokens: 400,
         temperature: 0.2,
-        system: `Extract open-ended written-response questions from job application form text.
+        system: `Extract ONLY explicit open-ended application form questions directed at the applicant in first-person form — questions the applicant is being asked to answer as part of their application.
 
-INCLUDE questions that require a thoughtful written answer, e.g.:
-- "Why do you want to work at [Company]?"
-- "Describe a time you resolved a complex technical issue"
-- "What are your motivations for this role?"
+VALID examples:
+- "Why do you want to work here?"
+- "Describe a time you handled a difficult customer."
+- "What experience do you have with warehouse management systems?"
 
-EXCLUDE:
+DO NOT extract any of the following — these are not application questions:
+- Role requirements phrased as bullets ("Proven track record of renewals", "Background in warehousing")
+- Section headings ("What We're Looking For", "About the Role", "What You'll Do")
+- Company value statements ("We move fast and support each other")
+- Nice-to-have qualifications or preferred experience bullets
 - Personal info fields (name, email, phone, address, LinkedIn URL)
 - Document uploads (resume, cover letter)
-- Yes/No or dropdown fields (work authorization, sponsorship, GPA, graduation year)
+- Yes/No or dropdown fields (work authorization, sponsorship, GPA)
 - Demographic/identity fields (race, gender, disability, veteran status)
 - Logistical questions (timezone, relocation, salary expectations)
 
-Output JSON only, no markdown fences: {"questions": ["...", "..."]}
-If none qualify, return {"questions": []}`,
+If no valid application questions exist, return {"questions": []}.
+When uncertain whether something is a question directed at the applicant, omit it — do not guess.
+
+Output JSON only, no markdown fences: {"questions": ["...", "..."]}`,
         messages: [{ role: 'user', content: formSection }],
       });
       const text = response.content[0].type === 'text' ? response.content[0].text : '{}';

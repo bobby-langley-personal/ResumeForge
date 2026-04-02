@@ -105,6 +105,7 @@ Rules:
 - Keep each bullet point under 180 characters including spaces. If a bullet runs long, split it into two focused bullets rather than letting it wrap to a third line.
 - Never repeat the same action verb more than once within a single role's bullet list. Scan all bullets for that role before writing — maintain a mental list of verbs already used. Vary openers: Built → Engineered, Developed, Created, Designed, Shipped, Delivered, Launched, Implemented, Deployed, Authored; Led → Managed, Directed, Oversaw, Guided, Mentored, Headed; Improved → Reduced, Increased, Accelerated, Optimized, Streamlined, Elevated, Boosted
 - Never use hedging or diminishing language on leadership experience. Words like "Informally", "Somewhat", "Partially", "Helped with", "Assisted in leading" undermine the candidate. If they led, they led. Reframe confidently: "Informally led a team" → "Managed a team of 2 engineers"; "Helped lead" → "Co-led" or just "Led"
+- All bullets must open with a past-tense verb — even for a current role. Never use present tense: "Manage" → "Managed", "Lead" → "Led", "Build" → "Built", "Drive" → "Drove", "Own" → "Owned". Scan every bullet before outputting and correct any present-tense verbs.
 - Be deterministic and consistent: do not vary structure, formatting, or section order between runs on the same input. Always follow the exact output format specified. Do not add creative flourishes or vary phrasing based on randomness — prioritize accuracy and repeatability over variety
 
 Output the resume in EXACTLY this format:

@@ -209,6 +209,25 @@ Unique constraint on `(api_name, month)`. Checked before every JSearch call; ret
 }
 ```
 
+### `KeywordTranslation`
+```typescript
+{
+  jdTerm: string          // term as used in the JD
+  candidatePhrase: string // equivalent phrase in candidate's resume
+  confidence: 'high' | 'medium' | 'low'
+}
+```
+Only `high`-confidence translations are returned by the API; lower confidence entries are filtered server-side.
+
+### `TenseCorrection`
+```typescript
+{
+  original: string   // present-tense bullet opener found in source material (first ~60 chars)
+  corrected: string  // past-tense corrected version
+}
+```
+Detected by `analyze-fit` before generation; surfaced in FitAnalysisModal as "Corrections Applied" (collapsed by default).
+
 ### `FitAnalysis`
 ```typescript
 {
@@ -216,8 +235,10 @@ Unique constraint on `(api_name, month)`. Checked before every JSearch call; ret
   strengths: FitPoint[]
   gaps: FitPoint[]
   suggestions: FitPoint[]
-  plannedImprovements: string[]   // 3–5 concrete resume changes the generator will make
+  plannedImprovements: string[]         // 3–5 concrete resume changes the generator will make
   roleType: RoleType
+  keywordTranslations?: KeywordTranslation[]  // JD ↔ candidate phrase mappings (high confidence only)
+  tenseCorrections?: TenseCorrection[]        // present-tense bullets that will be corrected on generation
 }
 ```
 

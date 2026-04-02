@@ -71,6 +71,7 @@ Rules:
 - Order bullets within each role by impact, not chronology — most impressive first
 - Write a strong 2–3 sentence summary that positions the candidate broadly${roleTypeHint ? ` — subtly weight experience relevant to "${roleTypeHint}" roles` : ''}
 - Use varied, strong action verbs — no repeats within a role, no hedging qualifiers
+- All bullets must open with a past-tense verb — even for a current role. Never use present tense: "Manage" → "Managed", "Lead" → "Led", "Build" → "Built", "Drive" → "Drove", "Own" → "Owned". Scan every bullet before outputting and correct any present-tense verbs.
 - If a bullet runs long, split it; max 180 characters per bullet
 - If you need to cut content to hit the page limit, cut the least impactful bullets first
 - Consolidate skills into compact categories

@@ -33,8 +33,27 @@ Output valid JSON only — no markdown fences, no explanation, nothing else:
 Rules:
 - jobTitle: the specific position being hired for (e.g. "Customer Success Engineer"). Infer the correct singular title if a department name is used as a header.
 - company: the hiring company name. Ignore job board names.
-- questions: open-ended application questions the candidate must answer in writing (e.g. "What excites you about this role?", "Describe a project where..."). Include at most 5. Strip leading asterisks, numbers, or bullet characters. Exclude identity/demographic/compliance fields (EEO, disability, veteran status, name, email, address, phone, LinkedIn URL, resume upload, availability, salary expectations, referral source). Return [] if none found.
-- company and jobTitle are required — make your best guess, do not return null.`,
+- company and jobTitle are required — make your best guess, do not return null.
+- questions: Extract ONLY explicit open-ended application form questions directed at the applicant — questions the applicant is being asked to answer as part of their application. Strip leading asterisks, numbers, or bullet characters. Include at most 5.
+
+VALID examples:
+- "Why do you want to work here?"
+- "Describe a time you handled a difficult customer."
+- "What experience do you have with warehouse management systems?"
+
+DO NOT extract any of the following — these are not application questions:
+- Role requirements phrased as bullets ("Proven track record of renewals", "Background in warehousing")
+- Section headings ("What We're Looking For", "About the Role", "What You'll Do")
+- Company value statements ("We move fast and support each other")
+- Nice-to-have qualifications or preferred experience bullets
+- Personal info fields (name, email, phone, address, LinkedIn URL)
+- Document uploads (resume, cover letter)
+- Yes/No or dropdown fields (work authorization, sponsorship, GPA)
+- Demographic/identity fields (race, gender, disability, veteran status)
+- Logistical questions (timezone, relocation, salary expectations)
+
+If no valid application questions exist, return {"questions": []}.
+When uncertain whether something is a question directed at the applicant, omit it — do not guess.`,
       messages: [
         {
           role: 'user',
