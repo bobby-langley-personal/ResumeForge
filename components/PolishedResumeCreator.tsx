@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useUser } from '@clerk/nextjs';
@@ -60,6 +60,11 @@ export default function PolishedResumeCreator({ sourceDocuments }: Props) {
   const [chatInput, setChatInput] = useState('');
   const [isChatting, setIsChatting] = useState(false);
   const [chatError, setChatError] = useState('');
+
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
 
   // Save step
   const [isSaving, setSaving] = useState(false);
@@ -428,6 +433,7 @@ export default function PolishedResumeCreator({ sourceDocuments }: Props) {
                   <span className="text-xs text-muted-foreground">Thinking…</span>
                 </div>
               )}
+              <div ref={chatEndRef} />
             </div>
           )}
 
