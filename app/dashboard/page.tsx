@@ -7,7 +7,7 @@ import ApplicationList from './ApplicationList';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, FileSearch } from 'lucide-react';
 
-export const metadata = { title: 'AI Resumes — ResumeForge' };
+export const metadata = { title: 'AI Resumes — Easy Apply AI' };
 
 export default async function DashboardPage() {
   const { userId } = await auth();

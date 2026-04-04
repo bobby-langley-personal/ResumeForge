@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
   try {
     const res = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; ResumeForge/1.0)',
+        'User-Agent': 'Mozilla/5.0 (compatible; Easy Apply AI/1.0)',
         'Accept': 'text/html,application/xhtml+xml',
       },
       signal: AbortSignal.timeout(10_000),

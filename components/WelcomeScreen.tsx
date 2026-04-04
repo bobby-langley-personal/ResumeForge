@@ -175,7 +175,7 @@ export default function WelcomeScreen() {
         <div>
           <h2 className="text-2xl font-bold text-foreground">Let&apos;s make sure we&apos;ve got the right info</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            We pulled this from your resume. Make sure it&apos;s up to date — it will appear on all generated documents. You can update it any time under <strong>My Profile</strong>.
+            We pulled this from your resume. Make sure it&apos;s up to date — it will appear on all generated documents. You can update it any time under <strong>My Experience</strong>.
           </p>
         </div>
 

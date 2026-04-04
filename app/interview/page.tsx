@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import InterviewClient from './InterviewClient';
 
-export const metadata = { title: 'Experience Interview — ResumeForge' };
+export const metadata = { title: 'Experience Interview — Easy Apply AI' };
 
 export default async function InterviewPage() {
   const { userId } = await auth();

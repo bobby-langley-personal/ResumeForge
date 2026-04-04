@@ -237,7 +237,7 @@ export default function Home() {
     };
 
     if (!data.company || !data.jobTitle || !data.jobDescription || !data.backgroundExperience) {
-      setErrorMessage('Please fill in all fields and provide your background experience (load from My Profile or upload a file)');
+      setErrorMessage('Please fill in all fields and provide your background experience (load from My Experience or upload a file)');
       setUIState('error');
       return;
     }

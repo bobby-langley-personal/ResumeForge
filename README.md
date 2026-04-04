@@ -1,13 +1,30 @@
-# ResumeForge
+# Easy Apply AI
 
-AI-powered resume and cover letter generator that tailors your documents to specific job postings. Paste a job description (or import it from a URL), provide your background, and ResumeForge analyzes your fit, surfaces gaps, and generates a polished, targeted resume — and optionally a cover letter — in seconds.
+AI-powered resume and cover letter generator that tailors your documents to specific job postings. Paste a job description (or import it from a URL), provide your background, and Easy Apply analyzes your fit, surfaces gaps, and generates a polished, targeted resume — and optionally a cover letter — in seconds.
+
+> **Branding note:** The codebase repo is named `ResumeForge` (legacy). The product is **Easy Apply AI**. All user-facing text uses "Easy Apply" / "Easy Apply AI". The Chrome extension (pending Google review) is named "Easy Apply".
+
+---
+
+## Landing Page
+
+The signed-out landing page (`/`) is a full marketing page with:
+- **Navbar** — brand logo with `AI` superscript, "Chrome Extension OTW" amber badge (scrolls to extension section), Sign In, Get Started Free
+- **Hero** — "Land more interviews. Faster." with dual CTA (Get Started Free / Sign In)
+- **Features** — AI-Tailored Resumes, Cover Letter Generator, Fit Analysis
+- **Experience Library** — AI Experience Interview (dark card), Experience Library, Polished Resume Builder (2-column grid)
+- **Not-job-seeker callout** — captures the "update your CV while employed" use case
+- **Template Myth** — "Your template doesn't get you the job. Your content does." — old-way vs Easy Apply way comparison
+- **How it works** — 3-step flow
+- **Chrome Extension** — "One click from any job board" with coming-soon banner + tab scraping callout, trust/control callouts
+- **CTA Strip** — blue band, "Get Started Free"
 
 ---
 
 ## What It Does
 
 ### 1. Job Fit Analysis
-Before generating anything, ResumeForge runs a fit analysis using Claude Haiku:
+Before generating anything, Easy Apply runs a fit analysis using Claude Haiku:
 - Rates overall fit: **Strong Fit**, **Good Fit**, or **Stretch Role**
 - Lists specific strengths, gaps, and suggestions — each attributed to the source artifact they came from
 - Generates 3–5 **Planned Improvements**: concrete changes that will be made to the resume (e.g. "surface the 50% ticket resolution metric", "add missing keyword: GraphQL")
@@ -49,7 +66,7 @@ Users can add up to 5 open-ended application questions before generating:
 - Answers are saved and viewable from the AI Resumes dashboard via a chat icon modal
 
 ### 3. Job Search
-Search for jobs directly within ResumeForge without leaving the page:
+Search for jobs directly within Easy Apply without leaving the page:
 - Keyword + optional location search powered by the JSearch API (RapidAPI)
 - Results show job title, company, location, salary range, and posting date
 - Expand any card to read the full job description before selecting
@@ -75,20 +92,20 @@ Create a standalone, polished resume from your uploaded documents — not tailor
 - Review with **inline PDF preview**, "Edit text" textarea toggle, and AI chat refinement
 - Save to My Documents, set as default, or just download the PDF
 
-### 5. My Documents (Resume Library)
+### 5. My Experience (Resume Library — `/resumes`)
 A personal library of saved context artifacts:
 - Upload PDF or DOCX files — text is extracted server-side
-- **Save to profile prompt** — when uploading a file on the home page, a modal asks if you'd like to save it to My Documents so it auto-loads next time
+- **Save to profile prompt** — when uploading a file on the home page, a modal asks if you'd like to save it to My Experience so it auto-loads next time
 - Categorize items: Resume, Cover Letter, Portfolio, Other
 - Mark one item as **Default** — it auto-loads as the primary background on the home page; if no item is marked default, the first document is used automatically
 - **All** non-default items are pre-selected as **additional context** for the AI, with the accordion expanded automatically
 - Additional context items are appended to both the fit analysis and generation prompts, with source attribution on every insight
 
 ### 6. User Profile / Contact Info
-ResumeForge extracts and stores your contact information so it is consistently applied across all generated documents:
+Easy Apply extracts and stores your contact information so it is consistently applied across all generated documents:
 - **Auto-extraction on first upload** — after uploading your first resume, Claude Haiku scans the text and pre-fills a contact confirmation form (name, email, location, LinkedIn URL); review, edit, and save in one click, or skip
-- **Contact Information section on My Profile** — collapsed by default showing your name and email; click the chevron to expand and edit all 4 fields at any time
-- **Smart pre-fill on My Profile** — if no profile is saved yet, the page runs contact extraction over your two most recent uploaded documents server-side and merges the results as a starting point
+- **Contact Information section on My Experience** — collapsed by default showing your name and email; click the chevron to expand and edit all 4 fields at any time
+- **Smart pre-fill on My Experience** — if no profile is saved yet, the page runs contact extraction over your two most recent uploaded documents server-side and merges the results as a starting point
 - **Injected into every generation** — when `full_name` and `email` are set, the resume generation and polished resume routes inject an exact contact block into the AI prompt so your details appear correctly in every output
 - **PDF downloads** — all download routes use your saved name (`full_name`) in preference to the Clerk display name
 
@@ -116,19 +133,19 @@ A guided walkthrough for new users powered by `driver.js`:
 - Auto-starts 800ms after first sign-in (tracked via `localStorage`)
 - 7 steps: Welcome → Job Details → Your Background → Context Documents → Application Questions → Generate → Navigation
 - Each step has a **pulsing blue ring** on the highlighted element and a **bouncing arrow** pointing at the specific field within the section
-- Dismissable at any step; completing or dismissing sets the `resumeforge_tour_completed` flag
+- Dismissable at any step; completing or dismissing sets the `resumeforge_tour_completed` flag in localStorage
 - Tour replay available in the hamburger nav menu (Compass icon) after the tour has been completed once
-- Styled to match the app's dark theme via custom CSS overrides in `globals.css`
+- Styled to match the app's dark theme via `.easy-apply-tour` CSS class overrides in `globals.css`
 
 ### 10. AI Experience Interview (`/interview`)
 An AI-guided career interview that builds a detailed experience document from the user's work history:
-- **Role checklist** — extracts companies, titles, and date ranges from existing My Documents library via Haiku; user selects which roles to cover (most recent first) and can add custom roles not in their documents
+- **Role checklist** — extracts companies, titles, and date ranges from existing My Experience library via Haiku; user selects which roles to cover (most recent first) and can add custom roles not in their documents
 - **Company research** — after each role is set up, Haiku generates a 3–5 sentence company + role summary; user confirms accuracy or clarifies before the interview starts
 - **Adaptive AI conversation** — each turn calls Claude Sonnet with the full chat history and system context; Claude decides what to ask next rather than following a fixed script
 - **Quick-reply choices** — Claude ends messages with `CHOICES: A | B | C`; UI parses and renders these as pill buttons; "Move to next role" triggers role completion
 - **Cross-device draft persistence** — draft auto-saves to Supabase `interview_sessions` table after each role completes and on "Save & exit"; user can resume on any device (mobile or desktop)
-- **Output** — generates a detailed, formatted experience document via Sonnet; user names and saves it to My Documents or copies to clipboard
-- Accessible from the My Documents page header ("Build experience doc →" with Beta badge)
+- **Output** — generates a detailed, formatted experience document via Sonnet; user names and saves it to My Experience or copies to clipboard
+- Accessible from the My Experience page header ("Build experience doc →" with Beta badge)
 
 ### 11. Feedback
 Users can submit feedback or bug reports at any time:
@@ -148,8 +165,18 @@ After a resume is generated (or from the AI Resumes dashboard), users can genera
 - Available on the home page post-generation via a collapsible "Interview Prep" section, and on each card in the AI Resumes dashboard via the Target icon
 - Questions are saved to `applications.interview_prep` (JSONB) and loaded lazily to avoid breaking the dashboard if the migration hasn't run
 
-### 13. Versioning
-ResumeForge uses a CalVer-style version format: `{Major}.{YY}{M}.{DD}{H}` — e.g. `1.263.259` for version 1, March 2026, 25th day, 9am.
+### 13. Chrome Extension (Pending Google Review)
+A companion Chrome extension for one-click resume generation from any job board:
+- **Tab scraping** — reads the active tab's job title, company, full description, and application questions automatically; no copy-pasting required
+- Works on LinkedIn, Indeed, Glassdoor, Greenhouse, Lever, Workday, and direct company job pages
+- Side panel UI — generates tailored resume and cover letter without leaving the job posting
+- Same generation quality as the webapp — draws from your My Experience library
+- Follow-up questions panel: enter tough interview questions, get AI-written answers
+- Cancel button, elapsed generation timer, cover letter download
+- Currently distributed as a `.zip` for manual installation; pending Chrome Web Store review
+
+### 14. Versioning
+Easy Apply uses a CalVer-style version format: `{Major}.{YY}{M}.{DD}{H}` — e.g. `1.263.259` for version 1, March 2026, 25th day, 9am.
 - Version is computed at **build time** in `next.config.mjs` from the major version in `package.json` and the current date/time
 - Injected as `NEXT_PUBLIC_APP_VERSION` environment variable
 - Displayed in the Footer at 40% opacity
@@ -179,7 +206,7 @@ ResumeForge uses a CalVer-style version format: `{Major}.{YY}{M}.{DD}{H}` — e.
 - **Pre-generation** — Resume generation begins 500ms after the user sees the fit analysis results, running in the background via refs (never touching state). When the user clicks "Generate", if generation is already complete the result appears instantly; if still running, it streams into the UI in real time.
 - **Fit analysis first** — Generation is always gated behind a fit review modal, so users see what the AI plans to change before committing. Fit analysis is saved with the application and accessible from the dashboard.
 - **Dark mode default** — Theme is toggled via a `dark` class on `<html>`, defaulting to dark. Preference persists in `localStorage`. An inline script in `layout.tsx` prevents flash of wrong theme on load. Theme toggle lives in the hamburger nav menu.
-- **Hamburger-only nav** — All navigation (Tailor New Resume, AI Resumes, My Documents) lives in the hamburger dropdown on all screen sizes. No always-visible nav links on desktop.
+- **Hamburger-only nav** — All navigation (Tailor New Resume, AI Resumes, My Experience) lives in the hamburger dropdown on all screen sizes. No always-visible nav links on desktop.
 
 ---
 
@@ -187,16 +214,16 @@ ResumeForge uses a CalVer-style version format: `{Major}.{YY}{M}.{DD}{H}` — e.
 
 ```
 app/
-  page.tsx                  # Home — job input form, fit analysis modal, generation flow
+  page.tsx                  # Home — landing page (signed-out) + goal/welcome routing (signed-in)
   layout.tsx                # Root layout with Clerk provider, theme script, and Footer
-  globals.css               # CSS variables for light/dark themes + driver.js tour overrides
+  globals.css               # CSS variables for light/dark themes + .easy-apply-tour driver.js overrides
   dashboard/
     page.tsx                # AI Resumes dashboard (server component)
     ApplicationList.tsx     # Client component — multi-select, delete
     ApplicationCard.tsx     # Resume card — download, preview, Q&A modal, fit analysis lightbulb
     loading.tsx             # Skeleton UI for Suspense boundary
   resumes/
-    page.tsx                # My Documents library page (server component); includes Contact Information section with server-side inferContactFromDocs pre-fill
+    page.tsx                # My Experience library page (server component); includes Contact Information section
     ResumeLibrary.tsx       # Client component — upload, edit, set default
     loading.tsx             # Skeleton UI
   polished-resume/
@@ -214,7 +241,7 @@ app/
     download-pdf/[type]/    # POST — PDF generation and download; all types prefer profile.full_name for candidateName
     generate-polished-resume/ # POST — Sonnet builds standalone resume from selected docs; injects profile contact info
     base-resume-chat/       # POST — Sonnet CHANGE/ANSWER chat for polished resume refinement
-    resumes/                # GET/POST — My Documents CRUD
+    resumes/                # GET/POST — My Experience CRUD
     applications/           # DELETE bulk
     applications/[id]/      # GET single (for PDF preview) + DELETE single
     feedback/               # POST — save feedback to Supabase
@@ -231,31 +258,31 @@ app/
       sessions/[id]/        # PATCH/DELETE — update or delete a session
 
 components/
-  Navbar.tsx                # Hamburger nav (all screen sizes) — navigation + theme + feedback + tour
+  Navbar.tsx                # Hamburger nav (all screen sizes) — navigation + theme + feedback + tour; logo shows Easy Apply AI superscript
   Footer.tsx                # Persistent footer — attribution + feedback shortcut
   ExperiencePanel.tsx       # Collapsible experience panel in tailor form — primary doc + additional context
   ContextSelector.tsx       # Legacy library picker (still used in some flows)
   PolishedResumeCreator.tsx # 4-step polished resume creation flow (select → configure → generate → review)
-  FitAnalysisModal.tsx      # Reusable fit analysis modal — top 3 per section by default, expandable; used on home page and dashboard cards
-  InlinePDFViewer.tsx       # Inline PDF iframe (US Letter aspect ratio) shown post-generation; updates on chat edits
+  FitAnalysisModal.tsx      # Reusable fit analysis modal — top 3 per section by default, expandable
+  InlinePDFViewer.tsx       # Inline PDF iframe (US Letter aspect ratio) shown post-generation
   ResumeChatPanel.tsx       # Post-generation chat UI — page fit chips, CHANGE/ANSWER response parsing
   FeedbackModal.tsx         # Feedback form modal — general and bug report types
   PDFPreviewModal.tsx       # PDF preview modal — BlobProvider iframe, dynamically imported (ssr: false)
-  JobSearchPanel.tsx        # Job search — keyword/location inputs, JSearch results with salary and expand/collapse
-  TourGuide.tsx             # driver.js onboarding tour; exports startTour() for replay
+  JobSearchPanel.tsx        # Job search — keyword/location inputs, JSearch results
+  TourGuide.tsx             # driver.js onboarding tour; popoverClass: 'easy-apply-tour'; exports startTour()
   InterviewPrepPanel.tsx    # Interview prep UI — QuestionCard, SkeletonQuestionCard, InterviewPrepSection
 
 lib/
   supabase.ts               # Singleton Supabase client (service role)
   models.ts                 # Cached model ID fetcher with fallback
   pipeline-utils.ts         # Shared SSE helpers, JSON parser, context block builder
-  extract-contact.ts        # extractContactFields(text) + inferContactFromDocs(docs, maxDocs) — shared Haiku contact extraction helper
+  extract-contact.ts        # extractContactFields(text) + inferContactFromDocs(docs, maxDocs)
 
 types/
   fit-analysis.ts           # FitAnalysis, FitPoint, OverallFit, RoleType
   resume.ts                 # ResumeItem, ItemType, ITEM_TYPE_LABELS
-  database.ts               # Full Supabase Database interface (users, resumes, applications, interview_sessions, feedback)
-  interview-prep.ts         # InterviewPrep, InterviewQuestion, InterviewQuestionCategory, InterviewPrepRequest
+  database.ts               # Full Supabase Database interface
+  interview-prep.ts         # InterviewPrep, InterviewQuestion, InterviewQuestionCategory
 
 supabase/migrations/        # SQL migration files (001–013)
 

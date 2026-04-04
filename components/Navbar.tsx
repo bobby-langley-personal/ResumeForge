@@ -67,7 +67,9 @@ export default function Navbar() {
 
           {/* Logo — always visible */}
           <a href="/" onClick={close}>
-            <h1 className="text-2xl font-bold text-foreground">ResumeForge</h1>
+            <h1 className="text-2xl font-bold text-foreground">
+              Easy Apply<sup className="text-blue-500 text-xs font-bold ml-0.5 align-super">AI</sup>
+            </h1>
           </a>
 
           {/* Right side */}
@@ -108,7 +110,7 @@ export default function Navbar() {
                       onClick={close}
                       className="flex items-center justify-between w-full px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                     >
-                      <span>My Profile</span>
+                      <span>My Experience</span>
                       <FolderOpen className="w-4 h-4" />
                     </Link>
 

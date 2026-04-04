@@ -59,7 +59,7 @@ export function startTour() {
     overlayColor: 'rgba(0,0,0,0.7)',
     stagePadding: 8,
     stageRadius: 8,
-    popoverClass: 'resumeforge-tour',
+    popoverClass: 'easy-apply-tour',
     onDestroyStarted: () => {
       hideArrow();
       localStorage.setItem(TOUR_KEY, 'true');
@@ -69,7 +69,7 @@ export function startTour() {
       {
         element: '#tour-heading',
         popover: {
-          title: 'Welcome to ResumeForge 👋',
+          title: 'Welcome to Easy Apply AI 👋',
           description:
             "Let's show you how to get a tailored resume in under 60 seconds. Click Next to get started.",
           side: 'bottom',
@@ -81,7 +81,7 @@ export function startTour() {
         popover: {
           title: 'Enter the role details',
           description:
-            'Fill in the company name, job title, and paste the full job description. Paste the JD first — ResumeForge will try to auto-fill Company and Title, so just double-check.',
+            'Fill in the company name, job title, and paste the full job description. Paste the JD first — Easy Apply will try to auto-fill Company and Title, so just double-check.',
           side: 'right',
           align: 'start',
         },
@@ -141,7 +141,7 @@ export function startTour() {
         popover: {
           title: 'Navigate from here',
           description:
-            'Use this menu to get around — Tailor New Resume brings you here to generate, AI Resumes shows your saved applications, and My Profile is where you store your resume and context files so they auto-load every time.',
+            'Use this menu to get around — Tailor New Resume brings you here to generate, AI Resumes shows your saved applications, and My Experience is where you store your resume and context files so they auto-load every time.',
           side: 'bottom',
           align: 'end',
         },

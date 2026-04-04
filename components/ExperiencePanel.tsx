@@ -180,7 +180,7 @@ export default function ExperiencePanel({
                 <p className="text-muted-foreground leading-snug">
                   Save your resume to{' '}
                   <Link href="/resumes" className="text-primary hover:underline font-medium">
-                    My Profile
+                    My Experience
                   </Link>{' '}
                   and it will auto-load here every time.
                 </p>
@@ -250,7 +250,7 @@ export default function ExperiencePanel({
           {/* Link to My Documents */}
           <Link href="/resumes" className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline">
             <FolderOpen className="w-3.5 h-3.5" />
-            Go to My Profile to manage your saved files
+            Go to My Experience to manage your saved files
           </Link>
         </div>
       )}

@@ -16,8 +16,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "ResumeForge",
-  description: "AI-powered resume and cover letter generator",
+  title: "Easy Apply AI",
+  description: "AI-powered resume and cover letter generator. Tailor every application in seconds.",
 };
 
 export default function RootLayout({

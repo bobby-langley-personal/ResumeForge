@@ -1,9 +1,38 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import Navbar from '@/components/Navbar';
 import { supabaseServer } from '@/lib/supabase';
 import HomeRouter from '@/components/HomeRouter';
-import { ArrowRight, FileText, Sparkles, Target, X, Check, Globe, MousePointerClick, Zap, ShieldCheck } from 'lucide-react';
+import AnimatedCounter from '@/components/AnimatedCounter';
+import { ArrowRight, FileText, Sparkles, Target, X, Check, Globe, MousePointerClick, Zap, ShieldCheck, MessageSquareText, Library, Star, Clock } from 'lucide-react';
+
+/** Fetches total resume count from DB — used inside a Suspense boundary */
+async function ResumesGeneratedBadge() {
+  const supabase = supabaseServer();
+  const { count } = await supabase
+    .from('applications')
+    .select('*', { count: 'exact', head: true });
+  const total = count ?? 0;
+  return (
+    <div className="inline-flex items-center gap-2 text-white/50 text-sm">
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+      <span className="font-semibold text-white tabular-nums">
+        <AnimatedCounter target={total} />
+      </span>
+      <span>resumes generated and counting</span>
+    </div>
+  );
+}
+
+/** Renders the brand name with a small "AI" superscript badge */
+function Brand({ className }: { className?: string }) {
+  return (
+    <span className={className}>
+      Easy Apply<sup className="text-blue-400 text-[11px] font-bold ml-0.5 align-super">AI</sup>
+    </span>
+  );
+}
 
 export default async function HomePage() {
   const { userId } = await auth();
@@ -16,9 +45,17 @@ export default async function HomePage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
             <div className="flex items-center gap-2 min-w-0">
               <Sparkles className="w-5 h-5 text-blue-400 flex-shrink-0" />
-              <span className="text-lg font-bold tracking-tight whitespace-nowrap">Easy Apply</span>
+              <Brand className="text-lg font-bold tracking-tight whitespace-nowrap" />
             </div>
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              {/* Extension badge — hidden on very small screens */}
+              <a
+                href="#extension"
+                className="hidden sm:inline-flex items-center gap-1.5 bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-medium px-2.5 py-1 rounded-full hover:bg-amber-500/25 transition-colors whitespace-nowrap"
+              >
+                <span>🔌</span>
+                <span>Chrome Extension OTW</span>
+              </a>
               <Link
                 href="/sign-in"
                 className="text-sm font-medium text-white/80 hover:text-white transition-colors px-2 sm:px-3 py-1.5 whitespace-nowrap"
@@ -66,6 +103,20 @@ export default async function HomePage() {
                 Sign In
               </Link>
             </div>
+
+            {/* Live resume count */}
+            <div className="mt-8 flex justify-center">
+              <Suspense
+                fallback={
+                  <div className="inline-flex items-center gap-2 text-white/30 text-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white/20 flex-shrink-0" />
+                    <span className="w-48 h-4 bg-white/10 rounded animate-pulse" />
+                  </div>
+                }
+              >
+                <ResumesGeneratedBadge />
+              </Suspense>
+            </div>
           </div>
         </section>
 
@@ -77,7 +128,7 @@ export default async function HomePage() {
                 Everything you need to apply smarter
               </h2>
               <p className="text-slate-500 max-w-xl mx-auto text-sm sm:text-base">
-                Stop sending the same resume everywhere. Easy Apply builds a tailored application for every role.
+                Stop sending the same resume everywhere. <Brand /> builds a tailored application for every role.
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -122,6 +173,127 @@ export default async function HomePage() {
           </div>
         </section>
 
+        {/* Experience / Interview Section */}
+        <section className="bg-white py-16 sm:py-20 px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <p className="text-xs font-semibold uppercase tracking-widest text-blue-600 mb-3">Your experience library</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4">
+                A real resume, built from your{' '}
+                <span className="text-blue-600">actual background.</span>
+              </h2>
+              <p className="text-slate-500 max-w-2xl mx-auto text-sm sm:text-base">
+                Most people struggle to put their own experience into words — that&apos;s not a skill problem,
+                it&apos;s a framing problem. Easy Apply solves it before you ever paste a job description.
+              </p>
+            </div>
+
+            {/* Feature grid — 1 large + 2 stacked on desktop */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {/* Large card — AI Interview */}
+              <div className="bg-slate-900 text-white rounded-2xl p-7 flex flex-col justify-between">
+                <div>
+                  <div className="w-11 h-11 bg-blue-600/20 rounded-xl flex items-center justify-center mb-5">
+                    <MessageSquareText className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-3">AI Experience Interview</h3>
+                  <p className="text-white/60 text-sm leading-relaxed mb-5">
+                    No resume to start from? No problem. Easy Apply walks you through a conversational interview
+                    about your roles, responsibilities, and wins — then builds your experience document from your answers.
+                    You talk about what you did; the AI handles the professional phrasing.
+                  </p>
+                  <ul className="space-y-2">
+                    {[
+                      'Asks the right follow-up questions to draw out depth',
+                      'Turns vague answers into strong, quantified bullets',
+                      'Saves to your library — used for every future application',
+                    ].map((p) => (
+                      <li key={p} className="flex items-start gap-2 text-xs text-white/50">
+                        <Check className="w-3.5 h-3.5 text-blue-400 mt-0.5 flex-shrink-0" />
+                        {p}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <p className="mt-6 text-xs text-white/30 border-t border-white/10 pt-4">
+                  Great for first-time resume writers, career changers, and anyone who finds it easier to talk than to type.
+                </p>
+              </div>
+
+              {/* Right column — 2 smaller cards */}
+              <div className="flex flex-col gap-5">
+                <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 flex-1">
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center mb-4 shadow-sm">
+                    <Library className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 mb-2">Experience Library</h3>
+                  <p className="text-sm text-slate-500 leading-relaxed mb-4">
+                    Upload your existing resume, add old job descriptions, attach project write-ups — everything lives
+                    in one place. Every tailored resume you generate draws from all of it, picking what&apos;s most relevant
+                    to the specific role.
+                  </p>
+                  <ul className="space-y-1.5">
+                    {[
+                      'Supports PDF, DOCX, and pasted text',
+                      'Set a default document for fastest generation',
+                      'Add multiple roles, projects, or certifications',
+                    ].map((p) => (
+                      <li key={p} className="flex items-start gap-2 text-xs text-slate-500">
+                        <Check className="w-3.5 h-3.5 text-blue-500 mt-0.5 flex-shrink-0" />
+                        {p}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="bg-violet-50 border border-violet-100 rounded-2xl p-6 flex-1">
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center mb-4 shadow-sm">
+                    <Star className="w-5 h-5 text-violet-600" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 mb-2">Polished Resume Builder</h3>
+                  <p className="text-sm text-slate-500 leading-relaxed mb-4">
+                    Already have a rough resume but know it undersells you? Feed it in and let AI expand on it —
+                    fleshing out thin bullet points, strengthening language, and structuring it properly — without
+                    adding anything that isn&apos;t already true.
+                  </p>
+                  <ul className="space-y-1.5">
+                    {[
+                      'Expands weak or vague bullets into strong ones',
+                      'Preserves your voice — no generic corporate filler',
+                      'Download as a clean, ATS-friendly PDF',
+                    ].map((p) => (
+                      <li key={p} className="flex items-start gap-2 text-xs text-slate-500">
+                        <Check className="w-3.5 h-3.5 text-violet-500 mt-0.5 flex-shrink-0" />
+                        {p}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Not just for job seekers */}
+        <section className="bg-slate-900 text-white py-12 px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 bg-white/5 border border-white/10 rounded-2xl p-6 sm:p-8">
+              <div className="w-12 h-12 bg-blue-600/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Clock className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                <p className="font-semibold text-white mb-1">Not looking for a new job? Still worth it.</p>
+                <p className="text-sm text-white/55 leading-relaxed max-w-2xl">
+                  Most people haven&apos;t updated their CV since their last job hunt — and by then it&apos;s already
+                  two years stale. Easy Apply is just as useful for documenting what you&apos;ve accomplished in your
+                  current role: new responsibilities, promotions, projects you led. Capture it now, before the details fade.
+                  When an opportunity does come along, you&apos;re not starting from scratch.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Template Myth Section */}
         <section className="bg-white py-16 sm:py-20 px-4">
           <div className="max-w-6xl mx-auto">
@@ -133,7 +305,8 @@ export default async function HomePage() {
               </h2>
               <p className="text-slate-500 max-w-2xl mx-auto text-sm sm:text-base">
                 Over 99% of large employers run every resume through automated screening software before a human ever reads it.
-                That software doesn&apos;t care if your resume has two columns or a sidebar — it parses plain text and scores keyword relevance.
+                That software doesn&apos;t care if your resume has two columns or a sidebar — it parses plain text and scores keyword relevance.{' '}
+                <Brand /> focuses entirely on getting the right content in front of the right system.
               </p>
             </div>
 
@@ -159,7 +332,7 @@ export default async function HomePage() {
 
               {/* Easy Apply way */}
               <div className="bg-blue-50 rounded-2xl border border-blue-200 p-6">
-                <p className="text-sm font-semibold text-blue-600 uppercase tracking-widest mb-5">The Easy Apply way</p>
+                <p className="text-sm font-semibold text-blue-600 uppercase tracking-widest mb-5">The <Brand /> way</p>
                 <ul className="space-y-3">
                   {[
                     'One experience library, infinite tailored resumes',
@@ -229,23 +402,83 @@ export default async function HomePage() {
                 </div>
               ))}
             </div>
+
+            {/* "Not perfect?" nudge */}
+            <div className="mt-12 max-w-2xl mx-auto bg-blue-50 border border-blue-100 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-900 mb-0.5">Not quite right? Chat with Claude to fix it.</p>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  After generating, a built-in AI chat lets you refine any bullet, adjust the tone, trim to one page, or expand a section — all in plain English. Every change updates the PDF preview instantly.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Interview Prep + Q&A strip */}
+        <section className="bg-white py-14 sm:py-16 px-4 border-t border-slate-100">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-10">
+              <p className="text-xs font-semibold uppercase tracking-widest text-blue-600 mb-3">Beyond the resume</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">
+                Prep for the interview too.
+              </h2>
+              <p className="text-slate-500 max-w-xl mx-auto text-sm sm:text-base">
+                Your generated resume isn&apos;t the end of the road — <Brand /> keeps helping once you land the interview.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-4xl mx-auto">
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6">
+                <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center mb-4">
+                  <Target className="w-5 h-5 text-blue-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">AI Interview Prep</h3>
+                <p className="text-sm text-slate-500 leading-relaxed mb-3">
+                  Based on your actual generated resume and the job description, Easy Apply creates 8 tailored interview questions across 6 categories — Technical, Behavioral, Motivation, Situational, Background, and Curveball.
+                </p>
+                <p className="text-xs text-slate-400">
+                  Each question comes with 2–3 answer hints grounded in your resume, so you know exactly what to reference in your response.
+                </p>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6">
+                <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center mb-4">
+                  <MessageSquareText className="w-5 h-5 text-blue-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">Application Question Answers</h3>
+                <p className="text-sm text-slate-500 leading-relaxed mb-3">
+                  Most applications include open-ended questions — "Tell us about a challenge you overcame", "Why do you want this role?". Paste them in and get AI-written answers grounded entirely in your background.
+                </p>
+                <p className="text-xs text-slate-400">
+                  Answers respect your experience — nothing is made up. Toggle between short (2–3 sentences) and full paragraph responses with one click.
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 
         {/* Chrome Extension Section */}
-        <section className="bg-slate-900 text-white py-16 sm:py-20 px-4">
+        <section id="extension" className="bg-slate-900 text-white py-16 sm:py-20 px-4">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
-              <div className="inline-flex items-center gap-2 bg-blue-600/20 text-blue-300 text-xs font-semibold px-3 py-1.5 rounded-full mb-4 border border-blue-500/30">
+              <div className="inline-flex items-center gap-2 bg-blue-600/20 text-blue-300 text-xs font-semibold px-3 py-1.5 rounded-full mb-3 border border-blue-500/30">
                 <span className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
                 Chrome Extension
+              </div>
+              {/* Coming soon banner */}
+              <div className="inline-flex items-center gap-2 bg-amber-500/15 text-amber-300 text-xs font-medium px-4 py-2 rounded-full mb-6 border border-amber-500/25">
+                <span>🚧</span>
+                <span>Coming soon — <span className="italic">blame Google for the review delay</span></span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold mb-4">
                 One click from any job board.
               </h2>
               <p className="text-white/60 max-w-2xl mx-auto text-sm sm:text-base">
-                Once you&apos;re set up, the daily workflow takes under a minute. Browse LinkedIn, Indeed,
-                or anywhere else — the extension brings your experience library with it.
+                Open any job posting in Chrome, click the extension, and it reads the entire tab for you —
+                job title, company, description, even application questions — no copy-pasting, no back-and-forth.
+                Your experience library is already there. Tailored resume in under a minute.
               </p>
             </div>
 
@@ -264,7 +497,7 @@ export default async function HomePage() {
                   icon: MousePointerClick,
                   step: '02',
                   title: 'Click the extension',
-                  description: 'It reads the job title, company, and description automatically. No copy-pasting required.',
+                  description: 'It reads your active tab — job title, company, full description, and application questions. No copy-pasting.',
                   color: 'text-violet-400',
                   bg: 'bg-violet-600/10 border-violet-500/20',
                 },
@@ -336,7 +569,7 @@ export default async function HomePage() {
               Ready to apply smarter?
             </h2>
             <p className="text-white/80 mb-8 text-base sm:text-lg">
-              Join job seekers who use Easy Apply to tailor every application and land more interviews.
+              Join job seekers who use <Brand /> to tailor every application and land more interviews.
             </p>
             <Link
               href="/sign-up"
@@ -353,7 +586,7 @@ export default async function HomePage() {
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-blue-400" />
-              <span className="font-semibold text-white">Easy Apply</span>
+              <Brand className="font-semibold text-white" />
             </div>
             <p className="text-sm text-center sm:text-right">
               &copy; {new Date().getFullYear()} Easy Apply. All rights reserved.

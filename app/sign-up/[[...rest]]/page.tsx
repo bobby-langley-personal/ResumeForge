@@ -3,9 +3,11 @@ import { SignUp } from '@clerk/nextjs';
 export default function SignUpPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-      {/* ResumeForge Wordmark */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground text-center">ResumeForge</h1>
+      {/* Wordmark */}
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-bold text-foreground">
+          Easy Apply<sup className="text-blue-500 text-sm font-bold ml-0.5 align-super">AI</sup>
+        </h1>
       </div>
       
       <SignUp 

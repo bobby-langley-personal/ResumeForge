@@ -25,14 +25,14 @@ Use these terms consistently in all user-facing text:
 | The page at `/` | "Home" (goal selection / welcome screen) |
 | The page at `/tailor` | "Tailor New Resume" (generation form) |
 | The page at `/dashboard` | "AI Resumes" |
-| The page at `/resumes` | "My Profile" (nav label) / "My Documents" (page heading) |
+| The page at `/resumes` | "My Experience" (nav label) / "My Documents" (page heading) |
 | The page at `/polished-resume` | "Polished Resume" |
 | A generated resume record | "resume" (not "application") |
 | The library context picker | "Load from My Documents" |
 
-Nav labels (hamburger menu): "Tailor New Resume" → `/tailor`, "AI Resumes" → `/dashboard`, "My Profile" → `/resumes`.
+Nav labels (hamburger menu): "Tailor New Resume" → `/tailor`, "AI Resumes" → `/dashboard`, "My Experience" → `/resumes`.
 
-Never use "Dashboard", "Library", "application/s" (in UI copy), or "New Application" — these were replaced.
+Never use "Dashboard", "Library", "application/s" (in UI copy), "New Application", or "ResumeForge" — these were replaced. Product name is "Easy Apply" or "Easy Apply AI".
 
 ---
 
@@ -60,7 +60,7 @@ Current valid columns:
 
 **Status editing is intentionally removed from the UI** — do not re-add it.
 
-### Resumes Table (My Profile / library)
+### Resumes Table (My Experience / library)
 Current valid columns:
 - `id`, `user_id`, `title`, `content` (JSONB: `{ text: string, fileName?: string }`), `item_type`, `is_default`, `created_at`, `updated_at`
 - `item_type` values: `'resume' | 'cover_letter' | 'portfolio' | 'other'`
@@ -262,11 +262,11 @@ should only target unnecessary whitespace — never content.
 
 ---
 
-## My Profile / ExperiencePanel
+## My Experience / ExperiencePanel
 
 - `ExperiencePanel` (replaces old `ContextSelector`) — collapsible panel in the tailor form; fetches `/api/resumes`, auto-selects the default item as primary background doc; shows collapsed summary bar when loaded
 - Collapsed state: shows primary doc name + additional doc count with "Edit▾" button
-- Expanded state: primary doc dropdown, session-only upload (no save modal), additional context checkboxes, link to My Profile
+- Expanded state: primary doc dropdown, session-only upload (no save modal), additional context checkboxes, link to My Experience
 - Warning state when no docs loaded (amber icon + "No experience loaded")
 - `key={resetKey}` on `<ExperiencePanel>` in `app/tailor/page.tsx` — incrementing remounts and re-fetches
 - Additional context items appear in both analyze-fit and generate-documents prompts with source attribution
@@ -317,7 +317,7 @@ The home page is a server component that detects user state and routes according
 ## Navbar
 
 - Hamburger menu (`Menu` icon) is visible on **all screen sizes** for signed-in users — no always-visible nav links on desktop
-- Hamburger dropdown contains: Tailor New Resume (`/tailor`), AI Resumes (`/dashboard`), My Profile (`/resumes`), divider, Take the Tour, Light/Dark Mode toggle, divider, Feedback
+- Hamburger dropdown contains: Tailor New Resume (`/tailor`), AI Resumes (`/dashboard`), My Experience (`/resumes`), divider, Take the Tour, Light/Dark Mode toggle, divider, Feedback
 - Signed-out users see a persistent Sun/Moon toggle + Sign In button (no hamburger)
 - `FeedbackModal` is `dynamic` imported with `ssr: false` in both `Navbar.tsx` and `Footer.tsx`
 - **Logo link bug fix**: Logo uses `<a href="/">` (plain anchor) instead of Next.js `<Link href="/">` — forces a full page reload so the router cache does not serve a stale "no documents" WelcomeScreen to returning users
@@ -351,7 +351,7 @@ Contact info is stored in `user_profiles` (one row per user, upserted — not in
 - Returns `{ full_name, email, location, linkedin_url }` — a pre-filled form is shown for the user to review/edit
 - "Save" → `PUT /api/profile` → redirect to `/tailor`; "Skip for now" bypasses without saving
 
-**My Profile page (`/resumes`) — Contact Information section**
+**My Experience page (`/resumes`) — Contact Information section**
 - Collapsed by default; header shows name + email as a summary
 - Click chevron to expand and edit all 4 fields
 - Server-side: if `user_profiles` is empty for the user, `inferContactFromDocs` runs over the two most recent uploaded documents to pre-fill the form (merges fields across docs, first non-empty value wins)

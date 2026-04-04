@@ -32,7 +32,7 @@ const TIPS: Tip[] = [
             <li>Click your profile picture → "View Profile"</li>
             <li>Click the "More" button below your name</li>
             <li>Select "Save to PDF"</li>
-            <li>Upload the downloaded PDF to ResumeForge using the "Add New" button</li>
+            <li>Upload the downloaded PDF to Easy Apply using the "Add New" button</li>
           </ol>
         </div>
         <div>
@@ -94,7 +94,7 @@ const TIPS: Tip[] = [
           <ol className="list-decimal list-inside space-y-1">
             <li>Find a cover letter you've written that felt authentic</li>
             <li>Save it as a PDF or copy the text</li>
-            <li>Upload or paste it into ResumeForge</li>
+            <li>Upload or paste it into Easy Apply</li>
             <li>When generating, select it in "Additional context"</li>
           </ol>
         </div>
