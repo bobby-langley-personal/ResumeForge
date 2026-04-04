@@ -3,7 +3,7 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { supabaseServer } from '@/lib/supabase';
 import HomeRouter from '@/components/HomeRouter';
-import { ArrowRight, FileText, Sparkles, Target, X, Check } from 'lucide-react';
+import { ArrowRight, FileText, Sparkles, Target, X, Check, Globe, MousePointerClick, Zap, ShieldCheck } from 'lucide-react';
 
 export default async function HomePage() {
   const { userId } = await auth();
@@ -226,6 +226,103 @@ export default async function HomePage() {
                   </div>
                   <h3 className="text-lg font-semibold text-slate-900 mb-2">{item.title}</h3>
                   <p className="text-sm text-slate-500 leading-relaxed">{item.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Chrome Extension Section */}
+        <section className="bg-slate-900 text-white py-16 sm:py-20 px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 bg-blue-600/20 text-blue-300 text-xs font-semibold px-3 py-1.5 rounded-full mb-4 border border-blue-500/30">
+                <span className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
+                Chrome Extension
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-4">
+                One click from any job board.
+              </h2>
+              <p className="text-white/60 max-w-2xl mx-auto text-sm sm:text-base">
+                Once you&apos;re set up, the daily workflow takes under a minute. Browse LinkedIn, Indeed,
+                or anywhere else — the extension brings your experience library with it.
+              </p>
+            </div>
+
+            {/* Step flow */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto mb-12">
+              {[
+                {
+                  icon: Globe,
+                  step: '01',
+                  title: 'Browse any job board',
+                  description: 'LinkedIn, Indeed, Glassdoor, company sites — the extension works wherever job postings live.',
+                  color: 'text-blue-400',
+                  bg: 'bg-blue-600/10 border-blue-500/20',
+                },
+                {
+                  icon: MousePointerClick,
+                  step: '02',
+                  title: 'Click the extension',
+                  description: 'It reads the job title, company, and description automatically. No copy-pasting required.',
+                  color: 'text-violet-400',
+                  bg: 'bg-violet-600/10 border-violet-500/20',
+                },
+                {
+                  icon: Zap,
+                  step: '03',
+                  title: 'Tailored resume, instantly',
+                  description: 'Your library generates a role-specific resume and cover letter. Review, download, apply.',
+                  color: 'text-emerald-400',
+                  bg: 'bg-emerald-600/10 border-emerald-500/20',
+                },
+              ].map((item, i) => (
+                <div key={item.step} className="relative">
+                  {/* Connector line between cards on desktop */}
+                  {i < 2 && (
+                    <div className="hidden sm:block absolute top-8 -right-2 w-4 h-px bg-white/10 z-10" />
+                  )}
+                  <div className={`rounded-2xl border p-5 ${item.bg}`}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center flex-shrink-0">
+                        <item.icon className={`w-4 h-4 ${item.color}`} />
+                      </div>
+                      <span className="text-xs font-bold text-white/30 tracking-widest">{item.step}</span>
+                    </div>
+                    <h3 className="text-sm font-semibold text-white mb-1.5">{item.title}</h3>
+                    <p className="text-xs text-white/50 leading-relaxed">{item.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Trust / control callouts */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto border-t border-white/10 pt-10">
+              {[
+                {
+                  icon: ShieldCheck,
+                  title: 'You stay in control',
+                  description: 'Review every resume before downloading. Change anything you want — the AI is a starting point, not the final word.',
+                },
+                {
+                  icon: FileText,
+                  title: 'Your words, AI-shaped',
+                  description: 'Easy Apply only uses your actual background. Nothing is invented or padded — it surfaces what\'s already there and frames it for the role.',
+                },
+                {
+                  icon: Target,
+                  title: 'Better than a template site',
+                  description: 'Template tools give everyone the same structure. Easy Apply gives you a resume that\'s specifically written for the job you\'re actually applying to.',
+                },
+              ].map((item) => (
+                <div key={item.title} className="flex gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <item.icon className="w-4 h-4 text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white mb-1">{item.title}</p>
+                    <p className="text-xs text-white/50 leading-relaxed">{item.description}</p>
+                  </div>
                 </div>
               ))}
             </div>
