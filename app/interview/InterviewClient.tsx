@@ -624,7 +624,7 @@ export default function InterviewClient() {
 
         <div className="flex gap-3">
           <Button onClick={() => handleUseExistingDocs(true)} className="flex-1">
-            Yes, use my documents
+            Yes, use my experience
           </Button>
           <Button variant="outline" onClick={() => handleUseExistingDocs(false)} className="flex-1">
             Start from scratch
@@ -1028,7 +1028,7 @@ export default function InterviewClient() {
       <div className="max-w-2xl mx-auto space-y-6 py-8">
         <div className="space-y-1">
           <h2 className="text-xl font-bold text-foreground">Your Experience Document</h2>
-          <p className="text-sm text-muted-foreground">Review, then save to My Documents.</p>
+          <p className="text-sm text-muted-foreground">Review, then save to My Experience.</p>
         </div>
 
         <div className="bg-card border border-border rounded-xl p-5 max-h-[50vh] overflow-y-auto">
@@ -1050,7 +1050,7 @@ export default function InterviewClient() {
               {saving ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</>
               ) : (
-                <><BookOpen className="w-4 h-4 mr-2" />Save to My Documents</>
+                <><BookOpen className="w-4 h-4 mr-2" />Save to My Experience</>
               )}
             </Button>
             <Button variant="outline" onClick={copyToClipboard}>

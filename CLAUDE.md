@@ -25,10 +25,12 @@ Use these terms consistently in all user-facing text:
 | The page at `/` | "Home" (goal selection / welcome screen) |
 | The page at `/tailor` | "Tailor New Resume" (generation form) |
 | The page at `/dashboard` | "AI Resumes" |
-| The page at `/resumes` | "My Experience" (nav label) / "My Documents" (page heading) |
+| The page at `/resumes` | "My Experience" (nav label and page heading) |
 | The page at `/polished-resume` | "Polished Resume" |
 | A generated resume record | "resume" (not "application") |
-| The library context picker | "Load from My Documents" |
+| The library context picker | "Load from My Experience" |
+| Saved items in the library | "experience files" (not "documents") |
+| Save action | "Save to My Experience" (not "Save to My Documents") |
 
 Nav labels (hamburger menu): "Tailor New Resume" → `/tailor`, "AI Resumes" → `/dashboard`, "My Experience" → `/resumes`.
 
@@ -95,7 +97,7 @@ Added in migration 012. Stores contact info extracted from uploaded resumes.
 | `GET /api/search-jobs` | Node | JSearch (RapidAPI) job search; checks `api_usage` table before calling; returns `{ jobs: JobResult[] }`; 429 when monthly limit hit |
 | `POST /api/extract-resume` | Node | PDF/DOCX text extraction |
 | `POST /api/download-pdf/[type]` | Node | PDF generation and download (`/resume`, `/cover-letter`, `/polished`); all three prefer `profile.full_name` over Clerk name for `candidateName` |
-| `GET /api/resumes` | Node | List My Documents (default first, then created_at desc) |
+| `GET /api/resumes` | Node | List My Experience (default first, then created_at desc) |
 | `POST /api/resumes` | Node | Save new document to library |
 | `GET /api/applications/[id]` | Node | Fetch application content + candidateName for PDF preview |
 | `DELETE /api/applications` | Node | Bulk delete by `ids` array |
@@ -112,7 +114,7 @@ Added in migration 012. Stores contact info extracted from uploaded resumes.
 | `GET /api/interview/sessions` | Node | Fetch most recent `draft` session for current user; returns `{ session }` (null if none) |
 | `POST /api/interview/sessions` | Node | Create a new draft session; returns `{ id }` |
 | `PATCH /api/interview/sessions/[id]` | Node | Update session state (`completed_roles`, `draft_state`, `status`) |
-| `DELETE /api/interview/sessions/[id]` | Node | Delete session (on discard or after saving to My Documents) |
+| `DELETE /api/interview/sessions/[id]` | Node | Delete session (on discard or after saving to My Experience) |
 
 ### generate-documents request fields
 - `company`, `jobTitle`, `jobDescription`, `backgroundExperience` — required
@@ -121,7 +123,7 @@ Added in migration 012. Stores contact info extracted from uploaded resumes.
 - `fitAnalysis` — pre-computed FitAnalysis (skips re-analysis)
 - `includeCoverLetter` — boolean (default false)
 - `includeSummary` — boolean (default false); when false the prompt instructs the AI to omit the SUMMARY section entirely
-- `additionalContext` — array of `{ title, type, text }` from My Documents
+- `additionalContext` — array of `{ title, type, text }` from My Experience
 - `questions` — optional `string[]` of application questions (max 5)
 - `shortResponse` — boolean, if true answers are 2-3 sentences instead of paragraphs
 
@@ -294,7 +296,7 @@ The home page is a server component that detects user state and routes according
 
 **`WelcomeScreen`** — Heading: "Let's build your Experience Library". Primary upload card (upload resume PDF/DOCX — extract → save as default `is_default: true` → contact confirmation form → `/tailor`). Collapsible "What else can I add?" tips panel. Negative path: "Don't have a resume? Let's make one with AI →" links to `/interview`. After first resume upload, calls `/api/extract-contact` to pre-fill a contact confirmation form (name, email, location, LinkedIn); user reviews/edits and saves → `PUT /api/profile` → redirects to `/tailor`; "Skip for now" bypasses without saving.
 
-**`GoalScreen`** — 5 cards: Tailor Now (`/tailor`), Polished Resume (`/polished-resume`), Add More Experience (`/interview`), Prep for Interview (`/dashboard`, shown only if `hasApplications`), Manage My Documents (`/resumes`)
+**`GoalScreen`** — 5 cards: Tailor Now (`/tailor`), Polished Resume (`/polished-resume`), Add More Experience (`/interview`), Prep for Interview (`/dashboard`, shown only if `hasApplications`), Manage My Experience (`/resumes`)
 
 **`HomeRouter`** is a client component that reads localStorage and renders the right screen. Home page state is fetched server-side (documents + applications count from Supabase) on every visit.
 
@@ -337,7 +339,7 @@ The home page is a server component that detects user state and routes according
   2. **Configure** — page limit radio (1/2/custom, max 4) + optional role type hint
   3. **Generate** — animated progress; calls `POST /api/generate-polished-resume`
   4. **Review** — `InlinePDFViewer` + "Edit text" textarea toggle + AI chat panel (quick chips + free-form input using `POST /api/base-resume-chat`)
-- Save options: "Save to My Documents" (`item_type: 'resume'`), "Set as default document" (`is_default: true`), "Just download" via `POST /api/download-pdf/polished`
+- Save options: "Save to My Experience" (`item_type: 'resume'`), "Set as default document" (`is_default: true`), "Just download" via `POST /api/download-pdf/polished`
 - Diamond icon as visual marker throughout
 
 ---
@@ -391,11 +393,11 @@ All feature/fix branches: `claude/issue-{number}-{YYYYMMDD}-{HHMM}` — Vercel s
 - **Thinking indicator:** animated dots between user message and AI response
 - **CHOICES: parsing:** Claude ends messages with `CHOICES: A | B | C`; UI renders as quick-reply pill buttons; "Move to next role" choice triggers role completion
 - "Skip role" also available at any time
-- **Session persistence:** draft auto-saved to `interview_sessions` table after each role completes + on "Save & exit"; deleted on discard or after saving to My Documents; enables cross-device resume (mobile ↔ browser)
+- **Session persistence:** draft auto-saved to `interview_sessions` table after each role completes + on "Save & exit"; deleted on discard or after saving to My Experience; enables cross-device resume (mobile ↔ browser)
 - On complete, calls `POST /api/interview/generate` with full chat history per role → renders doc in preview pane
-- "Save to My Documents" → `POST /api/resumes` with `item_type: 'other'`, then deletes session, redirects to `/resumes`
+- "Save to My Experience" → `POST /api/resumes` with `item_type: 'other'`, then deletes session, redirects to `/resumes`
 - "Copy to clipboard" copies raw text
-- Linked from My Documents page header; also add link from TipsPanel "Expanded Work History" tip once issue #69 is merged
+- Linked from My Experience page header; also add link from TipsPanel "Expanded Work History" tip once issue #69 is merged
 
 ### Interview API routes
 | Route | Purpose |

@@ -76,7 +76,7 @@ const TIPS: Tip[] = [
             Use the AI Experience Interview
           </Link>{' '}
           — it walks you through each role with adaptive questions and generates a polished experience
-          doc you can save directly to My Documents.
+          doc you can save directly to My Experience.
         </p>
       </div>
     ),

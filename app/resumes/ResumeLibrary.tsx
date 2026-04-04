@@ -248,7 +248,7 @@ export default function ResumeLibrary({ initialItems, profile: initialProfile }:
       </div>
 
       <div>
-        <h3 className="text-base font-semibold text-foreground mb-3">Context Documents</h3>
+        <h3 className="text-base font-semibold text-foreground mb-3">Experience Files</h3>
       <div className="flex items-center justify-between mb-6">
         <p className="text-sm text-muted-foreground">{items.length} saved item{items.length !== 1 ? 's' : ''}</p>
         <Button onClick={openAdd} title="Add a new resume or document to your library">
@@ -368,7 +368,7 @@ export default function ResumeLibrary({ initialItems, profile: initialProfile }:
 
             <div className="p-6 border-t border-border flex justify-end gap-3">
               <Button variant="outline" onClick={closeModal} title="Discard changes and close">Cancel</Button>
-              <Button onClick={handleSave} disabled={saving} title="Save this document to My Documents">
+              <Button onClick={handleSave} disabled={saving} title="Save to My Experience">
                 <Check className="w-4 h-4 mr-2" />
                 {saving ? 'Saving…' : 'Save'}
               </Button>

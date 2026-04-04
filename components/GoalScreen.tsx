@@ -102,8 +102,8 @@ export default function GoalScreen({ firstName, hasApplications }: Props) {
         />
         <GoalCard
           icon={<FileEdit className="w-5 h-5 text-foreground" />}
-          title="Manage my documents"
-          description="Upload, edit, or organize your saved resumes and context files"
+          title="Manage my experience"
+          description="Upload, edit, or organize your saved experience and context files"
           href="/resumes"
           cta="Open"
         />

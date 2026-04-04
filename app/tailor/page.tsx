@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { SignedIn, useUser } from '@clerk/nextjs';
 import dynamic from 'next/dynamic';
 import Navbar from '@/components/Navbar';
@@ -100,7 +101,17 @@ interface FormData {
 
 export default function Home() {
   const { user } = useUser();
+  const router = useRouter();
   const candidateName = user?.fullName ?? user?.firstName ?? '';
+
+  // Redirect to onboarding if the user has no experience files
+  useEffect(() => {
+    fetch('/api/resumes')
+      .then(r => r.json())
+      .then(data => { if (!Array.isArray(data) || data.length === 0) router.replace('/'); })
+      .catch(() => {}); // fail open — don't block on network error
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [uiState, setUIState] = useState<UIState>('idle');
   const [resetKey, setResetKey] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');

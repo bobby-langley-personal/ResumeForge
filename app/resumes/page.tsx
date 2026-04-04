@@ -9,7 +9,7 @@ import { ArrowLeft } from 'lucide-react';
 import { ResumeItem } from '@/types/resume';
 import { inferContactFromDocs } from '@/lib/extract-contact';
 
-export const metadata = { title: 'My Documents — Easy Apply AI' };
+export const metadata = { title: 'My Experience — Easy Apply AI' };
 
 export default async function ResumesPage() {
   const { userId } = await auth();
@@ -61,7 +61,7 @@ export default async function ResumesPage() {
           <div>
             <h2 className="text-2xl font-bold text-foreground">My Experience</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Your documents and context files
+              Your experience files and context
             </p>
           </div>
           <Link href="/interview">

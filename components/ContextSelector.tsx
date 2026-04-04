@@ -65,7 +65,7 @@ export default function ContextSelector({ onLoadBackground, onAdditionalContextC
         <p className="text-muted-foreground leading-snug">
           Save your resume to{' '}
           <Link href="/resumes" className="text-primary hover:underline font-medium">
-            My Documents
+            My Experience
           </Link>{' '}
           and it will auto-load here every time.
         </p>
@@ -79,7 +79,7 @@ export default function ContextSelector({ onLoadBackground, onAdditionalContextC
     <div id="tour-context" className="space-y-2 p-3 rounded-lg border border-border bg-muted/30">
       <div className="flex items-center gap-2 text-sm font-medium text-foreground">
         <BookOpen className="w-4 h-4" />
-        Load from My Documents
+        Load from My Experience
       </div>
 
       {/* Primary background selector */}

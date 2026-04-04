@@ -219,14 +219,14 @@ export default function PolishedResumeCreator({ sourceDocuments }: Props) {
             Create a Polished Resume
           </h2>
           <p className="text-sm text-muted-foreground">
-            Select the documents to build from. We&apos;ll generate a strong, standalone resume ready to send.
+            Select your experience files to build from. We&apos;ll generate a strong, standalone resume ready to send.
           </p>
         </div>
 
         {sourceDocuments.length === 0 ? (
           <div className="p-6 border border-dashed border-border rounded-xl text-center space-y-3">
-            <p className="text-muted-foreground">No documents found.</p>
-            <Link href="/resumes"><Button>Add documents to My Experience →</Button></Link>
+            <p className="text-muted-foreground">No experience files found.</p>
+            <Link href="/resumes"><Button>Add to My Experience →</Button></Link>
           </div>
         ) : (
           <div className="space-y-2">
@@ -486,7 +486,7 @@ export default function PolishedResumeCreator({ sourceDocuments }: Props) {
                   disabled={isSaving}
                 >
                   {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  Save to My Documents
+                  Save to My Experience
                 </Button>
                 <Button
                   variant="outline"
