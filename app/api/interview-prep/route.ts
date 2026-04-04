@@ -83,7 +83,9 @@ ${generatedResume}${toughQuestions?.length ? `\n\nTOUGH APPLICATION QUESTIONS TO
     });
 
     const rawText = response.content[0].type === 'text' ? response.content[0].text : '';
-    const jsonText = rawText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+    // Haiku wraps JSON in markdown fences despite instructions — strip fences and extract object
+    const stripped = rawText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+    const jsonText = stripped.match(/\{[\s\S]*\}/)?.[0] ?? stripped;
 
     let prep: InterviewPrep;
     try {

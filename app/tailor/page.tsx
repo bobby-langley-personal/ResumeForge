@@ -512,8 +512,8 @@ export default function Home() {
                 jobTitle={pendingFormData?.jobTitle ?? ''}
                 onClose={resetForm}
                 actions={
-                  <div id="tour-generate" className="flex flex-col sm:flex-row gap-3 pt-2">
-                    <Button size="lg" className="flex-1" onClick={handleGenerateDocuments}>
+                  <div id="tour-generate" className="flex flex-col items-center sm:flex-row sm:items-stretch gap-3 pt-2">
+                    <Button size="lg" className="sm:flex-1" onClick={handleGenerateDocuments}>
                       {includeCoverLetter ? 'Generate Resume & Cover Letter' : 'Generate Resume'}
                     </Button>
                     <Button variant="outline" size="lg" onClick={resetForm}>Start Over</Button>

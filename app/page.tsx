@@ -173,6 +173,69 @@ export default async function HomePage() {
           </div>
         </section>
 
+        {/* Template Myth Section */}
+        <section className="bg-white py-16 sm:py-20 px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-10">
+              <p className="text-xs font-semibold uppercase tracking-widest text-blue-600 mb-3">A different approach</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4">
+                Your template doesn&apos;t get you the job.{' '}
+                <span className="text-blue-600">Your content does.</span>
+              </h2>
+              <p className="text-slate-500 max-w-2xl mx-auto text-sm sm:text-base">
+                Over 99% of large employers run every resume through automated screening software before a human ever reads it.
+                That software doesn&apos;t care if your resume has two columns or a sidebar — it parses plain text and scores keyword relevance.{' '}
+                <Brand /> focuses entirely on getting the right content in front of the right system.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              {/* Old way */}
+              <div className="bg-slate-50 rounded-2xl border border-slate-200 p-6">
+                <p className="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-5">The old way</p>
+                <ul className="space-y-3">
+                  {[
+                    'Pick from 15 resume templates',
+                    'Agonize over fonts and column layouts',
+                    'Send the same resume to every job',
+                    'Wonder why the callbacks never come',
+                    'Pay for a "premium" template that ATS ignores',
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-3 text-sm text-slate-500">
+                      <X className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Easy Apply way */}
+              <div className="bg-blue-50 rounded-2xl border border-blue-200 p-6">
+                <p className="text-sm font-semibold text-blue-600 uppercase tracking-widest mb-5">The <Brand /> way</p>
+                <ul className="space-y-3">
+                  {[
+                    'One experience library, infinite tailored resumes',
+                    'AI matches your keywords to each job description',
+                    'Content-first — structure that both ATS and humans read',
+                    'Fit analysis shows your gaps before you apply',
+                    'Template-agnostic output that works everywhere',
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-3 text-sm text-slate-700">
+                      <Check className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <p className="text-center text-xs text-slate-400 mt-6 max-w-xl mx-auto">
+              ATS screening statistics sourced from Jobscan research. &ldquo;Template-agnostic&rdquo; means Easy Apply focuses entirely on
+              getting the right content in front of the right system — not selling you a layout.
+            </p>
+          </div>
+        </section>
+
         {/* Experience / Interview Section */}
         <section className="bg-white py-16 sm:py-20 px-4">
           <div className="max-w-6xl mx-auto">
@@ -291,69 +354,6 @@ export default async function HomePage() {
                 </p>
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* Template Myth Section */}
-        <section className="bg-white py-16 sm:py-20 px-4">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-10">
-              <p className="text-xs font-semibold uppercase tracking-widest text-blue-600 mb-3">A different approach</p>
-              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4">
-                Your template doesn&apos;t get you the job.{' '}
-                <span className="text-blue-600">Your content does.</span>
-              </h2>
-              <p className="text-slate-500 max-w-2xl mx-auto text-sm sm:text-base">
-                Over 99% of large employers run every resume through automated screening software before a human ever reads it.
-                That software doesn&apos;t care if your resume has two columns or a sidebar — it parses plain text and scores keyword relevance.{' '}
-                <Brand /> focuses entirely on getting the right content in front of the right system.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-              {/* Old way */}
-              <div className="bg-slate-50 rounded-2xl border border-slate-200 p-6">
-                <p className="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-5">The old way</p>
-                <ul className="space-y-3">
-                  {[
-                    'Pick from 15 resume templates',
-                    'Agonize over fonts and column layouts',
-                    'Send the same resume to every job',
-                    'Wonder why the callbacks never come',
-                    'Pay for a "premium" template that ATS ignores',
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-3 text-sm text-slate-500">
-                      <X className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Easy Apply way */}
-              <div className="bg-blue-50 rounded-2xl border border-blue-200 p-6">
-                <p className="text-sm font-semibold text-blue-600 uppercase tracking-widest mb-5">The <Brand /> way</p>
-                <ul className="space-y-3">
-                  {[
-                    'One experience library, infinite tailored resumes',
-                    'AI matches your keywords to each job description',
-                    'Content-first — structure that both ATS and humans read',
-                    'Fit analysis shows your gaps before you apply',
-                    'Template-agnostic output that works everywhere',
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-3 text-sm text-slate-700">
-                      <Check className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            <p className="text-center text-xs text-slate-400 mt-6 max-w-xl mx-auto">
-              ATS screening statistics sourced from Jobscan research. &ldquo;Template-agnostic&rdquo; means Easy Apply focuses entirely on
-              getting the right content in front of the right system — not selling you a layout.
-            </p>
           </div>
         </section>
 

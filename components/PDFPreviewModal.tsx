@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BlobProvider } from '@react-pdf/renderer';
-import { Download, X } from 'lucide-react';
+import { Download, X, ExternalLink, FileText } from 'lucide-react';
 import ResumePDF from '@/lib/pdf/ResumePDF';
 import CoverLetterPDF from '@/lib/pdf/CoverLetterPDF';
 
@@ -29,6 +29,14 @@ type PDFPreviewModalProps = (ResumePreviewProps | CoverLetterPreviewProps) & {
 export default function PDFPreviewModal(props: PDFPreviewModalProps) {
   const { onClose } = props;
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const ua = navigator.userAgent;
+    setIsMobile(
+      /iPhone|iPad|iPod|Android/i.test(ua) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    );
+  }, []);
 
   const slug = (s: string) => s.replace(/\bat\b/gi, '').replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
   const filename =
@@ -98,6 +106,29 @@ export default function PDFPreviewModal(props: PDFPreviewModalProps) {
                 return (
                   <div className="flex items-center justify-center h-full text-sm text-destructive">
                     Preview failed. Try downloading instead.
+                  </div>
+                );
+              }
+              // Mobile browsers cannot render PDF blob URLs in iframes — open in new tab instead
+              if (isMobile) {
+                return (
+                  <div className="flex flex-col items-center justify-center h-full gap-4 px-6">
+                    <FileText className="w-12 h-12 text-muted-foreground" />
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-foreground mb-1">PDF ready</p>
+                      <p className="text-xs text-muted-foreground mb-4">
+                        Inline preview isn&apos;t supported on iOS — tap below to open in Safari.
+                      </p>
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-semibold px-5 py-2.5 rounded-lg"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Open PDF
+                      </a>
+                    </div>
                   </div>
                 );
               }
