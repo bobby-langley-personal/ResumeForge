@@ -103,6 +103,7 @@ export default function WelcomeScreen() {
   // Upload step state
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [isDragOver, setIsDragOver] = useState(false);
   const [tipsOpen, setTipsOpen] = useState(false);
 
   // Contact step state
@@ -112,9 +113,7 @@ export default function WelcomeScreen() {
   const [isSavingContact, setIsSavingContact] = useState(false);
   const [contactError, setContactError] = useState('');
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const processFile = async (file: File) => {
     setIsUploading(true);
     setUploadError('');
     try {
@@ -143,8 +142,27 @@ export default function WelcomeScreen() {
       setUploadError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
     } finally {
       setIsUploading(false);
-      e.target.value = '';
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    processFile(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (isUploading) return;
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    if (!file.name.match(/\.(pdf|docx)$/i)) {
+      setUploadError('Please upload a PDF or DOCX file');
+      return;
+    }
+    processFile(file);
   };
 
   const handleSaveContact = async () => {
@@ -257,7 +275,16 @@ export default function WelcomeScreen() {
       </div>
 
       {/* Primary upload card */}
-      <div className="border border-primary/40 bg-primary/5 rounded-xl p-5">
+      <div
+        className={`border-2 rounded-xl p-5 transition-colors ${
+          isDragOver
+            ? 'border-primary bg-primary/10'
+            : 'border-primary/40 bg-primary/5'
+        }`}
+        onDragOver={(e) => { e.preventDefault(); if (!isUploading) setIsDragOver(true); }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={handleDrop}
+      >
         <input
           ref={fileInputRef}
           type="file"
@@ -268,12 +295,16 @@ export default function WelcomeScreen() {
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
             <div className="mt-0.5 p-2 rounded-lg bg-muted shrink-0">
-              <Upload className="w-5 h-5 text-foreground" />
+              <Upload className={`w-5 h-5 ${isDragOver ? 'text-primary' : 'text-foreground'}`} />
             </div>
             <div>
-              <p className="font-medium text-foreground">Upload your resume</p>
+              <p className="font-medium text-foreground">
+                {isDragOver ? 'Drop to upload' : 'Upload your resume'}
+              </p>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Upload one or more of your most recent resumes to start — PDF or DOCX
+                {isDragOver
+                  ? 'Release to add this file to your Experience Library'
+                  : 'Drag and drop or click Upload — PDF or DOCX'}
               </p>
             </div>
           </div>

@@ -1,6 +1,6 @@
 # Types and Interfaces
 
-Current type definitions for the ResumeForge codebase. This is the source of truth for database columns and shared interfaces.
+Current type definitions for the Easy Apply AI codebase. This is the source of truth for database columns and shared interfaces.
 
 ---
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,8 +42,10 @@ export default function ResumeLibrary({ initialItems, profile: initialProfile }:
   const [itemType, setItemType] = useState<ItemType>('resume');
   const [isDefault, setIsDefault] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleProfileSave = async () => {
     setProfileSaving(true);
@@ -92,9 +94,7 @@ export default function ResumeLibrary({ initialItems, profile: initialProfile }:
 
   const closeModal = () => { setModal(null); setEditingItem(null); };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const processFile = async (file: File) => {
     setIsUploading(true);
     setError('');
     try {
@@ -109,8 +109,27 @@ export default function ResumeLibrary({ initialItems, profile: initialProfile }:
       setError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
       setIsUploading(false);
-      e.target.value = '';
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    processFile(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (isUploading) return;
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    if (!file.name.match(/\.(pdf|docx)$/i)) {
+      setError('Please upload a PDF or DOCX file');
+      return;
+    }
+    processFile(file);
   };
 
   const handleSave = async () => {
@@ -341,11 +360,23 @@ export default function ResumeLibrary({ initialItems, profile: initialProfile }:
               {/* File upload */}
               <div className="space-y-1.5">
                 <Label>Upload file (PDF or DOCX) — or paste below</Label>
-                <label className="flex items-center gap-2 cursor-pointer border border-dashed border-border rounded-lg p-3 hover:bg-muted/50 transition-colors text-sm text-muted-foreground">
-                  <Upload className="w-4 h-4 shrink-0" />
-                  <span>{isUploading ? 'Extracting text…' : 'Click to upload file'}</span>
-                  <input type="file" accept=".pdf,.docx" className="hidden" onChange={handleFileUpload} disabled={isUploading} />
-                </label>
+                <div
+                  onDragOver={(e) => { e.preventDefault(); if (!isUploading) setIsDragOver(true); }}
+                  onDragLeave={() => setIsDragOver(false)}
+                  onDrop={handleDrop}
+                >
+                  <label
+                    className={`flex items-center gap-2 cursor-pointer rounded-lg p-3 transition-colors text-sm border-2 border-dashed ${
+                      isDragOver
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border hover:bg-muted/50 text-muted-foreground'
+                    } ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
+                  >
+                    <Upload className="w-4 h-4 shrink-0" />
+                    <span>{isUploading ? 'Extracting text…' : isDragOver ? 'Drop to upload' : 'Drop a file or click to browse'}</span>
+                    <input ref={fileInputRef} type="file" accept=".pdf,.docx" className="hidden" onChange={handleFileUpload} disabled={isUploading} />
+                  </label>
+                </div>
               </div>
 
               <div className="space-y-1.5">

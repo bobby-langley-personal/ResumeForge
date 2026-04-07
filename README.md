@@ -2,7 +2,7 @@
 
 AI-powered resume and cover letter generator that tailors your documents to specific job postings. Paste a job description (or import it from a URL), provide your background, and Easy Apply analyzes your fit, surfaces gaps, and generates a polished, targeted resume — and optionally a cover letter — in seconds.
 
-> **Branding note:** The codebase repo is named `ResumeForge` (legacy). The product is **Easy Apply AI**. All user-facing text uses "Easy Apply" / "Easy Apply AI". The Chrome extension (pending Google review) is named "Easy Apply".
+> **Branding note:** The GitHub repo is named `ResumeForge` (legacy name). The product is **Easy Apply AI**. All user-facing text uses "Easy Apply" / "Easy Apply AI". The Chrome extension (pending Google review) is named "Easy Apply".
 
 ---
 
@@ -90,11 +90,11 @@ Create a standalone, polished resume from your uploaded documents — not tailor
 - **4-step flow**: select source documents → configure page limit (1–4 pages) + optional role type hint → generate → review
 - AI synthesizes a clean, recruiter-ready resume from all selected documents
 - Review with **inline PDF preview**, "Edit text" textarea toggle, and AI chat refinement
-- Save to My Documents, set as default, or just download the PDF
+- Save to My Experience, set as default, or just download the PDF
 
 ### 5. My Experience (Resume Library — `/resumes`)
 A personal library of saved context artifacts:
-- Upload PDF or DOCX files — text is extracted server-side
+- Upload PDF or DOCX files — **drag and drop** or click to browse; text is extracted server-side
 - **Save to profile prompt** — when uploading a file on the home page, a modal asks if you'd like to save it to My Experience so it auto-loads next time
 - Categorize items: Resume, Cover Letter, Portfolio, Other
 - Mark one item as **Default** — it auto-loads as the primary background on the home page; if no item is marked default, the first document is used automatically
@@ -215,7 +215,7 @@ Easy Apply uses a CalVer-style version format: `{Major}.{YY}{M}.{DD}{H}` — e.g
 ```
 app/
   page.tsx                  # Home — landing page (signed-out) + goal/welcome routing (signed-in)
-  layout.tsx                # Root layout with Clerk provider, theme script, and Footer
+  layout.tsx                # Root layout with Clerk provider, theme script, Footer, and favicon/og metadata
   globals.css               # CSS variables for light/dark themes + .easy-apply-tour driver.js overrides
   dashboard/
     page.tsx                # AI Resumes dashboard (server component)
@@ -224,10 +224,12 @@ app/
     loading.tsx             # Skeleton UI for Suspense boundary
   resumes/
     page.tsx                # My Experience library page (server component); includes Contact Information section
-    ResumeLibrary.tsx       # Client component — upload, edit, set default
+    ResumeLibrary.tsx       # Client component — drag-and-drop or click upload, edit, set default
     loading.tsx             # Skeleton UI
+  tailor/
+    layout.tsx              # Route layout — exports metadata (title) for the client-component page
   polished-resume/
-    page.tsx                # Polished resume page — auth guard, fetches source docs
+    page.tsx                # Polished resume page — auth guard, fetches source docs; exports metadata
   interview/
     page.tsx                # Server wrapper — auth guard, renders InterviewClient
     InterviewClient.tsx     # Full adaptive interview state machine (10 steps)
@@ -285,6 +287,15 @@ types/
   interview-prep.ts         # InterviewPrep, InterviewQuestion, InterviewQuestionCategory
 
 supabase/migrations/        # SQL migration files (001–013)
+
+public/
+  favicon.ico               # App favicon
+  favicon-16x16.png         # 16×16 PNG favicon
+  favicon-32x32.png         # 32×32 PNG favicon
+  apple-touch-icon.png      # iOS home screen icon
+  android-chrome-192x192.png  # Android / PWA icon
+  android-chrome-512x512.png  # Android / PWA icon + og-image placeholder
+  site.webmanifest          # Web app manifest — name, icons, theme_color (#0a0a0a), display: standalone
 
 .env.local.example          # All required environment variables with comments
 ```

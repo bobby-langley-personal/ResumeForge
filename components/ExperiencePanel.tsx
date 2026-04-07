@@ -26,6 +26,7 @@ export default function ExperiencePanel({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState('');
   const [uploadError, setUploadError] = useState('');
+  const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -70,9 +71,7 @@ export default function ExperiencePanel({
     onAdditionalContextChange(items.filter(i => next.has(i.id)));
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const processFile = async (file: File) => {
     setIsUploading(true);
     setUploadError('');
     try {
@@ -90,6 +89,25 @@ export default function ExperiencePanel({
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    processFile(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (disabled || isUploading) return;
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    if (!file.name.match(/\.(pdf|docx)$/i)) {
+      setUploadError('Please upload a PDF or DOCX file');
+      return;
+    }
+    processFile(file);
   };
 
   if (!loaded) return null;
@@ -193,7 +211,11 @@ export default function ExperiencePanel({
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Upload a file
             </label>
-            <div>
+            <div
+              onDragOver={(e) => { e.preventDefault(); if (!disabled && !isUploading) setIsDragOver(true); }}
+              onDragLeave={() => setIsDragOver(false)}
+              onDrop={handleDrop}
+            >
               <input
                 ref={fileInputRef}
                 type="file"
@@ -205,12 +227,18 @@ export default function ExperiencePanel({
               />
               <label
                 htmlFor="exp-panel-file"
-                className={`inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md border border-dashed border-border cursor-pointer hover:bg-muted/40 transition-colors ${(disabled || isUploading) ? 'opacity-50 pointer-events-none' : ''}`}
+                className={`flex items-center justify-center gap-2 w-full px-3 py-3 text-sm rounded-md border-2 border-dashed cursor-pointer transition-colors ${
+                  isDragOver
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border hover:bg-muted/40 text-muted-foreground'
+                } ${(disabled || isUploading) ? 'opacity-50 pointer-events-none' : ''}`}
               >
                 {isUploading ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> Processing…</>
+                ) : isDragOver ? (
+                  <><Upload className="w-4 h-4" /> Drop to upload</>
                 ) : (
-                  <><Upload className="w-4 h-4" /> Upload PDF or DOCX</>
+                  <><Upload className="w-4 h-4" /> Drop a file or click to browse</>
                 )}
               </label>
               {uploadedFileName && !isUploading && (

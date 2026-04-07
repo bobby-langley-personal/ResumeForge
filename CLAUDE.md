@@ -1,6 +1,6 @@
 # Claude Development Guide
 
-This file contains important guidelines and rules for working with the ResumeForge codebase.
+This file contains important guidelines and rules for working with the Easy Apply AI codebase.
 
 ## Definition of Done
 
@@ -34,7 +34,7 @@ Use these terms consistently in all user-facing text:
 
 Nav labels (hamburger menu): "Tailor New Resume" → `/tailor`, "AI Resumes" → `/dashboard`, "My Experience" → `/resumes`.
 
-Never use "Dashboard", "Library", "application/s" (in UI copy), "New Application", or "ResumeForge" — these were replaced. Product name is "Easy Apply" or "Easy Apply AI".
+Never use "Dashboard", "Library", "application/s" (in UI copy), "New Application", or the legacy repo name "ResumeForge" — these were replaced. Product name is "Easy Apply" or "Easy Apply AI".
 
 ---
 
@@ -268,7 +268,7 @@ should only target unnecessary whitespace — never content.
 
 - `ExperiencePanel` (replaces old `ContextSelector`) — collapsible panel in the tailor form; fetches `/api/resumes`, auto-selects the default item as primary background doc; shows collapsed summary bar when loaded
 - Collapsed state: shows primary doc name + additional doc count with "Edit▾" button
-- Expanded state: primary doc dropdown, session-only upload (no save modal), additional context checkboxes, link to My Experience
+- Expanded state: primary doc dropdown, session-only upload (drag-and-drop or click to browse — no save modal), additional context checkboxes, link to My Experience
 - Warning state when no docs loaded (amber icon + "No experience loaded")
 - `key={resetKey}` on `<ExperiencePanel>` in `app/tailor/page.tsx` — incrementing remounts and re-fetches
 - Additional context items appear in both analyze-fit and generate-documents prompts with source attribution
@@ -284,6 +284,19 @@ should only target unnecessary whitespace — never content.
 
 ---
 
+## Favicon & App Icons
+
+All icons live in `/public/` and are referenced in `app/layout.tsx` metadata:
+- `favicon.ico` — legacy browser favicon
+- `favicon-16x16.png`, `favicon-32x32.png` — PNG favicons
+- `apple-touch-icon.png` — iOS home screen icon
+- `android-chrome-192x192.png`, `android-chrome-512x512.png` — Android / PWA icons; 512×512 also used as og-image placeholder
+- `site.webmanifest` — PWA manifest (`name: "Easy Apply AI"`, `theme_color: "#0a0a0a"`, `background_color: "#0a0a0a"`, `display: "standalone"`)
+
+The root `metadata` export in `layout.tsx` sets `icons`, `manifest`, and `openGraph` for all pages. Individual pages override `title` via their own `metadata` export (server components) or a co-located `layout.tsx` (client-component pages such as `/tailor`).
+
+---
+
 ## Home Page Routing (`/`)
 
 The home page is a server component that detects user state and routes accordingly:
@@ -294,7 +307,7 @@ The home page is a server component that detects user state and routes according
 | Returning user | Has ≥1 document | `GoalScreen` — 5 goal cards |
 | Skip flag set | `resumeforge_skip_goal_screen = 'true'` in localStorage | Redirect to `/tailor` |
 
-**`WelcomeScreen`** — Heading: "Let's build your Experience Library". Primary upload card (upload resume PDF/DOCX — extract → save as default `is_default: true` → contact confirmation form → `/tailor`). Collapsible "What else can I add?" tips panel. Negative path: "Don't have a resume? Let's make one with AI →" links to `/interview`. After first resume upload, calls `/api/extract-contact` to pre-fill a contact confirmation form (name, email, location, LinkedIn); user reviews/edits and saves → `PUT /api/profile` → redirects to `/tailor`; "Skip for now" bypasses without saving.
+**`WelcomeScreen`** — Heading: "Let's build your Experience Library". Primary upload card supports **drag-and-drop or click-to-upload** (PDF/DOCX) — card highlights with primary border on drag-over; extract → save as default `is_default: true` → contact confirmation form → `/tailor`. Collapsible "What else can I add?" tips panel. Negative path: "Don't have a resume? Let's make one with AI →" links to `/interview`. After first resume upload, calls `/api/extract-contact` to pre-fill a contact confirmation form (name, email, location, LinkedIn); user reviews/edits and saves → `PUT /api/profile` → redirects to `/tailor`; "Skip for now" bypasses without saving.
 
 **`GoalScreen`** — 5 cards: Tailor Now (`/tailor`), Polished Resume (`/polished-resume`), Add More Experience (`/interview`), Prep for Interview (`/dashboard`, shown only if `hasApplications`), Manage My Experience (`/resumes`)
 
