@@ -50,11 +50,13 @@ export default async function HomePage() {
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               {/* Extension badge — hidden on very small screens */}
               <a
-                href="#extension"
-                className="hidden sm:inline-flex items-center gap-1.5 bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-medium px-2.5 py-1 rounded-full hover:bg-amber-500/25 transition-colors whitespace-nowrap"
+                href="https://chromewebstore.google.com/detail/foodpkmblpknlbkmdnnlgjkbnnhmbcid?utm_source=item-share-cb"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden sm:inline-flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-medium px-2.5 py-1 rounded-full hover:bg-emerald-500/25 transition-colors whitespace-nowrap"
               >
-                <span>🔌</span>
-                <span>Chrome Extension OTW</span>
+                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                <span>Chrome Extension — Live</span>
               </a>
               <Link
                 href="/sign-in"
@@ -467,11 +469,16 @@ export default async function HomePage() {
                 <span className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
                 Chrome Extension
               </div>
-              {/* Coming soon banner */}
-              <div className="inline-flex items-center gap-2 bg-amber-500/15 text-amber-300 text-xs font-medium px-4 py-2 rounded-full mb-6 border border-amber-500/25">
-                <span>🚧</span>
-                <span>Coming soon — <span className="italic">blame Google for the review delay</span></span>
-              </div>
+              {/* Live on Chrome Web Store */}
+              <a
+                href="https://chromewebstore.google.com/detail/foodpkmblpknlbkmdnnlgjkbnnhmbcid?utm_source=item-share-cb"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-emerald-500/15 text-emerald-300 text-sm font-semibold px-5 py-2.5 rounded-full mb-6 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors"
+              >
+                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                Add to Chrome — It&apos;s Free
+              </a>
               <h2 className="text-2xl sm:text-3xl font-bold mb-4">
                 One click from any job board.
               </h2>

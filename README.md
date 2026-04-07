@@ -2,7 +2,7 @@
 
 AI-powered resume and cover letter generator that tailors your documents to specific job postings. Paste a job description (or import it from a URL), provide your background, and Easy Apply analyzes your fit, surfaces gaps, and generates a polished, targeted resume — and optionally a cover letter — in seconds.
 
-> **Branding note:** The GitHub repo is named `ResumeForge` (legacy name). The product is **Easy Apply AI**. All user-facing text uses "Easy Apply" / "Easy Apply AI". The Chrome extension (pending Google review) is named "Easy Apply".
+> **Branding note:** The GitHub repo is named `ResumeForge` (legacy name). The product is **Easy Apply AI**. All user-facing text uses "Easy Apply" / "Easy Apply AI". The Chrome extension is published on the Chrome Web Store as "Easy Apply".
 
 ---
 
@@ -165,15 +165,15 @@ After a resume is generated (or from the AI Resumes dashboard), users can genera
 - Available on the home page post-generation via a collapsible "Interview Prep" section, and on each card in the AI Resumes dashboard via the Target icon
 - Questions are saved to `applications.interview_prep` (JSONB) and loaded lazily to avoid breaking the dashboard if the migration hasn't run
 
-### 13. Chrome Extension (Pending Google Review)
-A companion Chrome extension for one-click resume generation from any job board:
+### 13. Chrome Extension
+A companion Chrome extension for one-click resume generation from any job board. **Now live on the Chrome Web Store.**
 - **Tab scraping** — reads the active tab's job title, company, full description, and application questions automatically; no copy-pasting required
 - Works on LinkedIn, Indeed, Glassdoor, Greenhouse, Lever, Workday, and direct company job pages
 - Side panel UI — generates tailored resume and cover letter without leaving the job posting
 - Same generation quality as the webapp — draws from your My Experience library
 - Follow-up questions panel: enter tough interview questions, get AI-written answers
 - Cancel button, elapsed generation timer, cover letter download
-- Currently distributed as a `.zip` for manual installation; pending Chrome Web Store review
+- Chrome Web Store: https://chromewebstore.google.com/detail/foodpkmblpknlbkmdnnlgjkbnnhmbcid
 
 ### 14. Versioning
 Easy Apply uses a CalVer-style version format: `{Major}.{YY}{M}.{DD}{H}` — e.g. `1.263.259` for version 1, March 2026, 25th day, 9am.
