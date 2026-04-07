@@ -23,46 +23,46 @@ export async function POST(req: NextRequest) {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
     const hasStructured = question?.length > 0 && options?.length > 0
-    const labels = ['A', 'B', 'C', 'D']
+    const labels = ['A', 'B', 'C', 'D', 'E']
 
     const prompt = hasStructured
-      ? `You are a cognitive aptitude test tutor. A user is taking an online aptitude test.
+      ? `You are a cognitive aptitude test tutor. A user is taking a CCAT (Criteria Cognitive Aptitude Test).
 
-DETECTED QUESTION:
+QUESTION:
 ${question}
 
-DETECTED OPTIONS:
+OPTIONS:
 ${options.map((o: string, i: number) => `${labels[i]}) ${o}`).join('\n')}
 
-Determine the correct answer and explain the reasoning clearly.
+Identify the correct answer and explain the reasoning clearly.
 
-Return ONLY valid JSON matching this exact shape (no markdown, no preamble):
+Return ONLY valid JSON (no markdown, no preamble):
 {"question":"${question.replace(/"/g, '\\"')}","options":${JSON.stringify(options)},"recommendedAnswer":"A","recommendedAnswerText":"the text of the correct option","reasoning":"2-3 sentences explaining why this is correct and the underlying pattern or logic to remember","confidence":"high"}`
-      : `You are a cognitive aptitude test tutor. A user is taking an online aptitude test and has shared the full text of their current test page.
+      : `You are a cognitive aptitude test tutor. A user is taking a CCAT (Criteria Cognitive Aptitude Test) and has shared their current test page text.
 
-PAGE TEXT (truncated to 6000 chars):
-${rawText?.slice(0, 6000)}
+PAGE TEXT:
+${rawText?.slice(0, 8000)}
 
 PAGE URL: ${url}
 
 Your task:
-1. Find the current test question on this page — it may be verbal, math/logic, or spatial reasoning.
-2. Extract the question and answer options (typically A/B/C/D or labeled 1-4).
+1. Find the current test question — it may be verbal, math/logic, or spatial reasoning.
+2. Extract the question stem and all answer options (CCAT uses A–E, 5 options).
 3. Identify the correct answer and explain the reasoning.
 
 Return ONLY valid JSON (no markdown, no preamble):
 {
   "question": "the question text",
-  "options": ["option A text", "option B text", "option C text", "option D text"],
+  "options": ["option A", "option B", "option C", "option D", "option E"],
   "recommendedAnswer": "A",
   "recommendedAnswerText": "the text of the correct option",
-  "reasoning": "2-3 sentences explaining why this answer is correct and the pattern/logic to remember for similar questions",
+  "reasoning": "2-3 sentences explaining why this is correct and the pattern/logic to remember",
   "confidence": "high"
 }
 
-If you cannot find a clear aptitude question, set confidence to "low" and explain in reasoning.
-options must have exactly 4 strings — pad with empty strings if fewer were found.
-recommendedAnswer must be A, B, C, or D.`
+CCAT questions have 5 options (A–E). Pad with empty strings only if fewer were genuinely found.
+recommendedAnswer must be A, B, C, D, or E.
+If you cannot find a clear question, set confidence to "low" and explain in reasoning.`
 
     const response = await anthropic.messages.create({
       model: HAIKU,
