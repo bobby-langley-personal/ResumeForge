@@ -36,6 +36,11 @@ ${options.map((o: string, i: number) => `${labels[i]}) ${o}`).join('\n')}
 
 Identify the correct answer and explain the reasoning clearly.
 
+CRITICAL RULES:
+- For word analogies (e.g. "A is to B as ___"): the DIRECTION of the relationship must match exactly. If A→B means "A is the adult form of B", the answer must also have X→Y where X is the adult form of Y — not reversed.
+- For math questions: compute precisely, do not estimate.
+- For antonyms: choose the word most nearly OPPOSITE, not a synonym.
+
 Return ONLY valid JSON (no markdown, no preamble):
 {"question":"${question.replace(/"/g, '\\"')}","options":${JSON.stringify(options)},"recommendedAnswer":"A","recommendedAnswerText":"the text of the correct option","reasoning":"2-3 sentences explaining why this is correct and the underlying pattern or logic to remember","confidence":"high"}`
       : `You are a cognitive aptitude test tutor. A user is taking a CCAT (Criteria Cognitive Aptitude Test) and has shared their current test page text.
