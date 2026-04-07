@@ -3,6 +3,58 @@ import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getModels } from '@/lib/models'
 
+const SYSTEM = `You are a cognitive aptitude test expert specializing in the CCAT (Criteria Cognitive Aptitude Test).
+
+CRITICAL RULES — follow exactly:
+- Word analogies: identify the PRECISE relationship direction. Example: "FROG is to TADPOLE" = adult→juvenile form. The answer pair must follow the SAME direction (adult→juvenile), not the reverse. Never pick the reversed direction.
+- Math: compute step by step with exact arithmetic — never estimate.
+- Antonyms: choose the word most nearly OPPOSITE in meaning.
+- Number series: state the exact rule (e.g. +3, ×2) before choosing.
+- Logic syllogisms: only conclude what is strictly entailed by the premises — no assumptions.
+
+Output ONLY valid JSON with no markdown, no explanation outside the JSON, no preamble.`
+
+function buildPrompt(question: string, options: string[], rawText: string, url: string): string {
+  const labels = ['A', 'B', 'C', 'D', 'E']
+  const hasStructured = question?.length > 0 && options?.length > 0
+
+  if (hasStructured) {
+    return `QUESTION:
+${question}
+
+OPTIONS:
+${options.map((o, i) => `${labels[i]}) ${o}`).join('\n')}
+
+Return ONLY valid JSON:
+{"question":${JSON.stringify(question)},"options":${JSON.stringify(options)},"recommendedAnswer":"<LETTER>","recommendedAnswerText":"<exact text of the correct option>","reasoning":"<2-3 sentences: state the rule/relationship and direction, apply it, explain why other options are wrong>","confidence":"<high|medium|low>"}`
+  }
+
+  return `PAGE TEXT:
+${rawText?.slice(0, 8000)}
+
+PAGE URL: ${url}
+
+Find the current CCAT question. Extract the question stem and all answer options (A–E).
+
+Return ONLY valid JSON:
+{"question":"<question text>","options":["<A>","<B>","<C>","<D>","<E>"],"recommendedAnswer":"<LETTER>","recommendedAnswerText":"<exact text>","reasoning":"<2-3 sentences>","confidence":"<high|medium|low>"}
+
+recommendedAnswer must be A, B, C, D, or E. Pad options with empty strings only if fewer than 5 exist.`
+}
+
+async function callModel(anthropic: Anthropic, model: string, system: string, prompt: string) {
+  const response = await anthropic.messages.create({
+    model,
+    max_tokens: 1024,
+    temperature: 0.1,
+    system,
+    messages: [{ role: 'user', content: prompt }],
+  })
+  const text = (response.content[0] as { type: string; text: string }).text
+  const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+  return JSON.parse(cleaned)
+}
+
 export async function POST(req: NextRequest) {
   try {
     if (!process.env.ANTHROPIC_API_KEY) {
@@ -19,68 +71,17 @@ export async function POST(req: NextRequest) {
       url: string
     }
 
-    const { HAIKU } = await getModels()
+    const { HAIKU, SONNET } = await getModels()
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    const prompt = buildPrompt(question, options, rawText, url)
 
-    const hasStructured = question?.length > 0 && options?.length > 0
-    const labels = ['A', 'B', 'C', 'D', 'E']
+    // Run both models in parallel
+    const [haikuResult, sonnetResult] = await Promise.all([
+      callModel(anthropic, HAIKU, SYSTEM, prompt).catch(e => ({ error: String(e) })),
+      callModel(anthropic, SONNET, SYSTEM, prompt).catch(e => ({ error: String(e) })),
+    ])
 
-    const prompt = hasStructured
-      ? `You are a cognitive aptitude test tutor. A user is taking a CCAT (Criteria Cognitive Aptitude Test).
-
-QUESTION:
-${question}
-
-OPTIONS:
-${options.map((o: string, i: number) => `${labels[i]}) ${o}`).join('\n')}
-
-Identify the correct answer and explain the reasoning clearly.
-
-CRITICAL RULES:
-- For word analogies (e.g. "A is to B as ___"): the DIRECTION of the relationship must match exactly. If A→B means "A is the adult form of B", the answer must also have X→Y where X is the adult form of Y — not reversed.
-- For math questions: compute precisely, do not estimate.
-- For antonyms: choose the word most nearly OPPOSITE, not a synonym.
-
-Return ONLY valid JSON (no markdown, no preamble):
-{"question":"${question.replace(/"/g, '\\"')}","options":${JSON.stringify(options)},"recommendedAnswer":"A","recommendedAnswerText":"the text of the correct option","reasoning":"2-3 sentences explaining why this is correct and the underlying pattern or logic to remember","confidence":"high"}`
-      : `You are a cognitive aptitude test tutor. A user is taking a CCAT (Criteria Cognitive Aptitude Test) and has shared their current test page text.
-
-PAGE TEXT:
-${rawText?.slice(0, 8000)}
-
-PAGE URL: ${url}
-
-Your task:
-1. Find the current test question — it may be verbal, math/logic, or spatial reasoning.
-2. Extract the question stem and all answer options (CCAT uses A–E, 5 options).
-3. Identify the correct answer and explain the reasoning.
-
-Return ONLY valid JSON (no markdown, no preamble):
-{
-  "question": "the question text",
-  "options": ["option A", "option B", "option C", "option D", "option E"],
-  "recommendedAnswer": "A",
-  "recommendedAnswerText": "the text of the correct option",
-  "reasoning": "2-3 sentences explaining why this is correct and the pattern/logic to remember",
-  "confidence": "high"
-}
-
-CCAT questions have 5 options (A–E). Pad with empty strings only if fewer were genuinely found.
-recommendedAnswer must be A, B, C, D, or E.
-If you cannot find a clear question, set confidence to "low" and explain in reasoning.`
-
-    const response = await anthropic.messages.create({
-      model: HAIKU,
-      max_tokens: 1024,
-      temperature: 0.1,
-      messages: [{ role: 'user', content: prompt }],
-    })
-
-    const text = (response.content[0] as { type: string; text: string }).text
-    const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    const result = JSON.parse(cleaned)
-
-    return Response.json(result)
+    return Response.json({ haiku: haikuResult, sonnet: sonnetResult })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     console.error('[ccat-assist] Error:', message)
