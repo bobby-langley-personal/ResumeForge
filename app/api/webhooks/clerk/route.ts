@@ -1,6 +1,6 @@
 import { Webhook } from 'svix';
 import { headers } from 'next/headers';
-import { WebhookEvent } from '@clerk/nextjs/server';
+import { WebhookEvent, clerkClient } from '@clerk/nextjs/server';
 import { supabaseServer } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
@@ -38,6 +38,55 @@ export async function POST(req: Request) {
   }
 
   const eventType = evt.type;
+
+  // session.created fires on every sign-in. Use it to migrate users who already
+  // created a prod Clerk account before the migration webhook was deployed.
+  if (eventType === 'session.created') {
+    const userId = (evt.data as { user_id: string }).user_id;
+    const supabase = supabaseServer();
+
+    // If they already have a prod row, nothing to do
+    const { data: prodUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (!prodUser) {
+      // No prod row — look for a dev row by email
+      const clerk = await clerkClient();
+      const user = await clerk.users.getUser(userId);
+      const email = user.emailAddresses[0]?.emailAddress;
+
+      if (email) {
+        const { data: devUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', email)
+          .neq('id', userId)
+          .maybeSingle();
+
+        if (devUser) {
+          const oldId = devUser.id;
+          console.log(`[webhook] session.created: migrating ${oldId} → ${userId} (${email})`);
+
+          await Promise.all([
+            supabase.from('resumes').update({ user_id: userId }).eq('user_id', oldId),
+            supabase.from('applications').update({ user_id: userId }).eq('user_id', oldId),
+            supabase.from('user_profiles').update({ user_id: userId }).eq('user_id', oldId),
+            supabase.from('interview_sessions').update({ user_id: userId }).eq('user_id', oldId),
+          ]);
+
+          await supabase.from('users').delete().eq('id', oldId);
+
+          const full_name = [user.firstName, user.lastName].filter(Boolean).join(' ') || null;
+          await supabase.from('users').upsert({ id: userId, email, full_name }, { onConflict: 'id' });
+
+          console.log(`[webhook] session.created: migration complete for ${email}`);
+        }
+      }
+    }
+  }
 
   if (eventType === 'user.created' || eventType === 'user.updated') {
     const { id, email_addresses, first_name, last_name } = evt.data;

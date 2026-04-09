@@ -48,13 +48,30 @@ export async function POST(req: NextRequest) {
       return new Response('Missing required fields', { status: 400 });
     }
 
-    // Fetch user profile for canonical contact info
+    // Fetch user subscription status + profile in parallel
     const supabase = supabaseServer();
-    const { data: profileData } = await supabase
-      .from('user_profiles')
-      .select('full_name, email, location, linkedin_url')
-      .eq('user_id', userId)
-      .single();
+    const [{ data: userData }, { data: profileData }] = await Promise.all([
+      supabase
+        .from('users')
+        .select('subscription_status, tailored_resume_count')
+        .eq('id', userId)
+        .single(),
+      supabase
+        .from('user_profiles')
+        .select('full_name, email, location, linkedin_url')
+        .eq('user_id', userId)
+        .single(),
+    ]);
+
+    const isPro = userData?.subscription_status === 'pro';
+    const resumeCount = userData?.tailored_resume_count ?? 0;
+
+    if (!isPro && resumeCount >= 3) {
+      return new Response(
+        JSON.stringify({ error: 'FREE_LIMIT_REACHED', upgradeUrl: '/pricing' }),
+        { status: 402, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
     const contactBlock = profileData && (profileData.full_name || profileData.email)
       ? `\n[Use this exact contact information in the resume header — do not change or omit these values:]\nName: ${profileData.full_name || ''}${profileData.email ? `\nEmail: ${profileData.email}` : ''}${profileData.location ? `\nLocation: ${profileData.location}` : ''}${profileData.linkedin_url ? `\nLinkedIn: ${profileData.linkedin_url}` : ''}\n`
@@ -303,12 +320,21 @@ Output valid JSON only, no markdown fences:
           console.log('[generate-documents] Successfully saved application with ID:', application.id);
 
           // Send final result with application ID
-          sendEvent('done', { 
-            resumeText, 
-            coverLetterText, 
-            applicationId: application.id 
+          sendEvent('done', {
+            resumeText,
+            coverLetterText,
+            applicationId: application.id
           });
           console.log('[generate-documents] All operations completed successfully');
+
+          // Increment resume count for free users
+          if (!isPro) {
+            const supabaseFree = supabaseServer();
+            await supabaseFree
+              .from('users')
+              .update({ tailored_resume_count: resumeCount + 1 })
+              .eq('id', userId);
+          }
 
         } catch (error) {
           console.error('[generate-documents] Fatal error:', error);

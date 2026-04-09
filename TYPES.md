@@ -178,6 +178,29 @@ Company | Location
 }
 ```
 
+---
+
+## Billing Types
+
+### `SubscriptionStatus`
+`'free' | 'pro' | 'canceled'`
+
+### `BillingStatusResponse`
+```typescript
+{
+  subscription_status: SubscriptionStatus
+  subscription_period_end: string | null
+  tailored_resume_count: number
+}
+```
+
+### `CreateCheckoutRequest`
+```typescript
+{ plan: 'monthly' | 'quarterly' | 'annual' }
+```
+
+---
+
 ### `ApiUsage` (table: `api_usage`)
 
 | Column | Type | Notes |
@@ -346,6 +369,17 @@ Claude ends adaptive chat messages with a `CHOICES: A | B | C` line. `InterviewC
   transcript: InterviewTranscript[]
 }
 ```
+
+---
+
+## Table: `users` (billing columns added)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `stripe_customer_id` | string \| null | Stripe customer ID — set on first checkout |
+| `subscription_status` | `'free' \| 'pro' \| 'canceled' \| null` | Defaults to `'free'` |
+| `subscription_period_end` | string \| null | ISO timestamp — current period end (not actively updated in v1) |
+| `tailored_resume_count` | number | Lifetime count of generated resumes; incremented per generation for free users |
 
 ---
 

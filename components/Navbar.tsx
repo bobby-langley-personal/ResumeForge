@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
-import { Sun, Moon, Menu, X, MessageSquare, Compass, PlusCircle, Sparkles, FolderOpen } from 'lucide-react';
+import { Sun, Moon, Menu, X, MessageSquare, Compass, PlusCircle, Sparkles, FolderOpen, Crown, Zap } from 'lucide-react';
 import { startTour } from '@/components/TourGuide';
 
 const FeedbackModal = dynamic(() => import('@/components/FeedbackModal'), { ssr: false });
@@ -17,11 +17,16 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [tourShown, setTourShown] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [billing, setBilling] = useState<{ subscription_status: string; tailored_resume_count: number } | null>(null);
   const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     setDark(document.documentElement.classList.contains('dark'));
     setTourShown(localStorage.getItem(TOUR_KEY) === 'true');
+    fetch('/api/billing/status')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setBilling(d); })
+      .catch(() => {});
   }, []);
 
   // Close menu on outside click
@@ -113,6 +118,32 @@ export default function Navbar() {
                       <span>My Experience</span>
                       <FolderOpen className="w-4 h-4" />
                     </Link>
+
+                    <div className="border-t border-border my-1" />
+
+                    {billing?.subscription_status === 'pro' ? (
+                      <button
+                        onClick={async () => {
+                          close();
+                          const res = await fetch('/api/billing/portal', { method: 'POST' });
+                          const { url } = await res.json();
+                          if (url) window.location.href = url;
+                        }}
+                        className="flex items-center justify-between w-full px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                      >
+                        <span>Manage Subscription</span>
+                        <Crown className="w-4 h-4" />
+                      </button>
+                    ) : billing && billing.tailored_resume_count >= 1 ? (
+                      <Link
+                        href="/pricing"
+                        onClick={close}
+                        className="flex items-center justify-between w-full px-4 py-2.5 text-sm text-blue-500 hover:bg-muted transition-colors"
+                      >
+                        <span>Upgrade to Pro</span>
+                        <Zap className="w-4 h-4" />
+                      </Link>
+                    ) : null}
 
                     <div className="border-t border-border my-1" />
 

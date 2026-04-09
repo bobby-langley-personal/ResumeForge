@@ -20,10 +20,10 @@ export default function SignInPage() {
             socialButtonsBlockButton: "bg-secondary hover:bg-secondary/80 border-border text-secondary-foreground",
             formFieldLabel: "text-card-foreground",
             formFieldInput: "bg-background border-border text-foreground",
-            footerActionLink: "text-primary hover:text-primary/80 underline cursor-pointer",
+            footerActionLink: "!text-blue-500 hover:!text-blue-400 underline cursor-pointer",
             identityPreviewText: "text-muted-foreground",
-            formResendCodeLink: "text-primary hover:text-primary/80",
-            otpCodeFieldInput: "border-border",
+            formResendCodeLink: "!text-blue-500 hover:!text-blue-400",
+            otpCodeFieldInput: "!text-foreground !bg-background border-border",
             alternativeMethodsBlockButton: "text-muted-foreground hover:text-foreground",
             logoBox: { display: 'none' }
           },

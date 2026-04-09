@@ -95,6 +95,10 @@ export interface Database {
           id: string
           email: string
           full_name: string | null
+          stripe_customer_id: string | null
+          subscription_status: 'free' | 'pro' | 'canceled' | null
+          subscription_period_end: string | null
+          tailored_resume_count: number
           created_at: string
           updated_at: string
         }
@@ -102,6 +106,10 @@ export interface Database {
           id: string
           email: string
           full_name?: string | null
+          stripe_customer_id?: string | null
+          subscription_status?: 'free' | 'pro' | 'canceled' | null
+          subscription_period_end?: string | null
+          tailored_resume_count?: number
           created_at?: string
           updated_at?: string
         }
@@ -109,6 +117,10 @@ export interface Database {
           id?: string
           email?: string
           full_name?: string | null
+          stripe_customer_id?: string | null
+          subscription_status?: 'free' | 'pro' | 'canceled' | null
+          subscription_period_end?: string | null
+          tailored_resume_count?: number
           created_at?: string
           updated_at?: string
         }

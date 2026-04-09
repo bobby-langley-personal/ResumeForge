@@ -104,6 +104,10 @@ Added in migration 012. Stores contact info extracted from uploaded resumes.
 | `DELETE /api/applications/[id]` | Node | Delete single resume record |
 | `POST /api/interview-prep` | Node | Haiku — generates 8 interview questions across 6 categories; saves to `applications.interview_prep`; returns `InterviewPrep` |
 | `POST /api/log-event` | Node | Server-side event logging — writes JSON to Vercel function logs; always returns 200 |
+| `POST /api/billing/create-checkout` | Node | Creates Stripe Checkout session; accepts `{ plan: 'monthly' \| 'quarterly' \| 'annual' }`; resolves price ID server-side from env vars; returns `{ url }` |
+| `POST /api/billing/portal` | Node | Creates Stripe Customer Portal session for subscription management; requires existing `stripe_customer_id`; returns `{ url }` |
+| `GET /api/billing/status` | Node | Returns `{ subscription_status, subscription_period_end, tailored_resume_count }` for current user |
+| `POST /api/webhooks/stripe` | Node | Stripe webhook handler — verifies signature, handles `checkout.session.completed`, `customer.subscription.updated/deleted`, `invoice.paid/payment_succeeded/payment_failed`; always returns 200 for unhandled events |
 | `POST /api/resume-chat` | Node | Sonnet non-streaming — AI chat for refining a generated resume; parses `CHANGE:` vs `ANSWER:` vs `GAP_REPORT:` response format; on change, updates `applications.resume_content` and `applications.chat_history` in Supabase. **Sourcing constraint:** the bot may only add content evidenced in background documents; skills not found in background docs are flagged as gaps (GAP_REPORT) and never added silently; user-confirmed additions are permitted but noted as not document-sourced |
 | `POST /api/base-resume-chat` | Node | Sonnet non-streaming — AI chat for refining a polished resume draft; parses `CHANGE:` vs `ANSWER:` vs `GAP_REPORT:`; does NOT save to DB (caller saves explicitly); returns `{ type, content }`. **Sourcing constraint:** same rule as resume-chat — may only add content evidenced in the base resume; gaps are flagged, not silently added |
 | `POST /api/generate-polished-resume` | Node | Sonnet non-streaming — accepts `{ documentIds[], pageLimit, roleTypeHint? }`, builds standalone resume; fetches `user_profiles` and injects contact info into prompt; returns `{ resumeText: string }` |
@@ -379,6 +383,21 @@ Contact info is stored in `user_profiles` (one row per user, upserted — not in
 **Document generation**
 - `generate-documents` and `generate-polished-resume` routes both fetch `user_profiles` for the current user; if `full_name` and `email` exist, an exact contact info block is injected into the generation prompt so the AI uses the saved details verbatim
 - All three download-pdf routes (`/resume`, `/cover-letter`, `/polished`) prefer `profile.full_name` over Clerk's display name for `candidateName`
+
+---
+
+## Billing & Paywall
+
+- **Free tier**: 3 lifetime tailored resumes (`tailored_resume_count` on `users` table). Counter incremented in `generate-documents` after successful generation for non-Pro users.
+- **Pro**: Unlimited everything. Set when `subscription_status === 'pro'`.
+- **Paywall check**: `POST /api/generate-documents` checks subscription before streaming. Returns `{ error: 'FREE_LIMIT_REACHED', upgradeUrl: '/pricing' }` with status 402. The tailor page catches 402 and shows an upgrade modal.
+- **Upgrade modal**: Shown on tailor page when 402 received. Three plan buttons (monthly/quarterly/annual) that hit `POST /api/billing/create-checkout`.
+- **Free counter**: Displayed below the tailor page header — "X/3 free resumes used · Upgrade to Pro" — only for non-Pro users.
+- **Navbar**: Pro users see "Manage Subscription" (hits billing portal); free users with ≥1 resume used see "Upgrade to Pro" link.
+- **Pricing page** (`/pricing`): Public. Three plan cards (Monthly $19/mo, Quarterly $47, Annual $149). Pro users see "You're on Pro ✓" + Manage Subscription instead of CTAs.
+- **Stripe singleton**: `lib/stripe.ts` — exports `stripe` instance and `PRICE_IDS` (resolved from env vars). Use `PRICE_IDS` only server-side — never expose to client.
+- **Webhook**: `POST /api/webhooks/stripe` — registered at `https://easy-apply.ai/api/webhooks/stripe` in Stripe Dashboard. Required events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_succeeded`, `invoice.payment_failed`.
+- **Stripe API version**: `2026-03-25.dahlia` (v22).
 
 ---
 

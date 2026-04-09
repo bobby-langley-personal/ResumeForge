@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { SignedIn, useUser } from '@clerk/nextjs';
 import dynamic from 'next/dynamic';
 import Navbar from '@/components/Navbar';
@@ -10,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { readSSEStream } from '@/lib/sse-reader';
-import { Loader2, Eye, Download, RotateCcw } from 'lucide-react';
+import { Loader2, Eye, Download, RotateCcw, X, Crown } from 'lucide-react';
 import { FitAnalysis } from '@/types/fit-analysis';
 import { ResumeItem } from '@/types/resume';
 import ExperiencePanel from '@/components/ExperiencePanel';
@@ -102,6 +103,7 @@ interface FormData {
 export default function Home() {
   const { user } = useUser();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const candidateName = user?.fullName ?? user?.firstName ?? '';
 
   // Redirect to onboarding if the user has no experience files
@@ -112,6 +114,41 @@ export default function Home() {
       .catch(() => {}); // fail open — don't block on network error
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  const [billingStatus, setBillingStatus] = useState<{ subscription_status: string; tailored_resume_count: number } | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeLoading, setUpgradeLoading] = useState<'monthly' | 'quarterly' | 'annual' | null>(null);
+  const preGenLimitReached = useRef(false);
+
+  // Fetch billing status and handle ?upgraded=true
+  useEffect(() => {
+    fetch('/api/billing/status')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setBillingStatus(d); })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (searchParams.get('upgraded') === 'true') {
+      setBillingStatus(prev => prev ? { ...prev, subscription_status: 'pro' } : null);
+    }
+  }, [searchParams]);
+
+  const handleUpgrade = async (plan: 'monthly' | 'quarterly' | 'annual') => {
+    setUpgradeLoading(plan);
+    try {
+      const res = await fetch('/api/billing/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      });
+      const { url, error } = await res.json();
+      if (error) throw new Error(error);
+      window.location.href = url;
+    } catch {
+      setUpgradeLoading(null);
+    }
+  };
+
   const [uiState, setUIState] = useState<UIState>('idle');
   const [resetKey, setResetKey] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');
@@ -152,6 +189,16 @@ export default function Home() {
       originalResumeRef.current = resumeContent;
     }
   }, [uiState, resumeContent]);
+
+  // Re-fetch billing status after generation so counter updates
+  useEffect(() => {
+    if (uiState === 'done') {
+      fetch('/api/billing/status')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d) setBillingStatus(d); })
+        .catch(() => {});
+    }
+  }, [uiState]);
 
   // Scroll to loading bar when analysis starts
   useEffect(() => {
@@ -294,6 +341,7 @@ export default function Home() {
         body: JSON.stringify({ ...formData, fitAnalysis: analysis, includeCoverLetter, includeSummary, jobUrl: jobUrl.trim() || undefined, additionalContext: additionalContext.map(i => ({ title: i.title, type: i.item_type, text: i.content.text })), questions: questions.filter(q => q.trim()), shortResponse }),
         signal: preGenAbort.current.signal,
       });
+      if (response.status === 402) { preGenLimitReached.current = true; preGenStatus.current = 'aborted'; return; }
       if (!response.ok) { preGenStatus.current = 'aborted'; return; }
 
       for await (const chunk of readSSEStream(response)) {
@@ -352,8 +400,14 @@ export default function Home() {
           setUIState('done');
         } else if (preGenStatus.current === 'aborted') {
           clearInterval(poll);
-          setErrorMessage('Generation failed. Please try again.');
-          setUIState('error');
+          if (preGenLimitReached.current) {
+            preGenLimitReached.current = false;
+            setShowUpgradeModal(true);
+            setUIState('idle');
+          } else {
+            setErrorMessage('Generation failed. Please try again.');
+            setUIState('error');
+          }
         }
       }, 50);
       return;
@@ -368,6 +422,7 @@ export default function Home() {
         body: JSON.stringify({ ...pendingFormData, fitAnalysis, includeCoverLetter, includeSummary, jobUrl: jobUrl.trim() || undefined, additionalContext: additionalContext.map(i => ({ title: i.title, type: i.item_type, text: i.content.text })), questions: questions.filter(q => q.trim()), shortResponse }),
       });
 
+      if (response.status === 402) { setShowUpgradeModal(true); setUIState('idle'); return; }
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       for await (const chunk of readSSEStream(response)) {
@@ -503,6 +558,13 @@ export default function Home() {
               <p className="text-muted-foreground">
                 We&apos;ll do a comprehensive fit analysis based on your experience and then tailor your resume to match this specific role using your real experience — we never invent anything.
               </p>
+              {billingStatus && billingStatus.subscription_status !== 'pro' && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {billingStatus.tailored_resume_count}/3 free resumes used
+                  {' · '}
+                  <Link href="/pricing" className="text-blue-500 hover:underline">Upgrade to Pro</Link>
+                </p>
+              )}
             </div>
 
             {/* Error Toast */}
@@ -1026,6 +1088,61 @@ export default function Home() {
           </div>
         </SignedIn>
       </main>
+
+      {/* Upgrade modal — shown when free limit hit */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+          <div className="relative bg-card border border-border rounded-2xl p-8 max-w-md w-full shadow-2xl">
+            <button
+              onClick={() => setShowUpgradeModal(false)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2 mb-2">
+              <Crown className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-bold text-foreground">You&apos;ve used your 3 free resumes</h2>
+            </div>
+            <p className="text-muted-foreground text-sm mb-6">
+              Upgrade to Pro for unlimited tailored resumes, cover letters, interview prep, and more.
+            </p>
+
+            <div className="space-y-3 mb-6">
+              <Button
+                className="w-full"
+                disabled={upgradeLoading !== null}
+                onClick={() => handleUpgrade('monthly')}
+              >
+                {upgradeLoading === 'monthly' ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Monthly — $19/mo
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                disabled={upgradeLoading !== null}
+                onClick={() => handleUpgrade('quarterly')}
+              >
+                {upgradeLoading === 'quarterly' ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Quarterly — $47/3 months · Save 18%
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                disabled={upgradeLoading !== null}
+                onClick={() => handleUpgrade('annual')}
+              >
+                {upgradeLoading === 'annual' ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Annual — $149/yr · Best Value · Save 35%
+              </Button>
+            </div>
+
+            <Link href="/pricing" className="text-sm text-blue-500 hover:underline block text-center">
+              View all features →
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
