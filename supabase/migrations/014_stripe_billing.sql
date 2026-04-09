@@ -1,4 +1,4 @@
--- Run in Supabase SQL Editor → Dashboard → SQL Editor
+-- Run in Supabase SQL Editor → Dashboard → SQL Edito
 -- Adds Stripe billing columns to the users table
 
 ALTER TABLE users
