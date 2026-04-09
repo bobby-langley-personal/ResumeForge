@@ -324,6 +324,29 @@ Open [http://localhost:3000](http://localhost:3000). The `[Dev] Fill Test Data` 
 
 ---
 
+## Backlog / Future Features
+
+### Job Search (built, not yet exposed to users)
+Search for jobs directly within Easy Apply without leaving the page. The feature is complete but hidden while UX is refined.
+
+- Keyword + optional location search powered by the JSearch API (RapidAPI)
+- Results show job title, company, location, salary range, and posting date
+- Expand any card to read the full job description before selecting
+- **One-click import** — auto-populates company, job title, job description, and URL fields
+- Monthly usage guard: tracked in Supabase `api_usage` table; calls stop at configured limit (default 175/month)
+
+**Files:** `components/JobSearchPanel.tsx`, `app/api/search-jobs/route.ts`, `supabase/migrations/013_api_usage.sql`
+
+**To re-enable:** import `JobSearchPanel` in `app/tailor/page.tsx`, restore the "Search for a job" section in the form, and add `'Job search'` back to `PRO_FEATURES` in `app/pricing/page.tsx`.
+
+**Required env vars:**
+```env
+RAPIDAPI_KEY=           # RapidAPI subscription key for JSearch
+JSEARCH_MONTHLY_LIMIT=  # Integer monthly call cap (default 175)
+```
+
+---
+
 ## Branch Naming
 
 Feature branches follow `claude/issue-{number}-{YYYYMMDD}-{HHMM}` so Vercel skips automatic deployment on non-main branches.
