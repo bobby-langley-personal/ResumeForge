@@ -65,15 +65,7 @@ Users can add up to 5 open-ended application questions before generating:
 - AI-generated answers are shown after generation with word count and one-click copy
 - Answers are saved and viewable from the AI Resumes dashboard via a chat icon modal
 
-### 3. Job Search
-Search for jobs directly within Easy Apply without leaving the page:
-- Keyword + optional location search powered by the JSearch API (RapidAPI)
-- Results show job title, company, location, salary range, and posting date
-- Expand any card to read the full job description before selecting
-- **One-click import** — clicking "Use this job" auto-populates the company, job title, job description, and URL fields
-- Monthly free-tier guard: usage tracked in Supabase `api_usage` table; calls stop at the configured limit (default 175/month)
-
-### 3a. Job URL Auto-Import
+### 3. Job URL Auto-Import
 Users can paste a job posting URL instead of copying text manually:
 - Server-side page fetch with HTML stripping (scripts, nav, footer, forms, `<head>`)
 - Seeks to where the job title appears in text to skip nav/menu noise in `<div>` elements
@@ -238,7 +230,6 @@ app/
     generate-documents/     # POST — Sonnet streaming SSE (Edge runtime) + optional question answers; injects profile contact info
     fetch-job-posting/      # POST — URL scrape, HTML extraction, company/title/question detection
     parse-job-details/      # POST — Haiku extraction of company, job title, and questions from pasted JD text
-    search-jobs/            # GET — JSearch job search with monthly usage guard
     extract-resume/         # POST — PDF/DOCX text extraction
     download-pdf/[type]/    # POST — PDF generation and download; all types prefer profile.full_name for candidateName
     generate-polished-resume/ # POST — Sonnet builds standalone resume from selected docs; injects profile contact info
@@ -270,7 +261,6 @@ components/
   ResumeChatPanel.tsx       # Post-generation chat UI — page fit chips, CHANGE/ANSWER response parsing
   FeedbackModal.tsx         # Feedback form modal — general and bug report types
   PDFPreviewModal.tsx       # PDF preview modal — BlobProvider iframe, dynamically imported (ssr: false)
-  JobSearchPanel.tsx        # Job search — keyword/location inputs, JSearch results
   TourGuide.tsx             # driver.js onboarding tour; popoverClass: 'easy-apply-tour'; exports startTour()
   InterviewPrepPanel.tsx    # Interview prep UI — QuestionCard, SkeletonQuestionCard, InterviewPrepSection
 
@@ -320,11 +310,6 @@ RESEND_API_KEY=
 FEEDBACK_EMAIL=
 ```
 
-Optional (for job search via JSearch / RapidAPI):
-```env
-RAPIDAPI_KEY=           # RapidAPI subscription key for JSearch
-JSEARCH_MONTHLY_LIMIT=  # Integer monthly call cap (default 175)
-```
 
 ---
 

@@ -28,7 +28,6 @@ const PRO_FEATURES = [
   'Interview prep',
   'Chrome extension full access',
   'Application Q&A answers',
-  'Job search',
 ];
 
 const FREE_LIMITS = [
