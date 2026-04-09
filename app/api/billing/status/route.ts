@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { supabaseServer } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function GET(): Promise<NextResponse> {
   try {

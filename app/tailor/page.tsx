@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { SignedIn, useUser } from '@clerk/nextjs';
 import dynamic from 'next/dynamic';
@@ -103,7 +103,6 @@ interface FormData {
 export default function Home() {
   const { user } = useUser();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const candidateName = user?.fullName ?? user?.firstName ?? '';
 
   // Redirect to onboarding if the user has no experience files
@@ -128,10 +127,10 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (searchParams.get('upgraded') === 'true') {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('upgraded') === 'true') {
       setBillingStatus(prev => prev ? { ...prev, subscription_status: 'pro' } : null);
     }
-  }, [searchParams]);
+  }, []);
 
   const handleUpgrade = async (plan: 'monthly' | 'quarterly' | 'annual') => {
     setUpgradeLoading(plan);
