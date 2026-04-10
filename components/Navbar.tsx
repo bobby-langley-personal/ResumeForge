@@ -17,7 +17,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [tourShown, setTourShown] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [billing, setBilling] = useState<{ subscription_status: string; tailored_resume_count: number } | null>(null);
+  const [billing, setBilling] = useState<{ subscription_status: string; tailored_resume_count: number; document_count: number } | null>(null);
   const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -80,8 +80,8 @@ export default function Navbar() {
           {/* Right side */}
           <div className="flex items-center gap-2">
             <SignedIn>
-              {/* Hamburger + dropdown anchored to this button */}
-              <div id="tour-nav" className="relative">
+              {/* Hamburger + dropdown anchored to this button — hidden until user has at least one document */}
+              <div id="tour-nav" className="relative" style={{ display: !billing || billing.document_count === 0 ? 'none' : undefined }}>
                 <button
                   onClick={() => setMenuOpen(v => !v)}
                   className="p-2 rounded-md text-muted-foreground hover:text-foreground transition-colors"

@@ -13,16 +13,23 @@ export async function GET(): Promise<NextResponse> {
     }
 
     const supabase = supabaseServer();
-    const { data: user } = await supabase
-      .from('users')
-      .select('subscription_status, subscription_period_end, tailored_resume_count')
-      .eq('id', userId)
-      .single();
+    const [{ data: user }, { count: documentCount }] = await Promise.all([
+      supabase
+        .from('users')
+        .select('subscription_status, subscription_period_end, tailored_resume_count')
+        .eq('id', userId)
+        .single(),
+      supabase
+        .from('resumes')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId),
+    ]);
 
     return NextResponse.json({
       subscription_status: user?.subscription_status ?? 'free',
       subscription_period_end: user?.subscription_period_end ?? null,
       tailored_resume_count: user?.tailored_resume_count ?? 0,
+      document_count: documentCount ?? 0,
     });
   } catch (err) {
     console.error('[/api/billing/status]', err);
