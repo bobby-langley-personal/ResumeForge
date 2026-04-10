@@ -620,8 +620,7 @@ export default async function HomePage() {
       .limit(1),
   ]);
 
-  const documents = docsResult.data ?? [];
-  const hasDocuments = documents.length > 0;
+  const documentCount = docsResult.data?.length ?? 0;
   const hasApplications = (appsResult.data?.length ?? 0) > 0;
 
   return (
@@ -630,7 +629,7 @@ export default async function HomePage() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <HomeRouter
           firstName={firstName}
-          hasDocuments={hasDocuments}
+          documentCount={documentCount}
           hasApplications={hasApplications}
         />
       </main>

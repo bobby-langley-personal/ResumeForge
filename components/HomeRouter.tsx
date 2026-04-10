@@ -7,47 +7,42 @@ import GoalScreen from '@/components/GoalScreen';
 import OnboardingOverlay from '@/components/OnboardingOverlay';
 
 const SKIP_KEY = 'resumeforge_skip_goal_screen';
-const ONBOARDING_KEY = 'easy_apply_onboarding_seen';
 
 interface Props {
   firstName: string | null;
-  hasDocuments: boolean;
+  documentCount: number;
   hasApplications: boolean;
 }
 
-export default function HomeRouter({ firstName, hasDocuments, hasApplications }: Props) {
+export default function HomeRouter({ firstName, documentCount, hasApplications }: Props) {
   const router = useRouter();
   const [checked, setChecked] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [overlayDismissed, setOverlayDismissed] = useState(false);
 
   useEffect(() => {
-    if (!hasDocuments) {
-      // Only show the onboarding overlay once, for new users with no documents
-      const seen = localStorage.getItem(ONBOARDING_KEY) === 'true';
-      setShowOnboarding(!seen);
-      setChecked(true);
-      return;
-    }
-    if (localStorage.getItem(SKIP_KEY) === 'true') {
+    // Users with multiple docs + skip flag → go straight to tailor
+    if (documentCount > 1 && localStorage.getItem(SKIP_KEY) === 'true') {
       router.replace('/tailor');
       return;
     }
     setChecked(true);
-  }, [hasDocuments, router]);
-
-  function dismissOnboarding() {
-    localStorage.setItem(ONBOARDING_KEY, 'true');
-    setShowOnboarding(false);
-  }
+  }, [documentCount, router]);
 
   if (!checked) return null;
 
-  if (showOnboarding) {
-    return <OnboardingOverlay onDismiss={dismissOnboarding} />;
+  // No documents — always show the orientation overlay, then WelcomeScreen
+  if (documentCount === 0) {
+    if (!overlayDismissed) {
+      return <OnboardingOverlay variant="new" onDismiss={() => setOverlayDismissed(true)} />;
+    }
+    return <WelcomeScreen />;
   }
 
-  if (!hasDocuments) {
-    return <WelcomeScreen />;
+  // Exactly one document — nudge to enrich the library, then GoalScreen
+  if (documentCount === 1) {
+    if (!overlayDismissed) {
+      return <OnboardingOverlay variant="sparse" onDismiss={() => setOverlayDismissed(true)} />;
+    }
   }
 
   return (
