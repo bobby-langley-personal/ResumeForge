@@ -415,6 +415,29 @@ All feature/fix branches: `claude/issue-{number}-{YYYYMMDD}-{HHMM}` — Vercel s
 - Dev mode: `[Dev] Fill Test Data` button on the tailor page (`/tailor`) pre-fills sample job + resume data
 - **After every feature: update CLAUDE.md, README.md, TYPES.md, post GitHub issue comment, close the issue** — see Definition of Done at the top of this file
 
+---
+
+## Local Dev vs Prod — Clerk / Supabase Environment Notes
+
+### The core constraint
+Clerk has two separate instances: **Development** (used on localhost) and **Production** (used on Vercel). They share the same Supabase database but produce **different user IDs for the same person**. A user who signs in on localhost gets a different `user_id` than on prod. Data (resumes, applications, profiles) is tied to a user ID — it will **not** carry over between environments and that is expected/correct behaviour.
+
+### Clerk webhooks don't fire to localhost
+Clerk cannot reach `localhost` to fire `user.created` / `session.created` webhooks. In prod, these webhooks create the `users` table row. In dev, they never run.
+
+**The fix — `components/UserSync.tsx`**: A server component rendered in `app/layout.tsx` on every authenticated page load. It upserts `{ id, email }` into the `users` table with `ON CONFLICT DO NOTHING`. In prod this is a ~1ms no-op (row already exists from webhook). In dev it creates the row on first page load so all downstream FK constraints are satisfied. **Never manually insert dev users into Supabase — just navigate to any page while signed in.**
+
+### Dev instance setup
+Mirror the prod Clerk instance settings: same social providers enabled/disabled, same email settings, same redirect URLs (pointing to `localhost:3000`). The instance keys (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`) in `.env.local` should be the **dev instance** keys — never the live keys locally.
+
+### What to expect when testing on localhost
+- Sign in → navigate to any page → `UserSync` fires → `users` row exists → all features work
+- Your local user data (uploaded docs, generated resumes) is isolated to your dev Clerk user ID and will not appear in prod and vice versa — this is correct
+- Do not expect data to transfer between localhost and prod — treat them as separate users sharing a codebase
+
+### Stripe on localhost
+Stripe webhooks also cannot reach localhost. To test Stripe billing locally, use the [Stripe CLI](https://stripe.com/docs/stripe-cli): `stripe listen --forward-to localhost:3000/api/webhooks/stripe`. The Stripe secret key in `.env.local` can be the live key (read-only for billing status checks) or a test key — never commit either.
+
 ## AI Experience Interview (`/interview`)
 
 - `app/interview/page.tsx` — server wrapper (auth guard), renders `InterviewClient`

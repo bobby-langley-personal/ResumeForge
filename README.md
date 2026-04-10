@@ -320,7 +320,23 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The `[Dev] Fill Test Data` button on the home page pre-fills a sample job description and resume for quick testing.
+Open [http://localhost:3000](http://localhost:3000). The `[Dev] Fill Test Data` button on the tailor page pre-fills a sample job description and resume for quick testing.
+
+### Clerk dev vs prod instances
+
+Clerk has separate **Development** and **Production** instances. They share the same Supabase database but generate **different user IDs for the same person** — data will not carry over between localhost and prod, and that is expected.
+
+`.env.local` must use the **dev instance** keys (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`). Never use live keys locally.
+
+**Clerk webhooks do not fire to localhost.** In prod, the `user.created` webhook creates the `users` table row. On localhost that never runs. The `UserSync` server component (rendered in the root layout on every authenticated page load) handles this automatically — it upserts the user row on first visit so all FK constraints are satisfied. No manual Supabase inserts needed.
+
+### Stripe on localhost
+
+Stripe webhooks also cannot reach localhost. To test billing locally, use the Stripe CLI:
+
+```bash
+stripe listen --forward-to localhost:3000/api/webhooks/stripe
+```
 
 ---
 
