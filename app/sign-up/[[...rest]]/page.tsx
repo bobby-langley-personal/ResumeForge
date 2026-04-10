@@ -19,7 +19,7 @@ export default function SignUpPage() {
             headerSubtitle: "text-muted-foreground",
             socialButtonsBlockButton: "bg-secondary hover:bg-secondary/80 border-border text-secondary-foreground",
             formFieldLabel: "text-card-foreground",
-            formFieldInput: "bg-background border-border text-foreground",
+            formFieldInput: "!bg-[#262626] border-border text-foreground",
             footerActionLink: "!text-blue-500 hover:!text-blue-400 underline cursor-pointer",
             identityPreviewText: "text-muted-foreground",
             formResendCodeLink: "!text-blue-500 hover:!text-blue-400",
