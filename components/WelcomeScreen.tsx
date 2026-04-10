@@ -359,6 +359,17 @@ export default function WelcomeScreen() {
           Let&apos;s make one with AI <ArrowRight className="w-3.5 h-3.5 inline -mt-0.5" />
         </Link>
       </p>
+
+      <p className="text-center text-xs text-muted-foreground/60">
+        Already added your experience?{' '}
+        <Link href="/tailor" className="underline underline-offset-2 hover:text-muted-foreground transition-colors">
+          Go to Tailor New Resume
+        </Link>
+        {' · '}
+        <Link href="/dashboard" className="underline underline-offset-2 hover:text-muted-foreground transition-colors">
+          AI Resumes
+        </Link>
+      </p>
     </div>
   );
 }
