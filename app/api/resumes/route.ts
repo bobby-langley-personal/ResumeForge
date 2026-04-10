@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
 
@@ -42,6 +42,14 @@ export async function POST(req: NextRequest) {
   if (!title || !content?.text) return new Response('title and content.text are required', { status: 400 });
 
   const supabase = supabaseServer();
+
+  // Ensure a users row exists — webhooks don't fire to localhost so dev
+  // accounts can be missing their row, causing the FK on resumes to reject.
+  const clerkUser = await currentUser();
+  const email = clerkUser?.emailAddresses[0]?.emailAddress ?? '';
+  await supabase
+    .from('users')
+    .upsert({ id: userId, email }, { onConflict: 'id', ignoreDuplicates: true });
 
   // Clear existing default first if this one is being set as default
   if (is_default) {
