@@ -16,6 +16,38 @@ Do not skip any of these steps. If you finish coding but haven't updated docs an
 
 ---
 
+## Chrome Extension Backwards Compatibility
+
+The Chrome Web Store approval process takes days. Users on approved (older) extension versions are making live requests to the production webapp. **Never break existing extension users** with a webapp change.
+
+### Rules
+
+**Never remove or rename these API endpoints without a deprecation plan:**
+`/api/me`, `/api/resumes`, `/api/billing/status`, `/api/analyze-fit`, `/api/parse-job-details`, `/api/generate-documents`, `/api/answer-questions`, `/api/download-pdf/[type]`
+
+**Never remove fields from API responses** that the extension reads. Only add new fields — old extension versions will ignore them (additive changes are safe).
+
+**Never change the SSE event format** for `generate-documents` — the extension's port-based streaming parser depends on exact event type names (`status`, `resume_chunk`, `resume_done`, `cover_letter_chunk`, `cover_letter_done`, `done`).
+
+**Never change HTTP status code semantics** for these routes — the extension branches on 401 (sign-in), 402 (paywall), 400 (bad request). Adding new codes is fine; changing existing ones breaks old versions silently.
+
+### What is currently in the store vs. what's running
+
+| Version | Auth mechanism | Status |
+|---------|---------------|--------|
+| ≤ v0.3.0 (store) | `credentials: 'include'` only | **Auth broken** — Clerk rejects extension-origin requests without a Bearer token; users are stuck at the sign-in screen |
+| v0.3.1 (current dev) | `chrome.cookies` → `Authorization: Bearer` + `credentials: 'include'` fallback | Fixed — submit to store ASAP |
+
+Until v0.3.1 is approved and users update, the webapp must continue to accept and correctly handle all extension API calls. Do not make changes that would further degrade the experience for users on old extension builds.
+
+### When making changes that affect extension ↔ webapp
+
+1. Check the extension's API surface against the list above before changing any endpoint
+2. If a breaking change is truly necessary, version the endpoint (e.g. `/api/v2/generate-documents`) and keep the old one working
+3. Bump the extension version and note the minimum required webapp version in the extension's `CLAUDE.md`
+
+---
+
 ## UI Terminology
 
 Use these terms consistently in all user-facing text:

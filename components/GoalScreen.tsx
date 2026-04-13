@@ -1,7 +1,11 @@
 'use client';
 
+import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Target, FileEdit, Plus, Brain, LayoutList, Diamond, ArrowRight } from 'lucide-react';
+import { Target, FileEdit, Plus, Brain, LayoutList, Diamond, ArrowRight, ShieldCheck } from 'lucide-react';
+
+const ATSInfoModal = dynamic(() => import('@/components/ATSInfoModal'), { ssr: false });
 
 const SKIP_KEY = 'resumeforge_skip_goal_screen';
 
@@ -49,6 +53,8 @@ function GoalCard({
 }
 
 export default function GoalScreen({ firstName, hasApplications }: Props) {
+  const [showATS, setShowATS] = useState(false);
+
   const handleSkip = () => {
     localStorage.setItem(SKIP_KEY, 'true');
   };
@@ -109,16 +115,28 @@ export default function GoalScreen({ firstName, hasApplications }: Props) {
         />
       </div>
 
-      <p className="text-center text-xs text-muted-foreground pt-2">
-        <Link
-          href="/tailor"
-          onClick={handleSkip}
-          className="hover:text-foreground transition-colors underline underline-offset-2"
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-1">
+        <p className="text-xs text-muted-foreground text-center sm:text-left">
+          <Link
+            href="/tailor"
+            onClick={handleSkip}
+            className="hover:text-foreground transition-colors underline underline-offset-2"
+          >
+            Skip to generation
+          </Link>
+          {' '}— we&apos;ll remember your preference
+        </p>
+        <button
+          onClick={() => setShowATS(true)}
+          className="inline-flex items-center justify-center sm:justify-start gap-1 text-xs text-emerald-500 hover:text-emerald-400 transition-colors shrink-0"
         >
-          Skip to generation
-        </Link>
-        {' '}— we&apos;ll remember your preference
-      </p>
+          <ShieldCheck className="w-3 h-3" />
+          ATS-formatted
+          <sup className="text-[9px] font-bold -mt-1">*</sup>
+        </button>
+      </div>
+
+      {showATS && <ATSInfoModal onClose={() => setShowATS(false)} />}
     </div>
   );
 }

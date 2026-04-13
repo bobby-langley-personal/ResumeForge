@@ -3,10 +3,13 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, ChevronDown, Loader2, ArrowRight, Lightbulb, Check } from 'lucide-react';
+import { Upload, ChevronDown, Loader2, ArrowRight, Lightbulb, Check, ShieldCheck } from 'lucide-react';
+
+const ATSInfoModal = dynamic(() => import('@/components/ATSInfoModal'), { ssr: false });
 
 interface WhatToAddTip {
   icon: string;
@@ -99,6 +102,7 @@ async function extractContactFromText(text: string): Promise<ContactFields> {
 export default function WelcomeScreen() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showATS, setShowATS] = useState(false);
 
   // Upload step state
   const [isUploading, setIsUploading] = useState(false);
@@ -320,6 +324,21 @@ export default function WelcomeScreen() {
         </div>
         {uploadError && <p className="text-sm text-destructive mt-3">{uploadError}</p>}
       </div>
+
+      {/* ATS note */}
+      <p className="text-center text-xs text-muted-foreground">
+        <button
+          onClick={() => setShowATS(true)}
+          className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+        >
+          <ShieldCheck className="w-3 h-3 text-emerald-500" />
+          Every resume generated is{' '}
+          <span className="text-emerald-500 font-medium">ATS-formatted</span>
+          <sup className="text-emerald-500 text-[9px] font-bold -mt-1 ml-px">*</sup>
+        </button>
+      </p>
+
+      {showATS && <ATSInfoModal onClose={() => setShowATS(false)} />}
 
       {/* What else can I add? */}
       <div className="border border-border rounded-xl overflow-hidden">

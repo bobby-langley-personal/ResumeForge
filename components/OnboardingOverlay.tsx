@@ -1,7 +1,11 @@
 'use client';
 
+import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Library, FileText, Zap, ArrowRight, Sparkles, Upload, MessageSquareText } from 'lucide-react';
+import { Library, FileText, Zap, ArrowRight, Sparkles, Upload, MessageSquareText, ShieldCheck } from 'lucide-react';
+
+const ATSInfoModal = dynamic(() => import('@/components/ATSInfoModal'), { ssr: false });
 
 interface Props {
   variant: 'new' | 'sparse';
@@ -9,6 +13,8 @@ interface Props {
 }
 
 export default function OnboardingOverlay({ variant, onDismiss }: Props) {
+  const [showATS, setShowATS] = useState(false);
+
   if (variant === 'sparse') {
     return (
       <div className="fixed inset-0 z-50 bg-background flex flex-col overflow-y-auto">
@@ -84,6 +90,16 @@ export default function OnboardingOverlay({ variant, onDismiss }: Props) {
               </div>
             </div>
 
+            {/* ATS reminder */}
+            <button
+              onClick={() => setShowATS(true)}
+              className="flex items-center gap-1.5 mx-auto text-xs text-emerald-500 hover:text-emerald-400 transition-colors"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              All generated resumes are ATS-formatted
+              <sup className="text-[10px] font-bold -mt-1">*</sup>
+            </button>
+
             {/* CTA */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
               <Link
@@ -103,6 +119,7 @@ export default function OnboardingOverlay({ variant, onDismiss }: Props) {
 
           </div>
         </div>
+        {showATS && <ATSInfoModal onClose={() => setShowATS(false)} />}
       </div>
     );
   }
@@ -180,7 +197,7 @@ export default function OnboardingOverlay({ variant, onDismiss }: Props) {
                   step: '3',
                   title: 'Generate in 60 seconds',
                   description:
-                    'Get a tailored resume (and optional cover letter) written specifically for that role. Download as PDF.',
+                    'Get a tailored, ATS-formatted resume (and optional cover letter) written specifically for that role. Download as PDF.',
                   color: 'text-emerald-500',
                   bg: 'bg-emerald-500/10 border-emerald-500/20',
                 },
@@ -200,6 +217,18 @@ export default function OnboardingOverlay({ variant, onDismiss }: Props) {
             </div>
           </div>
 
+          {/* ATS badge */}
+          <div className="flex justify-center">
+            <button
+              onClick={() => setShowATS(true)}
+              className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/25 hover:border-emerald-500/50 text-emerald-500 hover:text-emerald-400 text-xs font-medium px-4 py-2 rounded-full transition-colors"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              ATS-formatted output
+              <sup className="text-[10px] font-bold -mt-1">*</sup>
+            </button>
+          </div>
+
           {/* CTA */}
           <div className="flex flex-col items-center gap-4 pt-2">
             <button
@@ -217,6 +246,7 @@ export default function OnboardingOverlay({ variant, onDismiss }: Props) {
 
         </div>
       </div>
+      {showATS && <ATSInfoModal onClose={() => setShowATS(false)} />}
     </div>
   );
 }
