@@ -23,7 +23,7 @@ export default function SignUpPage() {
             footerActionLink: "!text-blue-500 hover:!text-blue-400 underline cursor-pointer",
             identityPreviewText: "text-muted-foreground",
             formResendCodeLink: "!text-blue-500 hover:!text-blue-400",
-            otpCodeFieldInput: "!text-foreground !bg-background border-border",
+            otpCodeFieldInput: "!text-foreground !bg-[#262626] !border-border",
             alternativeMethodsBlockButton: "text-muted-foreground hover:text-foreground",
             logoBox: { display: 'none' }
           },
