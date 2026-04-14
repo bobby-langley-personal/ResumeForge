@@ -7,11 +7,13 @@ import Anthropic from '@anthropic-ai/sdk';
 import { getModels } from '@/lib/models';
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? '';
-const GITHUB_REPO = process.env.GITHUB_FEEDBACK_REPO ?? 'bobby-langley-personal/ResumeForge';
+const GITHUB_WEBAPP_REPO = process.env.GITHUB_FEEDBACK_REPO ?? 'bobby-langley-personal/ResumeForge';
+const GITHUB_EXTENSION_REPO = process.env.GITHUB_EXTENSION_FEEDBACK_REPO ?? GITHUB_WEBAPP_REPO;
 const GITHUB_ASSIGNEE = 'bobby-langley-personal';
 
 async function createGitHubIssue(
   type: 'general' | 'bug',
+  source: 'extension' | 'webapp',
   message: string,
   fromLabel: string,
 ): Promise<string | null> {
@@ -26,7 +28,7 @@ async function createGitHubIssue(
       temperature: 0.3,
       messages: [{
         role: 'user',
-        content: `Write a concise GitHub issue title (max 60 chars, no quotes) and a one-sentence TL;DR summary for this user feedback.\n\nType: ${type}\nMessage: ${message}\n\nRespond in exactly this format:\nTITLE: <title>\nSUMMARY: <summary>`,
+        content: `Write a concise GitHub issue title (max 60 chars, no quotes) and a one-sentence TL;DR summary for this user feedback.\n\nSource: ${source}\nType: ${type}\nMessage: ${message}\n\nRespond in exactly this format:\nTITLE: <title>\nSUMMARY: <summary>`,
       }],
     });
 
@@ -34,9 +36,16 @@ async function createGitHubIssue(
     const title = text.match(/TITLE:\s*(.+)/)?.[1]?.trim() ?? `[${type}] User feedback`;
     const summary = text.match(/SUMMARY:\s*(.+)/)?.[1]?.trim() ?? message.slice(0, 120);
 
-    const label = type === 'bug' ? 'bug' : 'enhancement';
+    const sourceLabel = source === 'extension' ? 'extension' : 'webapp';
+    const typeLabel = type === 'bug' ? 'bug' : 'enhancement';
+    const sourceTag = source === 'extension' ? '[Extension]' : '[Webapp]';
+    const typeTag = type === 'bug' ? '[Bug]' : '[Feedback]';
+
+    const repo = source === 'extension' ? GITHUB_EXTENSION_REPO : GITHUB_WEBAPP_REPO;
+
     const body = [
       `**From:** ${fromLabel}`,
+      `**Source:** ${source === 'extension' ? 'Chrome Extension' : 'Web App'}`,
       `**Type:** ${type === 'bug' ? 'Bug Report' : 'General Feedback'}`,
       '',
       '## Message',
@@ -48,7 +57,7 @@ async function createGitHubIssue(
       `cc @${GITHUB_ASSIGNEE}`,
     ].join('\n');
 
-    const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/issues`, {
+    const res = await fetch(`https://api.github.com/repos/${repo}/issues`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${GITHUB_TOKEN}`,
@@ -57,10 +66,10 @@ async function createGitHubIssue(
         'X-GitHub-Api-Version': '2022-11-28',
       },
       body: JSON.stringify({
-        title: `[${type === 'bug' ? 'Bug' : 'Feedback'}] ${title}`,
+        title: `${sourceTag}${typeTag} ${title}`,
         body,
         assignees: [GITHUB_ASSIGNEE],
-        labels: [label],
+        labels: [typeLabel, sourceLabel],
       }),
     });
 
@@ -76,16 +85,17 @@ export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return new Response('Unauthorized', { status: 401 });
 
-  let body: { type?: string; message?: string; anonymous?: boolean };
+  let body: { type?: string; message?: string; anonymous?: boolean; source?: string };
   try {
     body = await req.json();
   } catch {
     return new Response('Invalid JSON', { status: 400 });
   }
 
-  const { type, message, anonymous = false } = body;
+  const { type, message, anonymous = false, source = 'webapp' } = body;
   if (!type || !message?.trim()) return new Response('Missing fields', { status: 400 });
   if (type !== 'general' && type !== 'bug') return new Response('Invalid type', { status: 400 });
+  const resolvedSource: 'extension' | 'webapp' = source === 'extension' ? 'extension' : 'webapp';
 
   const trimmed = message.trim();
 
@@ -100,7 +110,7 @@ export async function POST(req: NextRequest) {
 
   // Fire GitHub issue creation and DB insert in parallel
   const [issueUrl] = await Promise.all([
-    createGitHubIssue(type as 'general' | 'bug', trimmed, fromLabel),
+    createGitHubIssue(type as 'general' | 'bug', resolvedSource, trimmed, fromLabel),
     supabaseServer().from('feedback').insert({
       user_id: userId,
       type: type as 'general' | 'bug',
