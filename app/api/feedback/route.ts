@@ -44,6 +44,8 @@ async function createGitHubIssue(
     const repo = source === 'extension' ? GITHUB_EXTENSION_REPO : GITHUB_WEBAPP_REPO;
 
     const body = [
+      `@${GITHUB_ASSIGNEE}`,
+      '',
       `**From:** ${fromLabel}`,
       `**Source:** ${source === 'extension' ? 'Chrome Extension' : 'Web App'}`,
       `**Type:** ${type === 'bug' ? 'Bug Report' : 'General Feedback'}`,
@@ -53,8 +55,6 @@ async function createGitHubIssue(
       '',
       '## TL;DR',
       summary,
-      '',
-      `cc @${GITHUB_ASSIGNEE}`,
     ].join('\n');
 
     const res = await fetch(`https://api.github.com/repos/${repo}/issues`, {

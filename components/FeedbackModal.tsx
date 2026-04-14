@@ -25,7 +25,7 @@ export default function FeedbackModal({ onClose }: Props) {
       const res = await fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, message }),
+        body: JSON.stringify({ type, message, source: 'webapp' }),
       });
       if (!res.ok) throw new Error(await res.text());
       setDone(true);
