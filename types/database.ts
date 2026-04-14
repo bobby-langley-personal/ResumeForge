@@ -90,6 +90,27 @@ export interface Database {
         }
         Relationships: []
       }
+      user_notifications: {
+        Row: {
+          id: string
+          user_id: string
+          notification_type: 'setup_experience' | 'first_tailor' | 'add_more_experience' | 'job_hunt_checkin' | 'try_extension'
+          sent_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          notification_type: 'setup_experience' | 'first_tailor' | 'add_more_experience' | 'job_hunt_checkin' | 'try_extension'
+          sent_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          notification_type?: 'setup_experience' | 'first_tailor' | 'add_more_experience' | 'job_hunt_checkin' | 'try_extension'
+          sent_at?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           id: string
@@ -99,6 +120,7 @@ export interface Database {
           subscription_status: 'free' | 'pro' | 'canceled' | null
           subscription_period_end: string | null
           tailored_resume_count: number
+          has_used_extension: boolean
           created_at: string
           updated_at: string
         }
@@ -110,6 +132,7 @@ export interface Database {
           subscription_status?: 'free' | 'pro' | 'canceled' | null
           subscription_period_end?: string | null
           tailored_resume_count?: number
+          has_used_extension?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -121,6 +144,7 @@ export interface Database {
           subscription_status?: 'free' | 'pro' | 'canceled' | null
           subscription_period_end?: string | null
           tailored_resume_count?: number
+          has_used_extension?: boolean
           created_at?: string
           updated_at?: string
         }
