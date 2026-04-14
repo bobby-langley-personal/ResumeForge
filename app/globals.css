@@ -74,6 +74,30 @@
   }
 }
 
+/* ── Marquee (testimonials) ──────────────────────────────────────────────── */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 40s linear infinite;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* ── Hero entrance animations ────────────────────────────────────────────── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.7s ease-out both;
+}
+.animate-fade-up-delay-1 { animation: fade-up 0.7s ease-out 0.15s both; }
+.animate-fade-up-delay-2 { animation: fade-up 0.7s ease-out 0.3s both; }
+.animate-fade-up-delay-3 { animation: fade-up 0.7s ease-out 0.45s both; }
+
 /* driver.js tour — pulsing ring on highlighted element */
 .driver-highlighted-element {
   outline: 2px solid rgba(99, 155, 230, 0.8) !important;

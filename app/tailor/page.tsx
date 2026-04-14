@@ -755,6 +755,15 @@ export default function Home() {
                     </div>
                   )}
                 </div>
+                  <div id="tour-background" className="w-full">
+                    <ExperiencePanel
+                      key={resetKey}
+                      onBackgroundChange={(text) => { setManualExperience(text); setUsingBaseResume(false); }}
+                      onAdditionalContextChange={setAdditionalContext}
+                      disabled={uiState === 'analyzing'}
+                      usingBaseResume={usingBaseResume}
+                    />
+                  </div>
 
                 {/* 7. Toggles + Generate */}
                 <div className="flex flex-col items-center space-y-4">
@@ -791,15 +800,6 @@ export default function Home() {
                     {uiState === 'analyzing' ? 'Analyzing…' : 'Tailor My Resume'}
                   </Button>
 
-                  <div id="tour-background" className="w-full">
-                    <ExperiencePanel
-                      key={resetKey}
-                      onBackgroundChange={(text) => { setManualExperience(text); setUsingBaseResume(false); }}
-                      onAdditionalContextChange={setAdditionalContext}
-                      disabled={uiState === 'analyzing'}
-                      usingBaseResume={usingBaseResume}
-                    />
-                  </div>
 
                   {uiState === 'analyzing' && (
                     <div ref={analyzingRef} className="w-full max-w-lg p-5 bg-blue-50 border border-blue-200 rounded-lg space-y-3">

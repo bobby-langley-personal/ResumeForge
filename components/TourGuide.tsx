@@ -79,9 +79,9 @@ export function startTour() {
       {
         element: '#tour-job-details',
         popover: {
-          title: 'Enter the role details',
+          title: 'Check the job details',
           description:
-            'Fill in the company name, job title, and paste the full job description. Paste the JD first — Easy Apply will try to auto-fill Company and Title, so just double-check.',
+            'Paste the job description first — Easy Apply auto-fills Company and Job Title from it. Give them a quick look to make sure they look right before generating.',
           side: 'right',
           align: 'start',
         },
@@ -89,35 +89,11 @@ export function startTour() {
         onDeselected: hideArrow,
       },
       {
-        element: '#tour-background',
-        popover: {
-          title: 'Add your background',
-          description:
-            'Upload your existing resume, load a saved document from your library, or paste your work history. The more detail you add, the better your results.',
-          side: 'left',
-          align: 'start',
-        },
-        onHighlightStarted: () => showArrow('tour-upload-btn', 'down'),
-        onDeselected: hideArrow,
-      },
-      {
-        element: '#tour-context',
-        popover: {
-          title: 'Boost results with extra context (optional)',
-          description:
-            'Add cover letter samples, portfolios, or your expanded work history — the AI uses these as reference to write more specific, compelling content.',
-          side: 'left',
-          align: 'start',
-        },
-        onHighlightStarted: () => showArrow('tour-context', 'up'),
-        onDeselected: hideArrow,
-      },
-      {
         element: '#tour-questions',
         popover: {
-          title: 'Answer tough application questions (optional)',
+          title: 'Got application questions?',
           description:
-            'Paste in written questions from the application and get AI-generated answers grounded in your real experience.',
+            'If the job posting has written questions ("Tell us about yourself…"), paste them here and get AI-written answers grounded in your experience. You can always do this later from the AI chat on your saved resume too.',
           side: 'top',
           align: 'start',
         },
@@ -125,11 +101,23 @@ export function startTour() {
         onDeselected: hideArrow,
       },
       {
+        element: '#tour-background',
+        popover: {
+          title: 'Your experience is loaded',
+          description:
+            'This shows the experience files the AI will draw from. Your uploaded resume should already be here — you can swap it or add extra context like portfolios or cover letter samples.',
+          side: 'left',
+          align: 'start',
+        },
+        onHighlightStarted: () => showArrow('tour-background', 'up'),
+        onDeselected: hideArrow,
+      },
+      {
         element: '#tour-generate',
         popover: {
-          title: "You're ready to go",
+          title: "Hit Generate — you're ready",
           description:
-            'Hit the button and get a tailored resume and cover letter in about 30 seconds. Your application is saved to AI Resumes for re-downloading anytime.',
+            'Get a tailored resume in about 30 seconds. Your result is saved to AI Resumes so you can re-download or refine it anytime.<br/><br/>💡 <strong>Pro tip:</strong> Install the <a href="https://chromewebstore.google.com/detail/foodpkmblpknlbkmdnnlgjkbnnhmbcid" target="_blank" style="color:#60a5fa;text-decoration:underline">Chrome Extension</a> — it reads any job board tab and fills all of this in for you automatically.',
           side: 'top',
           align: 'center',
         },
@@ -141,7 +129,7 @@ export function startTour() {
         popover: {
           title: 'Navigate from here',
           description:
-            'Use this menu to get around — Tailor New Resume brings you here to generate, AI Resumes shows your saved applications, and My Experience is where you store your resume and context files so they auto-load every time.',
+            'Use this menu to get around — <strong>AI Resumes</strong> shows your saved applications, <strong>My Experience</strong> is where you manage your uploaded files.',
           side: 'bottom',
           align: 'end',
         },

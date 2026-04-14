@@ -126,6 +126,8 @@ export default function ApplicationCard({
     jobTitle: string;
   } | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [localFitAnalysis, setLocalFitAnalysis] = useState<FitAnalysis | null>(fitAnalysis);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
 
   const copyAnswer = (text: string, idx: number) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -257,6 +259,46 @@ export default function ApplicationCard({
     }
   };
 
+  const handleOpenFitAnalysis = async () => {
+    if (localFitAnalysis) { setShowInsights(true); return; }
+    setAnalysisLoading(true);
+    setError('');
+    try {
+      // Need resume content as backgroundExperience for the analysis
+      let appData = previewData;
+      if (!appData) {
+        const res = await fetch(`/api/applications/${id}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        appData = await res.json();
+        setPreviewData(appData);
+      }
+      const res = await fetch('/api/analyze-fit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company,
+          jobTitle,
+          jobDescription,
+          backgroundExperience: appData?.resumeContent ?? '',
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const analysis: FitAnalysis = await res.json();
+      setLocalFitAnalysis(analysis);
+      setShowInsights(true);
+      // Save back to DB in background — don't block the modal
+      fetch(`/api/applications/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fit_analysis: analysis }),
+      }).catch(() => {/* non-critical */});
+    } catch {
+      setError('Failed to run fit analysis. Please try again.');
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
+
   const handleDownload = async (type: 'resume' | 'cover-letter') => {
     setDownloading(type);
     setError('');
@@ -325,12 +367,15 @@ export default function ApplicationCard({
             <ScrollText className="w-4 h-4" />
           </button>
           <button
-            onClick={() => fitAnalysis && setShowInsights(true)}
-            disabled={!fitAnalysis}
-            className={`p-1 transition-colors ${fitAnalysis ? 'text-yellow-400 hover:text-yellow-300' : 'text-slate-600 cursor-not-allowed'}`}
-            title={fitAnalysis ? 'View fit analysis' : 'No insights available for this application'}
+            onClick={handleOpenFitAnalysis}
+            disabled={analysisLoading}
+            className={`p-1 transition-colors ${localFitAnalysis ? 'text-yellow-400 hover:text-yellow-300' : 'text-muted-foreground hover:text-foreground'}`}
+            title={localFitAnalysis ? 'View fit analysis' : 'Run fit analysis'}
           >
-            <Lightbulb className="w-4 h-4" />
+            {analysisLoading
+              ? <span className="w-4 h-4 block animate-spin rounded-full border-2 border-current border-t-transparent" />
+              : <Lightbulb className="w-4 h-4" />
+            }
           </button>
           {questionAnswers && questionAnswers.length > 0 && (
             <button
@@ -460,9 +505,9 @@ export default function ApplicationCard({
       )}
 
       {/* Fit Analysis Modal */}
-      {showInsights && fitAnalysis && (
+      {showInsights && localFitAnalysis && (
         <FitAnalysisModal
-          fitAnalysis={fitAnalysis}
+          fitAnalysis={localFitAnalysis}
           company={company}
           jobTitle={jobTitle}
           createdAt={createdAt}

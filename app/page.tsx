@@ -6,6 +6,7 @@ import { supabaseServer } from '@/lib/supabase';
 import HomeRouter from '@/components/HomeRouter';
 import AnimatedCounter from '@/components/AnimatedCounter';
 import { ArrowRight, FileText, Sparkles, Target, X, Check, Globe, MousePointerClick, Zap, ShieldCheck, MessageSquareText, Library, Star, Clock } from 'lucide-react';
+import TestimonialMarquee from '@/components/TestimonialMarquee';
 
 /** Fetches total resume count from DB — used inside a Suspense boundary */
 async function ResumesGeneratedBadge() {
@@ -78,19 +79,19 @@ export default async function HomePage() {
         {/* Hero */}
         <section className="bg-slate-900 text-white py-16 sm:py-24 lg:py-28 px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 bg-blue-600/20 text-blue-300 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 border border-blue-500/30">
+            <div className="animate-fade-up inline-flex items-center gap-2 bg-blue-600/20 text-blue-300 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 border border-blue-500/30">
               <span className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
               Powered by Claude AI
             </div>
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6">
+            <h1 className="animate-fade-up-delay-1 text-3xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6">
               Land more interviews.{' '}
               <span className="text-blue-400">Faster.</span>
             </h1>
-            <p className="text-base sm:text-xl text-white/70 max-w-2xl mx-auto mb-10">
+            <p className="animate-fade-up-delay-2 text-base sm:text-xl text-white/70 max-w-2xl mx-auto mb-10">
               Easy Apply tailors your resume and cover letter to every job posting in seconds —
               so you spend less time formatting and more time actually applying.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="animate-fade-up-delay-3 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 href="/sign-up"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors text-base shadow-lg shadow-blue-600/30"
@@ -107,7 +108,7 @@ export default async function HomePage() {
             </div>
 
             {/* Live resume count */}
-            <div className="mt-8 flex justify-center">
+            <div className="animate-fade-up-delay-3 mt-8 flex justify-center">
               <Suspense
                 fallback={
                   <div className="inline-flex items-center gap-2 text-white/30 text-sm">
@@ -567,6 +568,15 @@ export default async function HomePage() {
               ))}
             </div>
           </div>
+        </section>
+
+        {/* Testimonials marquee */}
+        <section className="bg-slate-900 py-14 sm:py-16 overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 mb-8 text-center">
+            <p className="text-xs font-semibold uppercase tracking-widest text-blue-400 mb-2">What people are saying</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-white">Real results from real job seekers.</h2>
+          </div>
+          <TestimonialMarquee />
         </section>
 
         {/* CTA Strip */}

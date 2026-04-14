@@ -32,6 +32,31 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   });
 }
 
+// PATCH /api/applications/[id] — update specific fields (e.g. fit_analysis)
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { userId } = await auth();
+  if (!userId) return new Response('Unauthorized', { status: 401 });
+  const { id } = await params;
+
+  const body = await req.json();
+  const allowed = ['fit_analysis'];
+  const updates: Record<string, unknown> = {};
+  for (const key of allowed) {
+    if (key in body) updates[key] = body[key];
+  }
+  if (Object.keys(updates).length === 0) return Response.json({ error: 'No valid fields' }, { status: 400 });
+
+  const supabase = supabaseServer();
+  const { error } = await supabase
+    .from('applications')
+    .update(updates)
+    .eq('id', id)
+    .eq('user_id', userId);
+
+  if (error) return new Response(error.message, { status: 500 });
+  return new Response(null, { status: 204 });
+}
+
 // DELETE /api/applications/[id]
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { userId } = await auth();
