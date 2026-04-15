@@ -121,6 +121,7 @@ export interface Database {
           subscription_period_end: string | null
           tailored_resume_count: number
           has_used_extension: boolean
+          email_unsubscribed: boolean
           created_at: string
           updated_at: string
         }
@@ -133,6 +134,7 @@ export interface Database {
           subscription_period_end?: string | null
           tailored_resume_count?: number
           has_used_extension?: boolean
+          email_unsubscribed?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -145,6 +147,7 @@ export interface Database {
           subscription_period_end?: string | null
           tailored_resume_count?: number
           has_used_extension?: boolean
+          email_unsubscribed?: boolean
           created_at?: string
           updated_at?: string
         }

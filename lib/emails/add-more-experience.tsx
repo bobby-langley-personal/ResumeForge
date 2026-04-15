@@ -1,4 +1,4 @@
-export function addMoreExperienceHtml(name: string): string {
+export function addMoreExperienceHtml(name: string, unsubscribeLink: string): string {
   const firstName = name?.split(' ')[0] || 'there';
   return `<!DOCTYPE html>
 <html>
@@ -13,7 +13,7 @@ export function addMoreExperienceHtml(name: string): string {
       <p style="margin:0 0 32px;font-size:15px;line-height:1.6;color:#9ca3af;">You can upload any document: PDFs, Word files, or paste text directly.</p>
       <a href="https://www.easy-apply.ai/resumes" style="display:inline-block;background:#f9fafb;color:#0a0a0a;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">Add to My Experience →</a>
       <hr style="margin:40px 0;border:none;border-top:1px solid #222;">
-      <p style="margin:0;font-size:12px;color:#4b5563;">You're receiving this because you signed up for Easy Apply AI. <a href="https://www.easy-apply.ai" style="color:#6b7280;">easy-apply.ai</a></p>
+      <p style="margin:0;font-size:12px;color:#4b5563;">You're receiving this because you signed up for Easy Apply AI. <a href="https://www.easy-apply.ai" style="color:#6b7280;">easy-apply.ai</a> · <a href="${unsubscribeLink}" style="color:#6b7280;">Unsubscribe</a></p>
     </div>
   </div>
 </body>

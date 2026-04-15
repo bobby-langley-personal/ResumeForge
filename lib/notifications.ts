@@ -5,6 +5,7 @@ import { firstTailorHtml, firstTailorSubject } from '@/lib/emails/first-tailor';
 import { addMoreExperienceHtml, addMoreExperienceSubject } from '@/lib/emails/add-more-experience';
 import { jobHuntCheckinHtml, jobHuntCheckinSubject } from '@/lib/emails/job-hunt-checkin';
 import { tryExtensionHtml, tryExtensionSubject } from '@/lib/emails/try-extension';
+import { unsubscribeUrl } from '@/lib/unsubscribe-token';
 
 export type NotificationType =
   | 'setup_experience'
@@ -22,6 +23,7 @@ export interface UserStats {
   tailor_count: number;
   last_tailor_at: string | null;
   has_used_extension: boolean;
+  email_unsubscribed: boolean;
   sent_notifications: NotificationType[];
 }
 
@@ -68,13 +70,14 @@ export function getEligibleNotifications(user: UserStats, now = Date.now()): Not
   return eligible;
 }
 
-function buildEmail(type: NotificationType, name: string): { subject: string; html: string } {
+function buildEmail(type: NotificationType, name: string, userId: string): { subject: string; html: string } {
+  const unsub = unsubscribeUrl(userId);
   switch (type) {
-    case 'setup_experience':    return { subject: setupExperienceSubject, html: setupExperienceHtml(name) };
-    case 'first_tailor':        return { subject: firstTailorSubject, html: firstTailorHtml(name) };
-    case 'add_more_experience': return { subject: addMoreExperienceSubject, html: addMoreExperienceHtml(name) };
-    case 'job_hunt_checkin':    return { subject: jobHuntCheckinSubject, html: jobHuntCheckinHtml(name) };
-    case 'try_extension':       return { subject: tryExtensionSubject, html: tryExtensionHtml(name) };
+    case 'setup_experience':    return { subject: setupExperienceSubject, html: setupExperienceHtml(name, unsub) };
+    case 'first_tailor':        return { subject: firstTailorSubject, html: firstTailorHtml(name, unsub) };
+    case 'add_more_experience': return { subject: addMoreExperienceSubject, html: addMoreExperienceHtml(name, unsub) };
+    case 'job_hunt_checkin':    return { subject: jobHuntCheckinSubject, html: jobHuntCheckinHtml(name, unsub) };
+    case 'try_extension':       return { subject: tryExtensionSubject, html: tryExtensionHtml(name, unsub) };
   }
 }
 
@@ -107,9 +110,19 @@ export async function sendNotification(
   if (!resendKey) return { ok: false, error: 'RESEND_API_KEY not set' };
 
   const resend = new Resend(resendKey);
-  const { subject, html } = buildEmail(type, name);
+  const { subject, html } = buildEmail(type, name, userId);
+  const unsub = unsubscribeUrl(userId);
 
-  const { error: sendError } = await resend.emails.send({ from: fromEmail, to: email, subject, html });
+  const { error: sendError } = await resend.emails.send({
+    from: fromEmail,
+    to: email,
+    subject,
+    html,
+    headers: {
+      'List-Unsubscribe': `<${unsub}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    },
+  });
   if (sendError) return { ok: false, error: sendError.message };
 
   // Record the send (ignore unique constraint violation — race condition is fine)
@@ -129,7 +142,8 @@ export async function fetchAllUserStats(): Promise<UserStats[]> {
 
   const { data: users, error } = await supabase
     .from('users')
-    .select('id, email, full_name, created_at, has_used_extension');
+    .select('id, email, full_name, created_at, has_used_extension, email_unsubscribed')
+    .eq('email_unsubscribed', false);
   if (error || !users) return [];
 
   const userIds = users.map(u => u.id);
@@ -181,6 +195,7 @@ export async function fetchAllUserStats(): Promise<UserStats[]> {
     tailor_count: tailorCountByUser.get(u.id) ?? 0,
     last_tailor_at: lastTailorByUser.get(u.id) ?? null,
     has_used_extension: u.has_used_extension ?? false,
+    email_unsubscribed: u.email_unsubscribed ?? false,
     sent_notifications: sentByUser.get(u.id) ?? [],
   }));
 }
