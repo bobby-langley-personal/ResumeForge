@@ -366,3 +366,6 @@ JSEARCH_MONTHLY_LIMIT=  # Integer monthly call cap (default 175)
 ## Branch Naming
 
 Feature branches follow `claude/issue-{number}-{YYYYMMDD}-{HHMM}` so Vercel skips automatic deployment on non-main branches.
+
+
+<!-- Fix #141 -->
