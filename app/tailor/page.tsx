@@ -212,10 +212,13 @@ export default function Home() {
   const preGenAbort = useRef<AbortController | null>(null);
   const preGenBuffer = useRef({ resume: '', coverLetter: '', answers: [] as { question: string; answer: string }[], applicationId: null as string | null, lastStatus: '' });
 
-  const fillTestData = () => {
+  const fillTestJD = () => {
     setCompany('Kforce / Fintech Client');
     setJobTitle('Technical Support Specialist');
     setJobDescription(DEV_JD);
+  };
+
+  const fillTestExperience = () => {
     setManualExperience(DEV_RESUME);
   };
 
@@ -589,9 +592,12 @@ export default function Home() {
             {(uiState === 'idle' || uiState === 'analyzing' || uiState === 'error') && (
               <form ref={formRef} onSubmit={handleFormSubmit} className="space-y-6">
                 {IS_DEV && (
-                  <div className="flex justify-end">
-                    <Button type="button" variant="outline" size="sm" onClick={fillTestData}>
-                      [Dev] Fill Test Data
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={fillTestJD}>
+                      [Dev] Test JD
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={fillTestExperience}>
+                      [Dev] Test Experience
                     </Button>
                   </div>
                 )}
