@@ -1096,7 +1096,7 @@ export default function Home() {
                 onClick={() => handleUpgrade('monthly')}
               >
                 {upgradeLoading === 'monthly' ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                Monthly — $19/mo
+                Monthly — $9/mo
               </Button>
               <Button
                 variant="outline"
@@ -1105,7 +1105,7 @@ export default function Home() {
                 onClick={() => handleUpgrade('quarterly')}
               >
                 {upgradeLoading === 'quarterly' ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                Quarterly — $47/3 months · Save 18%
+                Quarterly — $23/3 months · Save 15%
               </Button>
               <Button
                 variant="outline"
@@ -1114,7 +1114,7 @@ export default function Home() {
                 onClick={() => handleUpgrade('annual')}
               >
                 {upgradeLoading === 'annual' ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                Annual — $149/yr · Best Value · Save 35%
+                Annual — $79/yr · Best Value · Save 27%
               </Button>
             </div>
 
