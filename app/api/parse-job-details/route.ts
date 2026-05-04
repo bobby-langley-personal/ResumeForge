@@ -33,7 +33,9 @@ Output valid JSON only — no markdown fences, no explanation, nothing else:
 Rules:
 - jobTitle: the specific position being hired for (e.g. "Customer Success Engineer"). Infer the correct singular title if a department name is used as a header.
 - company: the hiring company name. Ignore job board names.
-- questions: open-ended application questions the candidate must answer in writing (e.g. "What excites you about this role?", "Describe a project where..."). Include at most 5. Strip leading asterisks, numbers, or bullet characters. Exclude identity/demographic/compliance fields (EEO, disability, veteran status, name, email, address, phone, LinkedIn URL, resume upload, availability, salary expectations, referral source). Return [] if none found.
+- questions: ONLY include questions that are LITERALLY AND VERBATIM present in the provided text, addressed directly to the applicant (e.g. a form field prompt like "What excites you about this role?" or "Describe a time when..."). Include at most 5. Strip leading asterisks, numbers, or bullet characters.
+  CRITICAL: Do NOT generate, infer, suggest, or rephrase questions. Do NOT turn job requirements or responsibilities into questions. Do NOT create questions based on the role content. If the text does not contain explicit written questions for the applicant to answer, return []. Most job descriptions have no application questions — [] is the correct and expected answer in those cases.
+  Exclude: identity/demographic/compliance fields (EEO, disability, veteran status, name, email, address, phone, LinkedIn URL, resume upload, availability, salary expectations, referral source, work authorization).
 - company and jobTitle are required — make your best guess, do not return null.`,
       messages: [
         {

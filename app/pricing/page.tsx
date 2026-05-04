@@ -16,9 +16,9 @@ interface BillingStatus {
 type Plan = 'monthly' | 'quarterly' | 'annual';
 
 const PLANS: { key: Plan; label: string; price: string; period: string; badge: string | null; highlight?: boolean }[] = [
-  { key: 'monthly',   label: 'Monthly',   price: '$19',  period: '/mo',        badge: null },
-  { key: 'quarterly', label: 'Quarterly', price: '$47',  period: '/3 months',  badge: 'Save 18%' },
-  { key: 'annual',    label: 'Annual',    price: '$149', period: '/yr',        badge: 'Save 35%', highlight: true },
+  { key: 'monthly',   label: 'Monthly',   price: '$9',  period: '/mo',        badge: null },
+  { key: 'quarterly', label: 'Quarterly', price: '$23', period: '/3 months',  badge: 'Save 15%' },
+  { key: 'annual',    label: 'Annual',    price: '$79', period: '/yr',        badge: 'Save 27%', highlight: true },
 ];
 
 const PRO_FEATURES = [
