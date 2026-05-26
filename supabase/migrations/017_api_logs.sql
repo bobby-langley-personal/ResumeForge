@@ -19,3 +19,7 @@ CREATE INDEX idx_api_logs_created_at ON api_logs(created_at DESC);
 CREATE INDEX idx_api_logs_route ON api_logs(route);
 CREATE INDEX idx_api_logs_status_code ON api_logs(status_code);
 CREATE INDEX idx_api_logs_error ON api_logs(error) WHERE error IS NOT NULL;
+
+-- Enable RLS — only the service role (used server-side) can access this table.
+-- No policies are added, so anon/authenticated keys are blocked entirely.
+ALTER TABLE api_logs ENABLE ROW LEVEL SECURITY;
