@@ -38,8 +38,7 @@ export function sanitizeBody(
 export function logApiCall(entry: ApiLogEntry): void {
   try {
     const supabase = supabaseServer();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    void Promise.resolve((supabase as any)
+    void Promise.resolve((supabase as unknown as { from: (t: string) => { insert: (v: unknown) => PromiseLike<unknown> } })
       .from('api_logs')
       .insert({
         user_id: entry.user_id ?? null,
