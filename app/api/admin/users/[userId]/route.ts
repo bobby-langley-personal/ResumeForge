@@ -19,7 +19,7 @@ export async function GET(
     await Promise.all([
       supabase
         .from('users')
-        .select('id, email, full_name, subscription_status, subscription_period_end, created_at, tailored_resume_count, stripe_customer_id')
+        .select('id, email, full_name, subscription_status, subscription_period_end, created_at, tailored_resume_count, stripe_customer_id, do_not_email')
         .eq('id', userId)
         .single(),
       supabase
@@ -60,4 +60,31 @@ export async function GET(
     },
     logs: logsResult.data ?? [],
   });
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ userId: string }> }
+) {
+  const secret = process.env.ADMIN_SECRET;
+  if (!secret || req.headers.get('x-admin-secret') !== secret) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
+  const { userId } = await params;
+  let body: { do_not_email?: boolean };
+  try { body = await req.json(); } catch { return new Response('Invalid JSON', { status: 400 }); }
+
+  if (typeof body.do_not_email !== 'boolean') {
+    return new Response('do_not_email (boolean) required', { status: 400 });
+  }
+
+  const supabase = supabaseServer();
+  const { error } = await supabase
+    .from('users')
+    .update({ do_not_email: body.do_not_email })
+    .eq('id', userId);
+
+  if (error) return Response.json({ error: error.message }, { status: 500 });
+  return Response.json({ ok: true });
 }

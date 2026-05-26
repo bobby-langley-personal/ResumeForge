@@ -19,10 +19,11 @@ export async function POST(req: NextRequest) {
 
   for (const user of users) {
     const eligible = getEligibleNotifications(user);
-    for (const type of eligible) {
-      const result = await sendNotification(user.id, type, user.email, user.full_name ?? user.email);
-      results.push({ userId: user.id, email: user.email, type, ...result });
-    }
+    if (eligible.length === 0) continue;
+    // Max 1 email per user per run — stagger multiple eligible types across days
+    const type = eligible[0];
+    const result = await sendNotification(user.id, type, user.email, user.full_name ?? user.email);
+    results.push({ userId: user.id, email: user.email, type, ...result });
   }
 
   const sent = results.filter(r => r.ok).length;

@@ -23,10 +23,13 @@ export async function GET(req: NextRequest) {
 
   for (const user of users) {
     const eligible = getEligibleNotifications(user);
-    for (const type of eligible) {
-      const result = await sendNotification(user.id, type, user.email, user.full_name ?? user.email);
-      results.push({ userId: user.id, type, ...result });
-    }
+    if (eligible.length === 0) continue;
+    // Send only the first (highest-priority) eligible notification per user per run
+    // to avoid sending multiple emails to the same person in a single day.
+    // Remaining eligible types will be sent on subsequent daily runs.
+    const type = eligible[0];
+    const result = await sendNotification(user.id, type, user.email, user.full_name ?? user.email);
+    results.push({ userId: user.id, type, ...result });
   }
 
   const sent = results.filter(r => r.ok).length;

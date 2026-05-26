@@ -24,6 +24,7 @@ export interface UserStats {
   last_tailor_at: string | null;
   has_used_extension: boolean;
   email_unsubscribed: boolean;
+  do_not_email: boolean;
   sent_notifications: NotificationType[];
 }
 
@@ -144,8 +145,9 @@ export async function fetchAllUserStats(): Promise<UserStats[]> {
   // .eq('email_unsubscribed', false) silently excludes NULLs in PostgreSQL
   const { data: users, error } = await supabase
     .from('users')
-    .select('id, email, full_name, created_at, has_used_extension, email_unsubscribed')
-    .or('email_unsubscribed.is.null,email_unsubscribed.eq.false');
+    .select('id, email, full_name, created_at, has_used_extension, email_unsubscribed, do_not_email')
+    .or('email_unsubscribed.is.null,email_unsubscribed.eq.false')
+    .eq('do_not_email', false);
   if (error || !users) {
     console.error('[fetchAllUserStats] query failed:', error);
     return [];
@@ -201,6 +203,7 @@ export async function fetchAllUserStats(): Promise<UserStats[]> {
     last_tailor_at: lastTailorByUser.get(u.id) ?? null,
     has_used_extension: u.has_used_extension ?? false,
     email_unsubscribed: u.email_unsubscribed ?? false,
+    do_not_email: u.do_not_email ?? false,
     sent_notifications: sentByUser.get(u.id) ?? [],
   }));
 }

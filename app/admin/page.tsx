@@ -5,7 +5,7 @@ import { useAdminContext } from './AdminContext';
 import {
   Users, TrendingUp, Crown, Mail, CheckCircle, XCircle, Loader2, Send,
   ChevronRight, X, ArrowLeft, ExternalLink, FileText, Briefcase, Activity,
-  MapPin, Linkedin,
+  MapPin, Linkedin, BellOff,
 } from 'lucide-react';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -27,6 +27,7 @@ interface UserRow {
   created_at: string;
   subscription_status: string | null;
   tailored_resume_count?: number;
+  do_not_email?: boolean;
 }
 
 interface ResumeDoc {
@@ -66,6 +67,7 @@ interface UserDetail {
     created_at: string;
     tailored_resume_count: number;
     stripe_customer_id: string | null;
+    do_not_email: boolean;
   };
   profile: {
     full_name: string | null;
@@ -153,6 +155,7 @@ function UserDetailPanel({
   const [detail, setDetail] = useState<UserDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'docs' | 'resumes' | 'logs'>('overview');
+  const [dneToggling, setDneToggling] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -161,6 +164,19 @@ function UserDetailPanel({
       .then(setDetail)
       .finally(() => setLoading(false));
   }, [userId, secret]);
+
+  async function toggleDoNotEmail() {
+    if (!detail) return;
+    const next = !detail.user.do_not_email;
+    setDneToggling(true);
+    await fetch(`/api/admin/users/${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
+      body: JSON.stringify({ do_not_email: next }),
+    });
+    setDetail(d => d ? { ...d, user: { ...d.user, do_not_email: next } } : d);
+    setDneToggling(false);
+  }
 
   if (loading) {
     return (
@@ -247,6 +263,38 @@ function UserDetailPanel({
                 <Row label="Period ends" value={new Date(user.subscription_period_end).toLocaleDateString()} />
               )}
             </Section>
+
+            {/* Do Not Email toggle */}
+            <div className={`rounded-lg border p-3 flex items-center justify-between gap-3 ${
+              user.do_not_email
+                ? 'border-orange-700/50 bg-orange-950/20'
+                : 'border-zinc-800 bg-zinc-900'
+            }`}>
+              <div className="flex items-center gap-2 min-w-0">
+                <BellOff className={`w-4 h-4 shrink-0 ${user.do_not_email ? 'text-orange-400' : 'text-zinc-600'}`} />
+                <div>
+                  <p className={`text-xs font-medium ${user.do_not_email ? 'text-orange-300' : 'text-zinc-400'}`}>
+                    {user.do_not_email ? 'On Do Not Send list' : 'Receiving lifecycle emails'}
+                  </p>
+                  <p className="text-xs text-zinc-600">
+                    {user.do_not_email
+                      ? 'This user will not receive any automatic emails.'
+                      : 'Toggle to block all automated emails for this user.'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={toggleDoNotEmail}
+                disabled={dneToggling}
+                className={`shrink-0 text-xs px-3 py-1.5 rounded font-medium transition-colors disabled:opacity-50 ${
+                  user.do_not_email
+                    ? 'bg-orange-700 hover:bg-orange-600 text-white'
+                    : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-200'
+                }`}
+              >
+                {dneToggling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : user.do_not_email ? 'Remove' : 'Add'}
+              </button>
+            </div>
 
             {profile && (
               <Section title="Contact info">
@@ -459,6 +507,11 @@ function UsersListPanel({
                   <span className={`text-xs px-1.5 py-0.5 rounded ${planBadge(u.subscription_status)}`}>
                     {u.subscription_status ?? 'free'}
                   </span>
+                  {u.do_not_email && (
+                    <span className="flex items-center gap-0.5 text-[10px] text-orange-500">
+                      <BellOff className="w-3 h-3" /> DNE
+                    </span>
+                  )}
                   {u.tailored_resume_count != null && (
                     <span className="text-xs text-zinc-600">{u.tailored_resume_count} resumes</span>
                   )}

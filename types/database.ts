@@ -161,6 +161,7 @@ export interface Database {
           tailored_resume_count: number
           has_used_extension: boolean
           email_unsubscribed: boolean
+          do_not_email: boolean
           created_at: string
           updated_at: string
         }
@@ -174,6 +175,7 @@ export interface Database {
           tailored_resume_count?: number
           has_used_extension?: boolean
           email_unsubscribed?: boolean
+          do_not_email?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -187,6 +189,7 @@ export interface Database {
           tailored_resume_count?: number
           has_used_extension?: boolean
           email_unsubscribed?: boolean
+          do_not_email?: boolean
           created_at?: string
           updated_at?: string
         }
