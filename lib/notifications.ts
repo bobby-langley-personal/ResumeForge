@@ -140,11 +140,16 @@ export async function sendNotification(
 export async function fetchAllUserStats(): Promise<UserStats[]> {
   const supabase = supabaseServer();
 
+  // Use .or() to include rows where email_unsubscribed is NULL (column default not yet applied)
+  // .eq('email_unsubscribed', false) silently excludes NULLs in PostgreSQL
   const { data: users, error } = await supabase
     .from('users')
     .select('id, email, full_name, created_at, has_used_extension, email_unsubscribed')
-    .eq('email_unsubscribed', false);
-  if (error || !users) return [];
+    .or('email_unsubscribed.is.null,email_unsubscribed.eq.false');
+  if (error || !users) {
+    console.error('[fetchAllUserStats] query failed:', error);
+    return [];
+  }
 
   const userIds = users.map(u => u.id);
 
