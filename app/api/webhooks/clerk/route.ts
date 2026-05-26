@@ -2,6 +2,8 @@ import { Webhook } from 'svix';
 import { headers } from 'next/headers';
 import { WebhookEvent, clerkClient } from '@clerk/nextjs/server';
 import { supabaseServer } from '@/lib/supabase';
+import { Resend } from 'resend';
+import { newMemberHtml, newMemberSubject } from '@/lib/emails/new-member';
 
 export const runtime = 'nodejs';
 
@@ -162,6 +164,22 @@ export async function POST(req: Request) {
     if (error) {
       console.error('Error syncing user:', error);
       return new Response('Error syncing user', { status: 500 });
+    }
+
+    // Notify admin on new signups
+    if (eventType === 'user.created') {
+      const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+      const resendKey = process.env.RESEND_API_KEY;
+      if (adminEmail && resendKey) {
+        const fromEmail = process.env.NOTIFICATION_FROM_EMAIL ?? 'Easy Apply AI <hello@easy-apply.ai>';
+        const resend = new Resend(resendKey);
+        await resend.emails.send({
+          from: fromEmail,
+          to: adminEmail,
+          subject: newMemberSubject(email),
+          html: newMemberHtml(email, full_name, new Date().toISOString()),
+        }).catch(err => console.error('[webhook] admin notification failed:', err));
+      }
     }
   }
 

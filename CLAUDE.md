@@ -151,6 +151,12 @@ Added in migration 012. Stores contact info extracted from uploaded resumes.
 | `POST /api/interview/sessions` | Node | Create a new draft session; returns `{ id }` |
 | `PATCH /api/interview/sessions/[id]` | Node | Update session state (`completed_roles`, `draft_state`, `status`) |
 | `DELETE /api/interview/sessions/[id]` | Node | Delete session (on discard or after saving to My Experience) |
+| `GET /api/admin/send-notification` | Node | Admin-only (x-admin-secret header); returns all users with stats + `eligible` notification types via `fetchAllUserStats()` |
+| `POST /api/admin/send-notification` | Node | Admin-only; sends notification of given type to specified `userIds`; accepts `force` boolean |
+| `GET /api/admin/stats` | Node | Admin-only; returns total/new user counts, subscription breakdown, recent signups (last 20), Resend config status, last notification sent timestamp |
+| `POST /api/admin/test-email` | Node | Admin-only; sends a test email to `ADMIN_NOTIFICATION_EMAIL` to verify Resend is working |
+| `GET /api/admin/preview-notification` | Node | Admin-only; renders a notification email as HTML for preview (uses dummy name/unsub); accepts `?type=` query param |
+| `GET /api/cron/notifications` | Node | Vercel cron (daily 14:00 UTC); sends lifecycle emails to all eligible non-unsubscribed users; auth via `Authorization: Bearer <CRON_SECRET>` |
 
 ### generate-documents request fields
 - `company`, `jobTitle`, `jobDescription`, `backgroundExperience` — required
@@ -415,6 +421,20 @@ Contact info is stored in `user_profiles` (one row per user, upserted — not in
 **Document generation**
 - `generate-documents` and `generate-polished-resume` routes both fetch `user_profiles` for the current user; if `full_name` and `email` exist, an exact contact info block is injected into the generation prompt so the AI uses the saved details verbatim
 - All three download-pdf routes (`/resume`, `/cover-letter`, `/polished`) prefer `profile.full_name` over Clerk's display name for `candidateName`
+
+---
+
+## Admin Panel (`/admin`)
+
+- Protected by Clerk user ID check (`NEXT_PUBLIC_ADMIN_USER_ID`) and an admin secret stored in `localStorage` (`ea_admin_secret`), validated on unlock via `GET /api/admin/stats`
+- `app/admin/layout.tsx` — shared client layout; shows unlock gate if no secret stored, sidebar nav otherwise; "Lock admin" clears localStorage secret
+- `app/admin/AdminContext.tsx` — React context that shares the secret across all admin pages without re-entry
+- `app/admin/page.tsx` — Overview: stats cards, email health (Resend status + test-send button), recent signups table
+- `app/admin/notifications/page.tsx` — Notification sender: type selector with descriptions, eligible-user count, "Preview email" modal (iframe with real rendered HTML), send results with per-user status
+- All admin API routes require `x-admin-secret` header matching `ADMIN_SECRET` env var
+- **New member notification**: `app/api/webhooks/clerk/route.ts` sends an email to `ADMIN_NOTIFICATION_EMAIL` on every `user.created` event
+- **Email lifecycle**: `lib/notifications.ts` `fetchAllUserStats()` uses `.or('email_unsubscribed.is.null,email_unsubscribed.eq.false')` to include users where the column was never set (defensive against NULL)
+- Required env vars: `ADMIN_SECRET`, `ADMIN_NOTIFICATION_EMAIL`, `RESEND_API_KEY`, `NOTIFICATION_FROM_EMAIL`, `UNSUBSCRIBE_SECRET`, `CRON_SECRET` (Vercel auto-injects for cron auth)
 
 ---
 

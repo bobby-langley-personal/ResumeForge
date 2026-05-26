@@ -12,7 +12,13 @@ export async function GET(req: NextRequest) {
     return new Response('Unauthorized', { status: 401 });
   }
 
+  if (!process.env.RESEND_API_KEY) {
+    console.error('[cron/notifications] RESEND_API_KEY is not set — no emails will be sent');
+    return Response.json({ error: 'RESEND_API_KEY not configured' }, { status: 500 });
+  }
+
   const users = await fetchAllUserStats();
+  console.log(`[cron/notifications] fetched ${users.length} eligible users`);
   const results: { userId: string; type: string; ok: boolean; error?: string }[] = [];
 
   for (const user of users) {
