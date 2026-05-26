@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { stripe } from '@/lib/stripe';
 import { supabaseServer } from '@/lib/supabase';
+import { logApiCall } from '@/lib/log-api';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const startMs = Date.now();
   try {
     const { userId } = await auth();
     if (!userId) {
@@ -55,10 +57,27 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       metadata: { userId },
     });
 
+    logApiCall({
+      user_id: userId,
+      route: '/api/billing/create-checkout',
+      method: 'POST',
+      status_code: 200,
+      request_body: { plan },
+      response_summary: { hasUrl: !!session.url },
+      duration_ms: Date.now() - startMs,
+    });
+
     return NextResponse.json({ url: session.url });
   } catch (err) {
     console.error('[/api/billing/create-checkout]', err);
     const message = err instanceof Error ? err.message : 'Checkout failed';
+    logApiCall({
+      route: '/api/billing/create-checkout',
+      method: 'POST',
+      status_code: 500,
+      error: message,
+      duration_ms: Date.now() - startMs,
+    });
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
