@@ -7,10 +7,12 @@ import { getModels } from '@/lib/models';
 import { buildContextBlock, parseStageJSON } from '@/lib/pipeline-utils';
 import { supabaseServer } from '@/lib/supabase';
 import { FitAnalysis } from '@/types/fit-analysis';
+import { logApiCall } from '@/lib/log-api';
 
 export async function POST(req: NextRequest) {
   console.log('[generate-documents] Request received');
-  
+  const startMs = Date.now();
+
   try {
     // Check for ANTHROPIC_API_KEY at runtime
     if (!process.env.ANTHROPIC_API_KEY) {
@@ -47,6 +49,25 @@ export async function POST(req: NextRequest) {
     if (!company || !jobTitle || !jobDescription || !backgroundExperience) {
       return new Response('Missing required fields', { status: 400 });
     }
+
+    logApiCall({
+      user_id: userId,
+      route: '/api/generate-documents',
+      method: 'POST',
+      status_code: 200,
+      request_body: {
+        company,
+        jobTitle,
+        jobDescriptionLen: jobDescription?.length ?? 0,
+        backgroundLen: backgroundExperience?.length ?? 0,
+        additionalContextCount: additionalContext?.length ?? 0,
+        includeCoverLetter,
+        includeSummary,
+        hasJobUrl: !!jobUrl,
+        questionCount: questions?.length ?? 0,
+      },
+      duration_ms: Date.now() - startMs,
+    });
 
     // Fetch user subscription status + profile in parallel
     const supabase = supabaseServer();
@@ -360,7 +381,15 @@ Output valid JSON only, no markdown fences:
     });
 
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error('API error:', error);
+    logApiCall({
+      route: '/api/generate-documents',
+      method: 'POST',
+      status_code: 500,
+      error: message,
+      duration_ms: Date.now() - startMs,
+    });
     return new Response('Internal server error', { status: 500 });
   }
 }

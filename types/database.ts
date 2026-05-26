@@ -9,6 +9,45 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      api_logs: {
+        Row: {
+          id: string
+          user_id: string | null
+          route: string
+          method: string
+          status_code: number | null
+          request_body: Json | null
+          response_summary: Json | null
+          error: string | null
+          duration_ms: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          route: string
+          method?: string
+          status_code?: number | null
+          request_body?: Json | null
+          response_summary?: Json | null
+          error?: string | null
+          duration_ms?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          route?: string
+          method?: string
+          status_code?: number | null
+          request_body?: Json | null
+          response_summary?: Json | null
+          error?: string | null
+          duration_ms?: number | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       api_usage: {
         Row: {
           id: string

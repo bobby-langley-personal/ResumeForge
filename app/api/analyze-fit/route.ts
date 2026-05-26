@@ -4,8 +4,10 @@ import { Anthropic } from '@anthropic-ai/sdk';
 import { getModels } from '@/lib/models';
 import { parseStageJSON, buildContextBlock } from '@/lib/pipeline-utils';
 import { FitAnalysis } from '@/types/fit-analysis';
+import { logApiCall } from '@/lib/log-api';
 
 export async function POST(req: NextRequest) {
+  const startMs = Date.now();
   try {
     if (!process.env.ANTHROPIC_API_KEY) {
       return new Response('ANTHROPIC_API_KEY not set', { status: 500 });
@@ -74,10 +76,27 @@ Output valid JSON only, no markdown fences:
     const fitAnalysis = parseStageJSON<FitAnalysis>(text);
     console.log('[analyze-fit] Parsed successfully:', JSON.stringify(fitAnalysis).slice(0, 300));
 
+    logApiCall({
+      user_id: userId,
+      route: '/api/analyze-fit',
+      method: 'POST',
+      status_code: 200,
+      request_body: { company, jobTitle },
+      response_summary: { overallFit: fitAnalysis?.overallFit, roleType: fitAnalysis?.roleType },
+      duration_ms: Date.now() - startMs,
+    });
+
     return Response.json(fitAnalysis);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error('[analyze-fit] Failed:', message);
+    logApiCall({
+      route: '/api/analyze-fit',
+      method: 'POST',
+      status_code: 500,
+      error: message,
+      duration_ms: Date.now() - startMs,
+    });
     return new Response(message, { status: 500 });
   }
 }
