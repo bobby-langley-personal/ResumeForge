@@ -58,13 +58,37 @@ export default function CoverLetterPDF({
     day: 'numeric'
   });
 
+  // Regex for common closing phrases (e.g. "Best,", "Sincerely,", "Regards,")
+  // Used to strip the AI-generated closing block so the hardcoded template
+  // closing ("Sincerely," + candidateName) doesn't duplicate it.
+  const CLOSING_RE = /^(best|sincerely|regards|warm regards|kind regards|best regards|thank you|thanks|yours truly|yours sincerely|with appreciation|with regards|respectfully)[,.]?\s*$/i;
+
   // Split cover letter text into paragraphs, stripping any AI-generated
   // greeting line (Dear ...,) since the template renders its own header
-  const paragraphs = coverLetterText
+  const rawParagraphs = coverLetterText
     .split('\n\n')
     .map(p => p.trim())
     .filter(p => p.length > 0)
     .filter(p => !/^dear\b/i.test(p));  // remove greeting — rendered below
+
+  // Strip trailing closing block so it doesn't duplicate the template's own
+  // "Sincerely, [name]" footer. Handles two cases:
+  //   Case A: "Best,\n\nJane Smith" → two separate paragraphs at the end
+  //   Case B: "Best,\nJane Smith" or just "Best," → one paragraph at the end
+  const paragraphs = [...rawParagraphs];
+  if (paragraphs.length >= 2) {
+    const secondLastFirstLine = paragraphs[paragraphs.length - 2].split('\n')[0].trim();
+    const lastLineCount = paragraphs[paragraphs.length - 1].split('\n').length;
+    if (CLOSING_RE.test(secondLastFirstLine) && lastLineCount <= 2) {
+      paragraphs.splice(paragraphs.length - 2, 2);  // remove closing phrase + name
+    }
+  }
+  if (paragraphs.length >= 1) {
+    const lastFirstLine = paragraphs[paragraphs.length - 1].split('\n')[0].trim();
+    if (CLOSING_RE.test(lastFirstLine)) {
+      paragraphs.pop();  // remove lone closing phrase (or "Best,\nName" single block)
+    }
+  }
 
   return (
     <Document>

@@ -4,8 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAdminContext } from './AdminContext';
 import {
   Users, TrendingUp, Crown, Mail, CheckCircle, XCircle, Loader2, Send,
-  ChevronRight, X, ArrowLeft, ExternalLink, FileText, Briefcase, Activity,
-  MapPin, Linkedin, BellOff,
+  ChevronRight, ChevronDown, ChevronUp, X, ArrowLeft, ExternalLink, FileText,
+  Briefcase, Activity, MapPin, Linkedin, BellOff,
 } from 'lucide-react';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -43,6 +43,11 @@ interface AppItem {
   company: string;
   job_title: string;
   created_at: string;
+}
+
+interface AppContent {
+  resume_content: string | null;
+  cover_letter_content: string | null;
 }
 
 interface LogEntry {
@@ -147,6 +152,43 @@ function StatCard({
   );
 }
 
+// ── App Content Viewer ────────────────────────────────────────────────────────
+
+function AppContentViewer({ content }: { content: AppContent }) {
+  const hasResume = !!content.resume_content;
+  const hasCoverLetter = !!content.cover_letter_content;
+  const [tab, setTab] = useState<'resume' | 'cover_letter'>(hasResume ? 'resume' : 'cover_letter');
+  const activeText = tab === 'resume' ? content.resume_content : content.cover_letter_content;
+
+  return (
+    <div className="mt-1 mb-2 bg-zinc-950 border border-zinc-800 rounded text-xs overflow-hidden">
+      <div className="flex border-b border-zinc-800">
+        <button
+          onClick={() => setTab('resume')}
+          disabled={!hasResume}
+          className={`px-3 py-1.5 text-[10px] font-medium border-b-2 transition-colors disabled:opacity-30 ${
+            tab === 'resume' ? 'border-zinc-400 text-zinc-200' : 'border-transparent text-zinc-500 hover:text-zinc-300'
+          }`}
+        >
+          Resume
+        </button>
+        <button
+          onClick={() => setTab('cover_letter')}
+          disabled={!hasCoverLetter}
+          className={`px-3 py-1.5 text-[10px] font-medium border-b-2 transition-colors disabled:opacity-30 ${
+            tab === 'cover_letter' ? 'border-zinc-400 text-zinc-200' : 'border-transparent text-zinc-500 hover:text-zinc-300'
+          }`}
+        >
+          Cover Letter{!hasCoverLetter ? ' (none)' : ''}
+        </button>
+      </div>
+      <pre className="p-3 text-[10px] text-zinc-400 font-mono whitespace-pre-wrap break-words overflow-auto max-h-72 leading-relaxed">
+        {activeText ?? <span className="text-zinc-600">No content</span>}
+      </pre>
+    </div>
+  );
+}
+
 // ── User Detail Panel ─────────────────────────────────────────────────────────
 
 function UserDetailPanel({
@@ -156,6 +198,25 @@ function UserDetailPanel({
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'docs' | 'resumes' | 'logs'>('overview');
   const [dneToggling, setDneToggling] = useState(false);
+  const [expandedAppId, setExpandedAppId] = useState<string | null>(null);
+  const [appContentMap, setAppContentMap] = useState<Record<string, AppContent>>({});
+  const [loadingAppId, setLoadingAppId] = useState<string | null>(null);
+
+  async function loadAppContent(appId: string) {
+    if (appContentMap[appId]) {
+      setExpandedAppId(id => id === appId ? null : appId);
+      return;
+    }
+    setLoadingAppId(appId);
+    setExpandedAppId(appId);
+    try {
+      const res = await fetch(`/api/admin/applications/${appId}`, { headers: { 'x-admin-secret': secret } });
+      const data = await res.json();
+      setAppContentMap(m => ({ ...m, [appId]: { resume_content: data.resume_content ?? null, cover_letter_content: data.cover_letter_content ?? null } }));
+    } finally {
+      setLoadingAppId(null);
+    }
+  }
 
   useEffect(() => {
     setLoading(true);
@@ -348,18 +409,37 @@ function UserDetailPanel({
               <p className="text-zinc-600 text-xs py-2">No resumes generated yet.</p>
             ) : (
               <div className="space-y-2">
-                {applications.recent.map(app => (
-                  <div key={app.id} className="flex items-start justify-between gap-2 py-2 border-b border-zinc-800/50 last:border-0">
-                    <div className="flex items-start gap-2 min-w-0">
-                      <Briefcase className="w-3.5 h-3.5 text-zinc-500 mt-0.5 shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-xs text-zinc-300 truncate">{app.job_title}</p>
-                        <p className="text-xs text-zinc-600 truncate">{app.company}</p>
-                      </div>
+                {applications.recent.map(app => {
+                  const isExpanded = expandedAppId === app.id;
+                  const content = appContentMap[app.id];
+                  const isLoading = loadingAppId === app.id;
+                  return (
+                    <div key={app.id} className="border-b border-zinc-800/50 last:border-0">
+                      <button
+                        onClick={() => loadAppContent(app.id)}
+                        className="w-full flex items-start justify-between gap-2 py-2 text-left hover:bg-zinc-800/20 rounded transition-colors"
+                      >
+                        <div className="flex items-start gap-2 min-w-0">
+                          <Briefcase className="w-3.5 h-3.5 text-zinc-500 mt-0.5 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-xs text-zinc-300 truncate">{app.job_title}</p>
+                            <p className="text-xs text-zinc-600 truncate">{app.company}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-xs text-zinc-600">{timeAgo(app.created_at)}</span>
+                          {isLoading
+                            ? <Loader2 className="w-3 h-3 text-zinc-600 animate-spin" />
+                            : isExpanded
+                              ? <ChevronUp className="w-3 h-3 text-zinc-600" />
+                              : <ChevronDown className="w-3 h-3 text-zinc-600" />
+                          }
+                        </div>
+                      </button>
+                      {isExpanded && content && <AppContentViewer content={content} />}
                     </div>
-                    <p className="text-xs text-zinc-600 shrink-0">{timeAgo(app.created_at)}</p>
-                  </div>
-                ))}
+                  );
+                })}
                 {applications.total > applications.recent.length && (
                   <p className="text-xs text-zinc-600 pt-1">
                     + {applications.total - applications.recent.length} more
