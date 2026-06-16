@@ -25,5 +25,11 @@ export async function GET(
     return Response.json({ error: 'Not found' }, { status: 404 });
   }
 
-  return Response.json(data);
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('full_name')
+    .eq('user_id', data.user_id)
+    .maybeSingle();
+
+  return Response.json({ ...data, candidateName: profile?.full_name ?? null });
 }

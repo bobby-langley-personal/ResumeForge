@@ -1,6 +1,9 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import dynamic from 'next/dynamic';
+
+const AdminPDFRenderer = dynamic(() => import('@/components/AdminPDFRenderer'), { ssr: false });
 import { useAdminContext } from './AdminContext';
 import {
   Users, TrendingUp, Crown, Mail, CheckCircle, XCircle, Loader2, Send,
@@ -48,6 +51,7 @@ interface AppItem {
 interface AppContent {
   resume_content: string | null;
   cover_letter_content: string | null;
+  candidateName: string | null;
 }
 
 interface LogEntry {
@@ -154,15 +158,18 @@ function StatCard({
 
 // ── App Content Viewer ────────────────────────────────────────────────────────
 
-function AppContentViewer({ content }: { content: AppContent }) {
+function AppContentViewer({ content, company, jobTitle }: { content: AppContent; company: string; jobTitle: string }) {
   const hasResume = !!content.resume_content;
   const hasCoverLetter = !!content.cover_letter_content;
   const [tab, setTab] = useState<'resume' | 'cover_letter'>(hasResume ? 'resume' : 'cover_letter');
+  const [showPDF, setShowPDF] = useState(false);
   const activeText = tab === 'resume' ? content.resume_content : content.cover_letter_content;
+  const candidateName = content.candidateName ?? '';
 
   return (
     <div className="mt-1 mb-2 bg-zinc-950 border border-zinc-800 rounded text-xs overflow-hidden">
-      <div className="flex border-b border-zinc-800">
+      {/* Tab bar + PDF toggle */}
+      <div className="flex items-center border-b border-zinc-800">
         <button
           onClick={() => setTab('resume')}
           disabled={!hasResume}
@@ -181,10 +188,33 @@ function AppContentViewer({ content }: { content: AppContent }) {
         >
           Cover Letter{!hasCoverLetter ? ' (none)' : ''}
         </button>
+        <div className="flex-1" />
+        {activeText && (
+          <button
+            onClick={() => setShowPDF(v => !v)}
+            className={`px-3 py-1.5 text-[10px] font-medium transition-colors ${
+              showPDF ? 'text-zinc-200 bg-zinc-800' : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            {showPDF ? 'Raw text' : 'Preview PDF'}
+          </button>
+        )}
       </div>
-      <pre className="p-3 text-[10px] text-zinc-400 font-mono whitespace-pre-wrap break-words overflow-auto max-h-72 leading-relaxed">
-        {activeText ?? <span className="text-zinc-600">No content</span>}
-      </pre>
+
+      {/* Content */}
+      {showPDF && activeText ? (
+        <AdminPDFRenderer
+          type={tab}
+          content={activeText}
+          candidateName={candidateName}
+          company={company}
+          jobTitle={jobTitle}
+        />
+      ) : (
+        <pre className="p-3 text-[10px] text-zinc-400 font-mono whitespace-pre-wrap break-words overflow-auto max-h-72 leading-relaxed">
+          {activeText ?? <span className="text-zinc-600">No content</span>}
+        </pre>
+      )}
     </div>
   );
 }
@@ -212,7 +242,7 @@ function UserDetailPanel({
     try {
       const res = await fetch(`/api/admin/applications/${appId}`, { headers: { 'x-admin-secret': secret } });
       const data = await res.json();
-      setAppContentMap(m => ({ ...m, [appId]: { resume_content: data.resume_content ?? null, cover_letter_content: data.cover_letter_content ?? null } }));
+      setAppContentMap(m => ({ ...m, [appId]: { resume_content: data.resume_content ?? null, cover_letter_content: data.cover_letter_content ?? null, candidateName: data.candidateName ?? null } }));
     } finally {
       setLoadingAppId(null);
     }
@@ -436,7 +466,7 @@ function UserDetailPanel({
                           }
                         </div>
                       </button>
-                      {isExpanded && content && <AppContentViewer content={content} />}
+                      {isExpanded && content && <AppContentViewer content={content} company={app.company} jobTitle={app.job_title} />}
                     </div>
                   );
                 })}
