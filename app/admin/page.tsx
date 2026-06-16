@@ -63,6 +63,7 @@ interface LogEntry {
   response_summary: Record<string, unknown> | null;
   error: string | null;
   duration_ms: number | null;
+  app_version: string | null;
   created_at: string;
 }
 
@@ -529,6 +530,9 @@ function LogRow({ log }: { log: LogEntry }) {
           {log.status_code ?? '?'}
         </span>
         <span className="text-zinc-300 font-mono flex-1 truncate">{routeShort}</span>
+        {log.app_version && (
+          <span className="text-zinc-700 font-mono shrink-0 text-[10px]">{log.app_version}</span>
+        )}
         {log.duration_ms != null && (
           <span className="text-zinc-600 shrink-0">{log.duration_ms}ms</span>
         )}

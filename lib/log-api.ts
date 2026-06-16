@@ -49,6 +49,7 @@ export function logApiCall(entry: ApiLogEntry): void {
         response_summary: entry.response_summary ?? null,
         error: entry.error ?? null,
         duration_ms: entry.duration_ms ?? null,
+        app_version: process.env.NEXT_PUBLIC_APP_VERSION ?? null,
       })
     ).then(() => {}).catch((err: unknown) => console.error('[logApiCall] insert failed:', err));
   } catch (err) {

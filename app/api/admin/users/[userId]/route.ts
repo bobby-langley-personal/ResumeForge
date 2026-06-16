@@ -40,7 +40,7 @@ export async function GET(
         .limit(10),
       supabase
         .from('api_logs')
-        .select('id, route, method, status_code, request_body, response_summary, error, duration_ms, created_at')
+        .select('id, route, method, status_code, request_body, response_summary, error, duration_ms, app_version, created_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(30),

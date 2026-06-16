@@ -14,6 +14,7 @@ interface LogEntry {
   response_summary: Record<string, unknown> | null;
   error: string | null;
   duration_ms: number | null;
+  app_version: string | null;
   created_at: string;
   user: { email: string; full_name: string | null } | null;
 }
@@ -48,6 +49,12 @@ function ExpandedLog({ log }: { log: LogEntry }) {
           <p className="text-zinc-300">{log.user?.full_name || log.user?.email || log.user_id}</p>
           {log.user?.full_name && <p className="text-zinc-500">{log.user.email}</p>}
           <p className="text-zinc-600 break-all">{log.user_id}</p>
+        </div>
+      )}
+      {log.app_version && (
+        <div>
+          <p className="text-zinc-500 mb-1 font-sans font-medium">App version</p>
+          <p className="text-zinc-400 font-mono">{log.app_version}</p>
         </div>
       )}
       {log.error && (
@@ -175,10 +182,11 @@ export default function AdminLogsPage() {
         ) : (
           <>
             {/* Header row */}
-            <div className="grid grid-cols-[80px_1fr_160px_80px_70px_24px] gap-2 px-4 py-2 border-b border-zinc-800 text-xs text-zinc-500 font-medium">
+            <div className="grid grid-cols-[80px_1fr_160px_72px_80px_70px_24px] gap-2 px-4 py-2 border-b border-zinc-800 text-xs text-zinc-500 font-medium">
               <span>Status</span>
               <span>Route</span>
               <span>User</span>
+              <span>Version</span>
               <span>Duration</span>
               <span>Time</span>
               <span />
@@ -188,7 +196,7 @@ export default function AdminLogsPage() {
               <div key={log.id} className="border-b border-zinc-800/60 last:border-0">
                 <button
                   onClick={() => setExpandedId(id => id === log.id ? null : log.id)}
-                  className="w-full grid grid-cols-[80px_1fr_160px_80px_70px_24px] gap-2 px-4 py-3 text-left hover:bg-zinc-800/30 transition-colors items-center"
+                  className="w-full grid grid-cols-[80px_1fr_160px_72px_80px_70px_24px] gap-2 px-4 py-3 text-left hover:bg-zinc-800/30 transition-colors items-center"
                 >
                   <span className={`text-xs px-1.5 py-0.5 rounded font-mono w-fit ${statusColor(log.status_code)}`}>
                     {log.status_code ?? '?'}
@@ -215,6 +223,9 @@ export default function AdminLogsPage() {
                       <span className="text-xs text-zinc-700">anon</span>
                     )}
                   </div>
+                  <span className="text-xs text-zinc-600 font-mono truncate">
+                    {log.app_version ?? '—'}
+                  </span>
                   <span className="text-xs text-zinc-500 font-mono">
                     {log.duration_ms != null ? `${log.duration_ms}ms` : '—'}
                   </span>
