@@ -48,6 +48,42 @@ export interface Database {
         }
         Relationships: []
       }
+      ext_logs: {
+        Row: {
+          id: string
+          user_id: string | null
+          event: string
+          platform: string | null
+          method: string | null
+          severity: string
+          payload: Json | null
+          ext_version: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          event: string
+          platform?: string | null
+          method?: string | null
+          severity?: string
+          payload?: Json | null
+          ext_version?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          event?: string
+          platform?: string | null
+          method?: string | null
+          severity?: string
+          payload?: Json | null
+          ext_version?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       api_usage: {
         Row: {
           id: string
