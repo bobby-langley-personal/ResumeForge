@@ -339,7 +339,7 @@ export default function PolishedResumeCreator({ sourceDocuments }: Props) {
       <div className="max-w-xl mx-auto flex flex-col items-center justify-center py-20 space-y-6 text-center">
         <Diamond className="w-10 h-10 text-primary animate-pulse" />
         <div>
-          <h2 className="text-xl font-semibold text-foreground">Building your polished resume…</h2>
+          <h2 className="text-xl font-semibold text-foreground">Building your polished résumé…</h2>
           <p className="text-sm text-muted-foreground mt-1">Ordering bullets by impact and fitting to {pageLimit} page{pageLimit > 1 ? 's' : ''}</p>
         </div>
         <div className="flex gap-1.5">
@@ -419,7 +419,7 @@ export default function PolishedResumeCreator({ sourceDocuments }: Props) {
               {chatMessages.map((msg, i) => (
                 <div key={i} className={`text-sm px-3 py-2 rounded-lg ${msg.role === 'user' ? 'bg-muted ml-8' : 'bg-primary/5 border border-primary/20 mr-8'}`}>
                   {msg.role === 'assistant' && msg.type === 'change' && (
-                    <span className="text-xs text-green-500 font-semibold block mb-1">✓ Resume updated</span>
+                    <span className="text-xs text-green-500 font-semibold block mb-1">✓ Résumé updated</span>
                   )}
                   {msg.role === 'assistant'
                     ? <MarkdownText text={msg.content} className="text-muted-foreground space-y-1.5" />

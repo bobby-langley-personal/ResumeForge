@@ -71,7 +71,7 @@ export function startTour() {
         popover: {
           title: 'Welcome to Easy Apply AI 👋',
           description:
-            "Let's show you how to get a tailored resume in under 60 seconds. Click Next to get started.",
+            "Let's show you how to get a tailored résumé in under 60 seconds. Click Next to get started.",
           side: 'bottom',
           align: 'center',
         },

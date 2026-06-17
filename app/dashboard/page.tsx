@@ -7,7 +7,7 @@ import ApplicationList from './ApplicationList';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, FileSearch } from 'lucide-react';
 
-export const metadata = { title: 'AI Resumes — Easy Apply AI' };
+export const metadata = { title: 'AI Résumés — Easy Apply AI' };
 
 export default async function DashboardPage() {
   const { userId } = await auth();
@@ -29,19 +29,19 @@ export default async function DashboardPage() {
         <div className="mb-8">
           <Link href="/tailor" className="flex items-center gap-1.5 w-fit text-sm text-muted-foreground hover:text-foreground transition-colors mb-3">
             <ArrowLeft className="w-4 h-4" />
-            Back to resume generator
+            Back to résumé generator
           </Link>
-          <h2 className="text-2xl font-bold text-foreground">AI Resumes</h2>
+          <h2 className="text-2xl font-bold text-foreground">AI Résumés</h2>
         </div>
 
         {(applications ?? []).length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
             <FileSearch className="w-12 h-12 text-muted-foreground" />
-            <h3 className="text-lg font-semibold text-foreground">No tailored resumes yet</h3>
+            <h3 className="text-lg font-semibold text-foreground">No tailored résumés yet</h3>
             <p className="text-sm text-muted-foreground max-w-xs">
-              Generate your first tailored resume to see it here.
+              Generate your first tailored résumé to see it here.
             </p>
-            <Link href="/tailor"><Button>Tailor Your First Resume</Button></Link>
+            <Link href="/tailor"><Button>Tailor Your First Résumé</Button></Link>
           </div>
         ) : (
           <ApplicationList initialItems={(applications ?? []) as ApplicationItem[]} />

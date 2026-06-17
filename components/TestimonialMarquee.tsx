@@ -4,13 +4,13 @@ const TESTIMONIALS = [
   { quote: "Landed 3 interviews in my first week. The tailoring actually works.", name: "Marcus T.", role: "Software Engineer" },
   { quote: "I was spending 2 hours per application. Now it's under 10 minutes.", name: "Priya K.", role: "Product Manager" },
   { quote: "The fit analysis alone is worth it — I stopped applying to roles I wasn't right for.", name: "Jordan L.", role: "UX Designer" },
-  { quote: "Finally an AI resume tool that doesn't make stuff up. It only uses what I gave it.", name: "Danielle R.", role: "Data Analyst" },
+  { quote: "Finally an AI résumé tool that doesn't make stuff up. It only uses what I gave it.", name: "Danielle R.", role: "Data Analyst" },
   { quote: "Used the AI interview to document 4 years of freelance work. Total game changer.", name: "Chris M.", role: "Freelance Developer" },
   { quote: "Got a callback from a company that had rejected me twice before. Keywords made the difference.", name: "Aisha B.", role: "Marketing Manager" },
   { quote: "The cover letter generator actually sounds like me. Never said that about any AI tool.", name: "Tyler W.", role: "Sales Engineer" },
   { quote: "Applied to 12 jobs over the weekend. Used to take me the whole week.", name: "Natalie S.", role: "Operations Lead" },
-  { quote: "I uploaded my old resume and the polished version blew me away. Night and day.", name: "Kevin H.", role: "Project Manager" },
-  { quote: "The extension is incredible. Job board → tailored resume in under a minute.", name: "Sofia G.", role: "Recruiter turned job seeker" },
+  { quote: "I uploaded my old résumé and the polished version blew me away. Night and day.", name: "Kevin H.", role: "Project Manager" },
+  { quote: "The extension is incredible. Job board → tailored résumé in under a minute.", name: "Sofia G.", role: "Recruiter turned job seeker" },
 ];
 
 // Double the list so the marquee loops seamlessly

@@ -98,7 +98,7 @@ export default function Navbar() {
                       onClick={close}
                       className="flex items-center justify-between w-full px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
                     >
-                      <span>Tailor New Resume</span>
+                      <span>Tailor New Résumé</span>
                       <PlusCircle className="w-4 h-4" />
                     </Link>
                     <Link
@@ -106,7 +106,7 @@ export default function Navbar() {
                       onClick={close}
                       className="flex items-center justify-between w-full px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                     >
-                      <span>AI Resumes</span>
+                      <span>AI Résumés</span>
                       <Sparkles className="w-4 h-4" />
                     </Link>
                     <Link

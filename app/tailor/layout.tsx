@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { auth } from '@clerk/nextjs/server';
 import { supabaseServer } from '@/lib/supabase';
 
-export const metadata = { title: 'Tailor New Resume — Easy Apply AI' };
+export const metadata = { title: 'Tailor New Résumé — Easy Apply AI' };
 
 export default async function TailorLayout({ children }: { children: React.ReactNode }) {
   const { userId } = await auth();

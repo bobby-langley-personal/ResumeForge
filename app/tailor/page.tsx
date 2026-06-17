@@ -544,7 +544,7 @@ export default function Home() {
           <div className="space-y-8">
             {/* Header */}
             <div id="tour-heading" className="text-center">
-              <h2 className="text-3xl font-bold text-foreground mb-3">Tailor My Resume</h2>
+              <h2 className="text-3xl font-bold text-foreground mb-3">Tailor My Résumé</h2>
               <p className="text-muted-foreground">
                 We&apos;ll do a comprehensive fit analysis based on your experience and then tailor your resume to match this specific role using your real experience — we never invent anything.
               </p>
@@ -822,7 +822,7 @@ export default function Home() {
                 {(() => {
                   const hasQs = questions.some(q => q.trim());
                   const steps = [
-                    { label: 'Generating resume', done: statusMessage.toLowerCase().includes('cover') || statusMessage.toLowerCase().includes('answering') || statusMessage.toLowerCase().includes('saving') || statusMessage.toLowerCase().includes('complete') },
+                    { label: 'Generating résumé', done: statusMessage.toLowerCase().includes('cover') || statusMessage.toLowerCase().includes('answering') || statusMessage.toLowerCase().includes('saving') || statusMessage.toLowerCase().includes('complete') },
                     ...(includeCoverLetter ? [{ label: 'Writing cover letter', done: statusMessage.toLowerCase().includes('answering') || statusMessage.toLowerCase().includes('saving') || statusMessage.toLowerCase().includes('complete') }] : []),
                     ...(hasQs ? [{ label: 'Answering questions', done: statusMessage.toLowerCase().includes('saving') || statusMessage.toLowerCase().includes('complete') }] : []),
                     { label: 'Saving', done: statusMessage.toLowerCase().includes('complete') },
@@ -883,7 +883,7 @@ export default function Home() {
                 {resumeContent && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-foreground">Resume</h3>
+                      <h3 className="text-lg font-semibold text-foreground">Résumé</h3>
                       {uiState === 'done' && (
                         <div className="flex items-center gap-3">
                           <Button size="sm" variant="outline" onClick={() => handleDownload('resume')}>
@@ -1083,10 +1083,10 @@ export default function Home() {
 
             <div className="flex items-center gap-2 mb-2">
               <Crown className="w-5 h-5 text-primary" />
-              <h2 className="text-xl font-bold text-foreground">You&apos;ve used your 3 free resumes</h2>
+              <h2 className="text-xl font-bold text-foreground">You&apos;ve used your 3 free résumés</h2>
             </div>
             <p className="text-muted-foreground text-sm mb-6">
-              Upgrade to Pro for unlimited tailored resumes, cover letters, interview prep, and more.
+              Upgrade to Pro for unlimited tailored résumés, cover letters, interview prep, and more.
             </p>
 
             <div className="space-y-3 mb-6">

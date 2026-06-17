@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
         includeSummary,
         hasJobUrl: !!jobUrl,
         questionCount: questions?.length ?? 0,
+        ext_version: req.headers.get('x-extension-version') ?? undefined,
       },
       duration_ms: Date.now() - startMs,
     });

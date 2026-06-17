@@ -70,7 +70,7 @@ function QuestionCard({ q, index, practiced, onTogglePracticed }: {
             </div>
             {q.resumeReference && (
               <div className="space-y-1">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">From your resume</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">From your résumé</p>
                 <blockquote className="border-l-2 border-primary/40 pl-3 text-sm text-muted-foreground italic">
                   {q.resumeReference}
                 </blockquote>

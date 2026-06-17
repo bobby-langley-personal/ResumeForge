@@ -204,7 +204,7 @@ export default function WelcomeScreen() {
         {isExtractingContact ? (
           <div className="flex items-center gap-2 py-8 justify-center text-muted-foreground">
             <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="text-sm">Reading your resume…</span>
+            <span className="text-sm">Reading your résumé…</span>
           </div>
         ) : (
           <div className="space-y-4">

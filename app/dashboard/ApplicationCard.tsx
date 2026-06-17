@@ -347,7 +347,7 @@ export default function ApplicationCard({
           <button
             onClick={handleOpenChat}
             className="p-1 text-muted-foreground hover:text-foreground transition-colors"
-            title="Refine resume with AI chat"
+            title="Refine résumé with AI chat"
           >
             <MessageCircle className="w-4 h-4" />
           </button>
@@ -439,7 +439,7 @@ export default function ApplicationCard({
             <Download className="w-3.5 h-3.5 mr-2" />
             {downloading === 'resume' ? 'Downloading…' : 'Resume'}
           </Button>
-          <Button size="sm" variant="outline" onClick={() => handlePreview('resume')} disabled={downloading !== null || loadingPreview} className="px-2.5" title="Preview Resume">
+          <Button size="sm" variant="outline" onClick={() => handlePreview('resume')} disabled={downloading !== null || loadingPreview} className="px-2.5" title="Preview Résumé">
             <Eye className="w-3.5 h-3.5" />
           </Button>
         </div>
@@ -522,7 +522,7 @@ export default function ApplicationCard({
             <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
               <div>
                 <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <MessageCircle className="w-4 h-4 text-primary" /> Resume Chat
+                  <MessageCircle className="w-4 h-4 text-primary" /> Résumé Chat
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">{company} — {jobTitle}</p>
               </div>

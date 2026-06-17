@@ -96,7 +96,7 @@ export default function ApplicationList({ initialItems }: Props) {
             variant="destructive"
             onClick={handleBulkDelete}
             disabled={deleting}
-            title={`Delete ${selected.size} selected resume${selected.size > 1 ? 's' : ''}`}
+            title={`Delete ${selected.size} selected résumé${selected.size > 1 ? 's' : ''}`}
           >
             <Trash2 className="w-3.5 h-3.5 mr-1.5" />
             {deleting ? 'Deleting…' : `Delete ${selected.size}`}
@@ -105,7 +105,7 @@ export default function ApplicationList({ initialItems }: Props) {
       </div>
 
       {filtered.length === 0 && search && (
-        <p className="text-sm text-muted-foreground py-12 text-center">No resumes match &quot;{search}&quot;</p>
+        <p className="text-sm text-muted-foreground py-12 text-center">No résumés match &quot;{search}&quot;</p>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -284,7 +284,7 @@ function UserDetailPanel({
   const TABS = [
     { id: 'overview', label: 'Account' },
     { id: 'docs', label: `Docs (${resumes.length})` },
-    { id: 'resumes', label: `Resumes (${applications.total})` },
+    { id: 'resumes', label: `Résumés (${applications.total})` },
     { id: 'logs', label: `API Logs (${logs.length})` },
   ] as const;
 
@@ -435,9 +435,9 @@ function UserDetailPanel({
         )}
 
         {activeTab === 'resumes' && (
-          <Section title={`AI resumes (${applications.total} total)`}>
+          <Section title={`AI résumés (${applications.total} total)`}>
             {applications.recent.length === 0 ? (
-              <p className="text-zinc-600 text-xs py-2">No resumes generated yet.</p>
+              <p className="text-zinc-600 text-xs py-2">No résumés generated yet.</p>
             ) : (
               <div className="space-y-2">
                 {applications.recent.map(app => {
@@ -627,7 +627,7 @@ function UsersListPanel({
                     </span>
                   )}
                   {u.tailored_resume_count != null && (
-                    <span className="text-xs text-zinc-600">{u.tailored_resume_count} resumes</span>
+                    <span className="text-xs text-zinc-600">{u.tailored_resume_count} résumés</span>
                   )}
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-zinc-600 shrink-0" />

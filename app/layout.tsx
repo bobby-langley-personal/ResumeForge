@@ -18,7 +18,7 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: "Easy Apply AI",
-  description: "AI-powered resume and cover letter generator. Tailor every application in seconds.",
+  description: "AI-powered résumé and cover letter generator. Tailor every application in seconds.",
   icons: {
     icon: [
       { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },

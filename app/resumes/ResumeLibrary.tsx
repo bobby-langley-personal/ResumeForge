@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ResumeItem, ItemType, ITEM_TYPE_LABELS } from '@/types/resume';
-import { Plus, Trash2, Star, Pencil, Upload, X, Check, Diamond, User, Loader2, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, Star, Pencil, Upload, X, Check, Diamond, User, Loader2, ChevronDown, Download } from 'lucide-react';
 import TipsPanel from '@/components/TipsPanel';
 
 interface UserProfile {
@@ -45,6 +45,7 @@ export default function ResumeLibrary({ initialItems, profile: initialProfile }:
   const [isDragOver, setIsDragOver] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleProfileSave = async () => {
@@ -167,6 +168,29 @@ export default function ResumeLibrary({ initialItems, profile: initialProfile }:
     setItems(prev => prev.map(i => ({ ...i, is_default: i.id === item.id })));
   };
 
+  const handleDownload = async (item: ResumeItem) => {
+    setDownloadingIds(prev => new Set(prev).add(item.id));
+    try {
+      const res = await fetch('/api/download-pdf/experience', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resumeId: item.id }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${item.title.replace(/[^a-zA-Z0-9_\- ]/g, '_').trim() || 'document'}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setDownloadingIds(prev => { const s = new Set(prev); s.delete(item.id); return s; });
+    }
+  };
+
   const handleDelete = async (item: ResumeItem) => {
     if (!confirm(`Delete "${item.title}"?`)) return;
     const res = await fetch(`/api/resumes/${item.id}`, { method: 'DELETE' });
@@ -254,9 +278,9 @@ export default function ResumeLibrary({ initialItems, profile: initialProfile }:
           <div className="flex items-start gap-3">
             <Diamond className="w-5 h-5 text-primary mt-0.5 shrink-0" />
             <div>
-              <p className="font-medium text-foreground">Polished General-Use Resume</p>
+              <p className="font-medium text-foreground">Polished General-Use Résumé</p>
               <p className="text-sm text-muted-foreground mt-0.5">
-                A strong standalone resume optimized for recruiters, networking, and broad applications — not tailored to a specific job.
+                A strong standalone résumé optimized for recruiters, networking, and broad applications — not tailored to a specific job.
               </p>
             </div>
           </div>
@@ -270,7 +294,7 @@ export default function ResumeLibrary({ initialItems, profile: initialProfile }:
         <h3 className="text-base font-semibold text-foreground mb-3">Experience Files</h3>
       <div className="flex items-center justify-between mb-6">
         <p className="text-sm text-muted-foreground">{items.length} saved item{items.length !== 1 ? 's' : ''}</p>
-        <Button onClick={openAdd} title="Add a new resume or document to your library">
+        <Button onClick={openAdd} title="Add a new résumé or document to your library">
           <Plus className="w-4 h-4 mr-2" />
           Add New
         </Button>
@@ -280,7 +304,7 @@ export default function ResumeLibrary({ initialItems, profile: initialProfile }:
       {items.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
           <p className="text-muted-foreground">No saved items yet.</p>
-          <Button onClick={openAdd}>Add your first resume</Button>
+          <Button onClick={openAdd}>Add your first résumé</Button>
         </div>
       )}
 
@@ -316,6 +340,18 @@ export default function ResumeLibrary({ initialItems, profile: initialProfile }:
               <Button size="sm" variant="ghost" onClick={() => openEdit(item)} title="Edit">
                 <Pencil className="w-4 h-4" />
               </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleDownload(item)}
+                disabled={downloadingIds.has(item.id)}
+                title="Download as PDF"
+              >
+                {downloadingIds.has(item.id)
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : <Download className="w-4 h-4" />
+                }
+              </Button>
               <Button size="sm" variant="ghost" onClick={() => handleDelete(item)} title="Delete" className="text-destructive hover:text-destructive">
                 <Trash2 className="w-4 h-4" />
               </Button>
@@ -341,7 +377,7 @@ export default function ResumeLibrary({ initialItems, profile: initialProfile }:
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>Name</Label>
-                  <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. My 2025 Resume" />
+                  <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. My 2025 Résumé" />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Type</Label>
@@ -384,7 +420,7 @@ export default function ResumeLibrary({ initialItems, profile: initialProfile }:
                 <Textarea
                   value={text}
                   onChange={e => setText(e.target.value)}
-                  placeholder="Paste resume text, cover letter example, portfolio notes…"
+                  placeholder="Paste résumé text, cover letter example, portfolio notes…"
                   className="min-h-52 font-mono text-sm"
                 />
               </div>

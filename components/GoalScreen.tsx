@@ -70,16 +70,16 @@ export default function GoalScreen({ firstName, hasApplications }: Props) {
       <div className="space-y-3">
         <GoalCard
           icon={<Target className="w-5 h-5 text-foreground" />}
-          title="Tailor a resume for a specific job"
-          description="Paste a job description and get a tailored resume in seconds"
+          title="Tailor a résumé for a specific job"
+          description="Paste a job description and get a tailored résumé in seconds"
           href="/tailor"
           cta="Tailor Now"
           primary
         />
         <GoalCard
           icon={<Diamond className="w-5 h-5 text-foreground" />}
-          title="Create a polished general-use resume"
-          description="A strong standalone resume for recruiters, networking, and broad applications"
+          title="Create a polished general-use résumé"
+          description="A strong standalone résumé for recruiters, networking, and broad applications"
           href="/polished-resume"
           cta="Create"
         />
@@ -102,7 +102,7 @@ export default function GoalScreen({ firstName, hasApplications }: Props) {
         <GoalCard
           icon={<LayoutList className="w-5 h-5 text-foreground" />}
           title="View my applications"
-          description="See past tailored resumes and re-download anytime"
+          description="See past tailored résumés and re-download anytime"
           href="/dashboard"
           cta="View"
         />

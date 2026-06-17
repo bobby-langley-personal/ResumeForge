@@ -84,8 +84,8 @@ export default function ATSInfoModal({ onClose }: Props) {
           </div>
 
           <p className="text-xs text-muted-foreground leading-relaxed border-t border-border pt-4">
-            Studies estimate that <strong className="text-foreground">75% of resumes are rejected by ATS</strong>{' '}
-            before a human sees them. Every resume Easy Apply generates is ATS-optimized by design —
+            Studies estimate that <strong className="text-foreground">75% of résumés are rejected by ATS</strong>{' '}
+            before a human sees them. Every résumé Easy Apply generates is ATS-optimized by design —
             so your qualifications actually reach the people hiring.
           </p>
         </div>

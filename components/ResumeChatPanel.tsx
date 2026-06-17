@@ -207,7 +207,7 @@ export default function ResumeChatPanel({
                     : 'bg-primary text-primary-foreground'
                 }`}>
                   {msg.type === 'change' && msg.role === 'assistant' && (
-                    <span className="text-xs font-semibold text-green-500 block mb-1">✓ Resume updated</span>
+                    <span className="text-xs font-semibold text-green-500 block mb-1">✓ Résumé updated</span>
                   )}
                   {msg.role === 'assistant'
                     ? <MarkdownText text={msg.content} />
@@ -276,7 +276,7 @@ export default function ResumeChatPanel({
                     send(input);
                   }
                 }}
-                placeholder="Ask anything about your resume or request changes…"
+                placeholder="Ask anything about your résumé or request changes…"
                 className="min-h-[2.5rem] max-h-32 resize-none text-sm flex-1"
                 disabled={loading}
               />

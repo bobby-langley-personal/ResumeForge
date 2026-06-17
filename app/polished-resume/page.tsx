@@ -5,7 +5,7 @@ import { supabaseServer } from '@/lib/supabase';
 import { ResumeItem } from '@/types/resume';
 import PolishedResumeCreator from '@/components/PolishedResumeCreator';
 
-export const metadata = { title: 'Polished Resume — Easy Apply AI' };
+export const metadata = { title: 'Polished Résumé — Easy Apply AI' };
 
 export default async function PolishedResumePage() {
   const { userId } = await auth();
