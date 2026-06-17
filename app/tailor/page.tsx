@@ -1040,19 +1040,7 @@ export default function Home() {
               </div>
             )}
 
-            {/* Interview Prep Section */}
-            {uiState === 'done' && applicationId && resumeContent && (
-              <InterviewPrepSection
-                applicationId={applicationId}
-                jobTitle={jobTitle}
-                company={company}
-                jobDescription={jobDescription}
-                generatedResume={resumeContent}
-                toughQuestions={questionAnswers.length > 0 ? questionAnswers.map(qa => qa.question) : undefined}
-              />
-            )}
-
-            {/* Resume Chat */}
+            {/* Résumé Chat */}
             {uiState === 'done' && applicationId && resumeContent && (
               <ResumeChatPanel
                 applicationId={applicationId}
@@ -1064,6 +1052,18 @@ export default function Home() {
                 jobTitle={jobTitle}
                 backgroundExperience={pendingFormData?.backgroundExperience}
                 onResumeUpdate={setResumeContent}
+              />
+            )}
+
+            {/* Interview Prep Section */}
+            {uiState === 'done' && applicationId && resumeContent && (
+              <InterviewPrepSection
+                applicationId={applicationId}
+                jobTitle={jobTitle}
+                company={company}
+                jobDescription={jobDescription}
+                generatedResume={resumeContent}
+                toughQuestions={questionAnswers.length > 0 ? questionAnswers.map(qa => qa.question) : undefined}
               />
             )}
           </div>
