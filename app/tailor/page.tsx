@@ -99,6 +99,24 @@ interface FormData {
   isFromUploadedFile?: boolean;
 }
 
+/** Live countdown to a future ISO timestamp — updates every minute. */
+function CountdownLabel({ endsAt }: { endsAt: string }) {
+  const [label, setLabel] = useState('');
+  useEffect(() => {
+    function update() {
+      const ms = new Date(endsAt).getTime() - Date.now();
+      if (ms <= 0) { setLabel('now'); return; }
+      const h = Math.floor(ms / 3600000);
+      const m = Math.floor((ms % 3600000) / 60000);
+      setLabel(h > 0 ? `${h}h ${m}m` : `${m}m`);
+    }
+    update();
+    const id = setInterval(update, 60000);
+    return () => clearInterval(id);
+  }, [endsAt]);
+  return <span className="tabular-nums">{label}</span>;
+}
+
 export default function Home() {
   const { user } = useUser();
   const router = useRouter();
@@ -112,7 +130,12 @@ export default function Home() {
       .catch(() => {}); // fail open — don't block on network error
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const [billingStatus, setBillingStatus] = useState<{ subscription_status: string; tailored_resume_count: number } | null>(null);
+  const [billingStatus, setBillingStatus] = useState<{
+    subscription_status: string;
+    tailored_resume_count: number;
+    weekly_resume_count: number;
+    weekly_window_ends_at: string | null;
+  } | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeLoading, setUpgradeLoading] = useState<'monthly' | 'quarterly' | 'annual' | null>(null);
   const preGenLimitReached = useRef(false);
@@ -420,7 +443,13 @@ export default function Home() {
         body: JSON.stringify({ ...pendingFormData, fitAnalysis, includeCoverLetter, includeSummary, jobUrl: jobUrl.trim() || undefined, additionalContext: additionalContext.map(i => ({ title: i.title, type: i.item_type, text: i.content.text })), questions: questions.filter(q => q.trim()), shortResponse }),
       });
 
-      if (response.status === 402) { setShowUpgradeModal(true); setUIState('idle'); return; }
+      if (response.status === 402) {
+        const limitData = await response.json().catch(() => ({}));
+        if (limitData?.weekly_window_ends_at) {
+          setBillingStatus(prev => prev ? { ...prev, weekly_window_ends_at: limitData.weekly_window_ends_at } : prev);
+        }
+        setShowUpgradeModal(true); setUIState('idle'); return;
+      }
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       for await (const chunk of readSSEStream(response)) {
@@ -550,7 +579,10 @@ export default function Home() {
               </p>
               {billingStatus && billingStatus.subscription_status !== 'pro' && (
                 <p className="mt-2 text-sm text-muted-foreground">
-                  {billingStatus.tailored_resume_count}/3 free resumes used
+                  {billingStatus.weekly_resume_count}/5 free this week
+                  {billingStatus.weekly_window_ends_at && (
+                    <> · <CountdownLabel endsAt={billingStatus.weekly_window_ends_at} /></>
+                  )}
                   {' · '}
                   <Link href="/pricing" className="text-blue-500 hover:underline">Upgrade to Pro</Link>
                 </p>
@@ -1083,9 +1115,13 @@ export default function Home() {
 
             <div className="flex items-center gap-2 mb-2">
               <Crown className="w-5 h-5 text-primary" />
-              <h2 className="text-xl font-bold text-foreground">You&apos;ve used your 3 free résumés</h2>
+              <h2 className="text-xl font-bold text-foreground">You&apos;ve used your 5 free résumés this week</h2>
             </div>
             <p className="text-muted-foreground text-sm mb-6">
+              Your free allowance resets every 7 days.{' '}
+              {billingStatus?.weekly_window_ends_at && (
+                <>Resets in <CountdownLabel endsAt={billingStatus.weekly_window_ends_at} />. </>
+              )}
               Upgrade to Pro for unlimited tailored résumés, cover letters, interview prep, and more.
             </p>
 

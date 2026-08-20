@@ -440,7 +440,7 @@ Contact info is stored in `user_profiles` (one row per user, upserted — not in
 
 ## Billing & Paywall
 
-- **Free tier**: 3 lifetime tailored resumes (`tailored_resume_count` on `users` table). Counter incremented in `generate-documents` after successful generation for non-Pro users.
+- **Free tier**: 5 tailored resumes per rolling 7-day window. Tracked via `weekly_resume_count` + `weekly_window_start` on `users` table. Window resets when `now - weekly_window_start >= 7 days`. `tailored_resume_count` remains as a lifetime stat for admin visibility. Cap configurable via `FREE_WEEKLY_RESUME_LIMIT` env var (default 5).
 - **Pro**: Unlimited everything. Set when `subscription_status === 'pro'`.
 - **Paywall check**: `POST /api/generate-documents` checks subscription before streaming. Returns `{ error: 'FREE_LIMIT_REACHED', upgradeUrl: '/pricing' }` with status 402. The tailor page catches 402 and shows an upgrade modal.
 - **Upgrade modal**: Shown on tailor page when 402 received. Three plan buttons (monthly/quarterly/annual) that hit `POST /api/billing/create-checkout`.

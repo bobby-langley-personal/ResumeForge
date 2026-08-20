@@ -195,6 +195,8 @@ export interface Database {
           subscription_status: 'free' | 'pro' | 'canceled' | null
           subscription_period_end: string | null
           tailored_resume_count: number
+          weekly_resume_count: number
+          weekly_window_start: string | null
           has_used_extension: boolean
           email_unsubscribed: boolean
           do_not_email: boolean
@@ -209,6 +211,8 @@ export interface Database {
           subscription_status?: 'free' | 'pro' | 'canceled' | null
           subscription_period_end?: string | null
           tailored_resume_count?: number
+          weekly_resume_count?: number
+          weekly_window_start?: string | null
           has_used_extension?: boolean
           email_unsubscribed?: boolean
           do_not_email?: boolean
@@ -223,6 +227,8 @@ export interface Database {
           subscription_status?: 'free' | 'pro' | 'canceled' | null
           subscription_period_end?: string | null
           tailored_resume_count?: number
+          weekly_resume_count?: number
+          weekly_window_start?: string | null
           has_used_extension?: boolean
           email_unsubscribed?: boolean
           do_not_email?: boolean

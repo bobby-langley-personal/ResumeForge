@@ -379,7 +379,15 @@ Claude ends adaptive chat messages with a `CHOICES: A | B | C` line. `InterviewC
 | `stripe_customer_id` | string \| null | Stripe customer ID — set on first checkout |
 | `subscription_status` | `'free' \| 'pro' \| 'canceled' \| null` | Defaults to `'free'` |
 | `subscription_period_end` | string \| null | ISO timestamp — current period end (not actively updated in v1) |
-| `tailored_resume_count` | number | Lifetime count of generated resumes; incremented per generation for free users |
+| `tailored_resume_count` | number | Lifetime count of generated resumes (admin stat — never reset) |
+| `weekly_resume_count` | number | Count of resumes generated in the current rolling 7-day window |
+| `weekly_window_start` | string \| null | ISO timestamp — start of the current 7-day window; null if never used |
+
+**Weekly window logic**: on each generation, if `now - weekly_window_start >= 7 days` (or start is null), the window is considered expired; `weekly_resume_count` resets to 0 and `weekly_window_start` is set to now. Free cap is 5/week (override via `FREE_WEEKLY_RESUME_LIMIT` env var).
+
+`GET /api/billing/status` returns:
+- `weekly_resume_count` — effective count (0 if window expired)
+- `weekly_window_ends_at` — ISO timestamp when the window ends; null if no active window
 
 ---
 

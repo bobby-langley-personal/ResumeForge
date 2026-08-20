@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     const [{ data: userData }, { data: profileData }] = await Promise.all([
       supabase
         .from('users')
-        .select('subscription_status, tailored_resume_count')
+        .select('subscription_status, tailored_resume_count, weekly_resume_count, weekly_window_start')
         .eq('id', userId)
         .single(),
       supabase
@@ -86,11 +86,21 @@ export async function POST(req: NextRequest) {
     ]);
 
     const isPro = userData?.subscription_status === 'pro';
-    const resumeCount = userData?.tailored_resume_count ?? 0;
+    const lifetimeCount = userData?.tailored_resume_count ?? 0;
 
-    if (!isPro && resumeCount >= 3) {
+    // Rolling 7-day window check
+    const WEEKLY_LIMIT = Number(process.env.FREE_WEEKLY_RESUME_LIMIT ?? 5);
+    const windowStart = userData?.weekly_window_start ? new Date(userData.weekly_window_start) : null;
+    const windowExpired = !windowStart || Date.now() - windowStart.getTime() >= 7 * 24 * 60 * 60 * 1000;
+    const weeklyCount = windowExpired ? 0 : (userData?.weekly_resume_count ?? 0);
+    const now = new Date().toISOString();
+
+    if (!isPro && weeklyCount >= WEEKLY_LIMIT) {
+      const windowEndsAt = windowStart && !windowExpired
+        ? new Date(windowStart.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        : null;
       return new Response(
-        JSON.stringify({ error: 'FREE_LIMIT_REACHED', upgradeUrl: '/pricing' }),
+        JSON.stringify({ error: 'FREE_LIMIT_REACHED', upgradeUrl: '/pricing', weekly_window_ends_at: windowEndsAt }),
         { status: 402, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -349,12 +359,17 @@ Output valid JSON only, no markdown fences:
           });
           console.log('[generate-documents] All operations completed successfully');
 
-          // Increment resume count for free users
+          // Increment resume counts for free users (lifetime stat + rolling window)
           if (!isPro) {
             const supabaseFree = supabaseServer();
             await supabaseFree
               .from('users')
-              .update({ tailored_resume_count: resumeCount + 1 })
+              .update({
+                tailored_resume_count: lifetimeCount + 1,
+                weekly_resume_count: weeklyCount + 1,
+                // Start a new window on first use; keep existing start if window is still active
+                weekly_window_start: windowExpired ? now : (userData?.weekly_window_start ?? now),
+              })
               .eq('id', userId);
           }
 
