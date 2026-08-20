@@ -16,7 +16,7 @@ export async function GET(): Promise<NextResponse> {
     const [{ data: user }, { count: documentCount }] = await Promise.all([
       supabase
         .from('users')
-        .select('subscription_status, subscription_period_end, tailored_resume_count')
+        .select('subscription_status, subscription_period_end, tailored_resume_count, chat_unlocked_count, interview_prep_count, experience_interview_count')
         .eq('id', userId)
         .single(),
       supabase
@@ -30,6 +30,9 @@ export async function GET(): Promise<NextResponse> {
       subscription_period_end: user?.subscription_period_end ?? null,
       tailored_resume_count: user?.tailored_resume_count ?? 0,
       document_count: documentCount ?? 0,
+      chat_unlocked_count: user?.chat_unlocked_count ?? 0,
+      interview_prep_count: user?.interview_prep_count ?? 0,
+      experience_interview_count: user?.experience_interview_count ?? 0,
     });
   } catch (err) {
     console.error('[/api/billing/status]', err);

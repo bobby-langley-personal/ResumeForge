@@ -198,6 +198,9 @@ export interface Database {
           has_used_extension: boolean
           email_unsubscribed: boolean
           do_not_email: boolean
+          chat_unlocked_count: number
+          interview_prep_count: number
+          experience_interview_count: number
           created_at: string
           updated_at: string
         }
@@ -212,6 +215,9 @@ export interface Database {
           has_used_extension?: boolean
           email_unsubscribed?: boolean
           do_not_email?: boolean
+          chat_unlocked_count?: number
+          interview_prep_count?: number
+          experience_interview_count?: number
           created_at?: string
           updated_at?: string
         }
@@ -226,6 +232,9 @@ export interface Database {
           has_used_extension?: boolean
           email_unsubscribed?: boolean
           do_not_email?: boolean
+          chat_unlocked_count?: number
+          interview_prep_count?: number
+          experience_interview_count?: number
           created_at?: string
           updated_at?: string
         }
@@ -271,6 +280,30 @@ export interface Database {
             referencedColumns: ["id"]
           }
         ]
+      }
+      user_events: {
+        Row: {
+          id: string
+          user_id: string | null
+          event: string
+          properties: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          event: string
+          properties?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          event?: string
+          properties?: Json | null
+          created_at?: string
+        }
+        Relationships: []
       }
       interview_sessions: {
         Row: {
@@ -319,6 +352,7 @@ export interface Database {
           question_answers: unknown | null
           interview_prep: unknown | null
           chat_history: unknown | null
+          chat_enabled: boolean
           created_at: string
           updated_at: string
         }
@@ -338,6 +372,7 @@ export interface Database {
           question_answers?: unknown | null
           interview_prep?: unknown | null
           chat_history?: unknown | null
+          chat_enabled?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -357,6 +392,7 @@ export interface Database {
           question_answers?: unknown | null
           interview_prep?: unknown | null
           chat_history?: unknown | null
+          chat_enabled?: boolean
           created_at?: string
           updated_at?: string
         }

@@ -68,6 +68,7 @@ Display labels map: `{ resume: 'Resume', cover_letter: 'Cover Letter Example', p
 | `question_answers` | Json \| null | `ApplicationQuestion[]` — AI-generated answers |
 | `interview_prep` | Json \| null | Stored `InterviewPrep` object |
 | `chat_history` | Json \| null | `ResumeChatMessage[]` — persisted chat turns |
+| `chat_enabled` | boolean | Whether AI chat is unlocked for this application (true for first 3 per user lifetime) |
 | `created_at` | string | ISO timestamp |
 | `updated_at` | string | ISO timestamp |
 
@@ -82,8 +83,11 @@ Exported from `app/dashboard/page.tsx`:
   id: string
   company: string
   job_title: string
+  job_description: string
   cover_letter_content: string | null
   question_answers: { question: string; answer: string }[] | null
+  fit_analysis: FitAnalysis | null
+  chat_enabled: boolean
   created_at: string
 }
 ```
@@ -380,6 +384,23 @@ Claude ends adaptive chat messages with a `CHOICES: A | B | C` line. `InterviewC
 | `subscription_status` | `'free' \| 'pro' \| 'canceled' \| null` | Defaults to `'free'` |
 | `subscription_period_end` | string \| null | ISO timestamp — current period end (not actively updated in v1) |
 | `tailored_resume_count` | number | Lifetime count of generated resumes; incremented per generation for free users |
+| `chat_unlocked_count` | number | Count of applications with chat enabled (max 3 for free users) |
+| `interview_prep_count` | number | Lifetime first-time interview prep generations (max 2 for free users) |
+| `experience_interview_count` | number | Lifetime experience interview sessions started (max 2 for free users) |
+
+---
+
+## Table: `user_events` (product telemetry)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | string | UUID, primary key |
+| `user_id` | string \| null | Clerk user ID |
+| `event` | string | Event name (e.g. `chat_locked_click`, `interview_prep_locked_click`) |
+| `properties` | Json \| null | Arbitrary properties JSONB |
+| `created_at` | string | ISO timestamp |
+
+Key frustration signal events: `chat_locked_click`, `interview_prep_locked_click`, `experience_interview_locked_click`
 
 ---
 

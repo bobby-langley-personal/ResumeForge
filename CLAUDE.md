@@ -134,13 +134,13 @@ Added in migration 012. Stores contact info extracted from uploaded resumes.
 | `GET /api/applications/[id]` | Node | Fetch application content + candidateName for PDF preview |
 | `DELETE /api/applications` | Node | Bulk delete by `ids` array |
 | `DELETE /api/applications/[id]` | Node | Delete single resume record |
-| `POST /api/interview-prep` | Node | Haiku — generates 8 interview questions across 6 categories; saves to `applications.interview_prep`; returns `InterviewPrep` |
+| `POST /api/interview-prep` | Node | Haiku — generates 8 interview questions across 6 categories; saves to `applications.interview_prep`; returns `InterviewPrep`; **gated**: returns 402 `PREP_LIMIT_REACHED` for free users on first-time gen when count ≥ 2 (regen exempt) |
 | `POST /api/log-event` | Node | Server-side event logging — writes JSON to Vercel function logs; always returns 200 |
 | `POST /api/billing/create-checkout` | Node | Creates Stripe Checkout session; accepts `{ plan: 'monthly' \| 'quarterly' \| 'annual' }`; resolves price ID server-side from env vars; returns `{ url }` |
 | `POST /api/billing/portal` | Node | Creates Stripe Customer Portal session for subscription management; requires existing `stripe_customer_id`; returns `{ url }` |
-| `GET /api/billing/status` | Node | Returns `{ subscription_status, subscription_period_end, tailored_resume_count }` for current user |
+| `GET /api/billing/status` | Node | Returns `{ subscription_status, subscription_period_end, tailored_resume_count, document_count, chat_unlocked_count, interview_prep_count, experience_interview_count }` for current user |
 | `POST /api/webhooks/stripe` | Node | Stripe webhook handler — verifies signature, handles `checkout.session.completed`, `customer.subscription.updated/deleted`, `invoice.paid/payment_succeeded/payment_failed`; always returns 200 for unhandled events |
-| `POST /api/resume-chat` | Node | Sonnet non-streaming — AI chat for refining a generated resume; parses `CHANGE:` vs `ANSWER:` vs `GAP_REPORT:` response format; on change, updates `applications.resume_content` and `applications.chat_history` in Supabase. **Sourcing constraint:** the bot may only add content evidenced in background documents; skills not found in background docs are flagged as gaps (GAP_REPORT) and never added silently; user-confirmed additions are permitted but noted as not document-sourced |
+| `POST /api/resume-chat` | Node | Sonnet non-streaming — AI chat for refining a generated resume; **gated**: returns 402 `CHAT_LOCKED` if free user and `application.chat_enabled = false`; parses `CHANGE:` vs `ANSWER:` vs `GAP_REPORT:` response format; on change, updates `applications.resume_content` and `applications.chat_history` in Supabase. **Sourcing constraint:** the bot may only add content evidenced in background documents; skills not found in background docs are flagged as gaps (GAP_REPORT) and never added silently; user-confirmed additions are permitted but noted as not document-sourced |
 | `POST /api/base-resume-chat` | Node | Sonnet non-streaming — AI chat for refining a polished resume draft; parses `CHANGE:` vs `ANSWER:` vs `GAP_REPORT:`; does NOT save to DB (caller saves explicitly); returns `{ type, content }`. **Sourcing constraint:** same rule as resume-chat — may only add content evidenced in the base resume; gaps are flagged, not silently added |
 | `POST /api/generate-polished-resume` | Node | Sonnet non-streaming — accepts `{ documentIds[], pageLimit, roleTypeHint? }`, builds standalone resume; fetches `user_profiles` and injects contact info into prompt; returns `{ resumeText: string }` |
 | `GET /api/profile` | Node | Fetch `user_profiles` row for current user; returns empty defaults if not found |
@@ -148,7 +148,7 @@ Added in migration 012. Stores contact info extracted from uploaded resumes.
 | `POST /api/extract-contact` | Node | Haiku call — extracts name/email/location/LinkedIn from first 800 chars of resume text; returns `{ full_name, email, location, linkedin_url }` |
 | `POST /api/interview/generate` | Node | Sonnet non-streaming call — builds experience doc from interview transcript; returns `{ document: string }` |
 | `GET /api/interview/sessions` | Node | Fetch most recent `draft` session for current user; returns `{ session }` (null if none) |
-| `POST /api/interview/sessions` | Node | Create a new draft session; returns `{ id }` |
+| `POST /api/interview/sessions` | Node | Create a new draft session; returns `{ id }`; **gated**: returns 402 `INTERVIEW_LIMIT_REACHED` for free users when count ≥ 2 |
 | `PATCH /api/interview/sessions/[id]` | Node | Update session state (`completed_roles`, `draft_state`, `status`) |
 | `DELETE /api/interview/sessions/[id]` | Node | Delete session (on discard or after saving to My Experience) |
 | `GET /api/admin/send-notification` | Node | Admin-only (x-admin-secret header); returns all users with stats + `eligible` notification types via `fetchAllUserStats()` |
@@ -446,6 +446,21 @@ Contact info is stored in `user_profiles` (one row per user, upserted — not in
 - **Upgrade modal**: Shown on tailor page when 402 received. Three plan buttons (monthly/quarterly/annual) that hit `POST /api/billing/create-checkout`.
 - **Free counter**: Displayed below the tailor page header — "X/3 free resumes used · Upgrade to Pro" — only for non-Pro users.
 - **Navbar**: Pro users see "Manage Subscription" (hits billing portal); free users with ≥1 resume used see "Upgrade to Pro" link.
+
+### Feature Limits (Free Tier)
+
+| Feature | Free Limit | Column | Gate |
+|---------|-----------|--------|------|
+| Résumé Chat | First 3 applications (lifetime) | `users.chat_unlocked_count`, `applications.chat_enabled` | `resume-chat` returns 402 if `!isPro && !app.chat_enabled` |
+| Interview Prep | 2 first-time generations (lifetime, regens don't count) | `users.interview_prep_count` | `interview-prep` returns 402 if `!isPro && isFirstTimeGen && count >= 2` |
+| Experience Interview | 2 sessions (lifetime) | `users.experience_interview_count` | `interview/sessions` POST returns 402 if `!isPro && count >= 2` |
+
+- Frustrated clicks are logged to `user_events` table via `lib/log-user-event.ts`
+- `GET /api/billing/status` returns `chat_unlocked_count`, `interview_prep_count`, `experience_interview_count` for UI badges
+- `ApplicationList` fetches billing status on mount and passes counts to each `ApplicationCard`
+- Chat lock: grayed `MessageCircle` + `Lock` overlay badge on the card button; click shows inline error
+- Interview Prep lock: `Lock` overlay badge on `Target` button; server returns 402 after exhaustion
+- Experience Interview lock: `InterviewClient` fetches billing on mount; shows dedicated locked screen instead of entry flow if limit reached
 - **Pricing page** (`/pricing`): Public. Three plan cards (Monthly $19/mo, Quarterly $47, Annual $149). Pro users see "You're on Pro ✓" + Manage Subscription instead of CTAs.
 - **Stripe singleton**: `lib/stripe.ts` — exports `stripe` instance and `PRICE_IDS` (resolved from env vars). Use `PRICE_IDS` only server-side — never expose to client.
 - **Webhook**: `POST /api/webhooks/stripe` — registered at `https://easy-apply.ai/api/webhooks/stripe` in Stripe Dashboard. Required events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_succeeded`, `invoice.payment_failed`.
