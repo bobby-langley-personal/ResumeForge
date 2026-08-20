@@ -201,6 +201,31 @@ Company | Location
 
 ---
 
+### `api_logs` (updated columns)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `app_version` | string \| null | Value of `NEXT_PUBLIC_APP_VERSION` env var at call time |
+| `source` | `'webapp' \| 'extension' \| null` | Set to `'extension'` when `X-Extension-Version` header is present; `'webapp'` otherwise |
+
+---
+
+### Table: `cron_runs`
+
+Tracks automated cron job invocations to prevent overlapping runs and record outcomes.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `name` | string | Primary key — cron job identifier (e.g. `'notifications'`) |
+| `status` | `'running' \| 'succeeded' \| 'failed' \| null` | Current/last run status |
+| `started_at` | string \| null | ISO timestamp — when the run began |
+| `finished_at` | string \| null | ISO timestamp — when the run ended |
+| `sent_count` | number \| null | How many emails were sent in the run |
+
+One row per job name (upserted on each run). Used by `GET /api/cron/notifications` to skip runs when a previous one is still in progress.
+
+---
+
 ### `ApiUsage` (table: `api_usage`)
 
 | Column | Type | Notes |

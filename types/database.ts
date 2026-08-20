@@ -20,6 +20,8 @@ export interface Database {
           response_summary: Json | null
           error: string | null
           duration_ms: number | null
+          app_version: string | null
+          source: string | null
           created_at: string
         }
         Insert: {
@@ -32,6 +34,8 @@ export interface Database {
           response_summary?: Json | null
           error?: string | null
           duration_ms?: number | null
+          app_version?: string | null
+          source?: string | null
           created_at?: string
         }
         Update: {
@@ -44,7 +48,33 @@ export interface Database {
           response_summary?: Json | null
           error?: string | null
           duration_ms?: number | null
+          app_version?: string | null
+          source?: string | null
           created_at?: string
+        }
+        Relationships: []
+      }
+      cron_runs: {
+        Row: {
+          name: string
+          status: 'running' | 'succeeded' | 'failed' | null
+          started_at: string | null
+          finished_at: string | null
+          sent_count: number | null
+        }
+        Insert: {
+          name: string
+          status?: 'running' | 'succeeded' | 'failed' | null
+          started_at?: string | null
+          finished_at?: string | null
+          sent_count?: number | null
+        }
+        Update: {
+          name?: string
+          status?: 'running' | 'succeeded' | 'failed' | null
+          started_at?: string | null
+          finished_at?: string | null
+          sent_count?: number | null
         }
         Relationships: []
       }

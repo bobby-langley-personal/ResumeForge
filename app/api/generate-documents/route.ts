@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
         ext_version: req.headers.get('x-extension-version') ?? undefined,
       },
       duration_ms: Date.now() - startMs,
+      source: req.headers.get('x-extension-version') ? 'extension' : 'webapp',
     });
 
     // Fetch user subscription status + profile in parallel

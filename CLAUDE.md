@@ -156,7 +156,7 @@ Added in migration 012. Stores contact info extracted from uploaded resumes.
 | `GET /api/admin/stats` | Node | Admin-only; returns total/new user counts, subscription breakdown, recent signups (last 20), Resend config status, last notification sent timestamp |
 | `POST /api/admin/test-email` | Node | Admin-only; sends a test email to `ADMIN_NOTIFICATION_EMAIL` to verify Resend is working |
 | `GET /api/admin/preview-notification` | Node | Admin-only; renders a notification email as HTML for preview (uses dummy name/unsub); accepts `?type=` query param |
-| `GET /api/cron/notifications` | Node | Vercel cron (daily 14:00 UTC); sends lifecycle emails to all eligible non-unsubscribed users; auth via `Authorization: Bearer <CRON_SECRET>` |
+| `GET /api/cron/notifications` | Node | Vercel cron (daily 14:00 UTC); sends lifecycle emails to eligible non-unsubscribed users; auth via `Authorization: Bearer <CRON_SECRET>`; overlap guard via `cron_runs` table; per-run cap of 25 (override via `NOTIFICATIONS_MAX_PER_RUN` env var) to drain backlog gradually |
 
 ### generate-documents request fields
 - `company`, `jobTitle`, `jobDescription`, `backgroundExperience` — required
