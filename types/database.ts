@@ -407,6 +407,30 @@ export interface Database {
           }
         ]
       }
+      user_events: {
+        Row: {
+          id: string
+          user_id: string | null
+          event: string
+          properties: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          event: string
+          properties?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          event?: string
+          properties?: Json | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

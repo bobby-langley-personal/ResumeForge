@@ -4,6 +4,7 @@ import { renderToBuffer } from '@react-pdf/renderer';
 import { createElement } from 'react';
 import { supabaseServer } from '@/lib/supabase';
 import ResumePDF from '@/lib/pdf/ResumePDF';
+import { stripBlankTrailingPages } from '@/lib/pdf/strip-blank-pages';
 
 export const runtime = 'nodejs';
 
@@ -28,11 +29,12 @@ export async function POST(request: NextRequest) {
       company: '',
       jobTitle: '',
     });
-    const pdfBuffer = await renderToBuffer(element as React.ReactElement);
+    const rawBuffer = await renderToBuffer(element as React.ReactElement);
+    const pdfBuffer = await stripBlankTrailingPages(Buffer.from(rawBuffer));
 
     const safeName = (fileName || 'Polished_Resume').replace(/[^a-zA-Z0-9_-]/g, '_');
 
-    return new NextResponse(new Uint8Array(pdfBuffer), {
+    return new NextResponse(new Uint8Array(pdfBuffer as Buffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${safeName}.pdf"`,

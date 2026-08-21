@@ -5,7 +5,7 @@ import { useUser } from '@clerk/nextjs';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AdminProvider, useAdminContext } from './AdminContext';
-import { LayoutDashboard, Bell, Lock, Eye, EyeOff, ScrollText, Puzzle } from 'lucide-react';
+import { LayoutDashboard, Bell, Lock, Eye, EyeOff, ScrollText, Puzzle, Zap } from 'lucide-react';
 
 const ADMIN_USER_ID = process.env.NEXT_PUBLIC_ADMIN_USER_ID ?? '';
 
@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { href: '/admin/notifications', label: 'Notifications', icon: Bell },
   { href: '/admin/logs', label: 'API Logs', icon: ScrollText },
   { href: '/admin/ext-logs', label: 'Ext Logs', icon: Puzzle },
+  { href: '/admin/events', label: 'Events', icon: Zap },
 ];
 
 function AdminSecretGate({ children }: { children: React.ReactNode }) {

@@ -156,6 +156,7 @@ Added in migration 012. Stores contact info extracted from uploaded resumes.
 | `GET /api/admin/stats` | Node | Admin-only; returns total/new user counts, subscription breakdown, recent signups (last 20), Resend config status, last notification sent timestamp |
 | `POST /api/admin/test-email` | Node | Admin-only; sends a test email to `ADMIN_NOTIFICATION_EMAIL` to verify Resend is working |
 | `GET /api/admin/preview-notification` | Node | Admin-only; renders a notification email as HTML for preview (uses dummy name/unsub); accepts `?type=` query param |
+| `GET /api/admin/events` | Node | Admin-only; returns paginated user_events with aggregate counts per event type; accepts `?page=&event=&userId=&days=` (days default 30, max 90) |
 | `GET /api/cron/notifications` | Node | Vercel cron (daily 14:00 UTC); sends lifecycle emails to eligible non-unsubscribed users; auth via `Authorization: Bearer <CRON_SECRET>`; overlap guard via `cron_runs` table; per-run cap of 25 (override via `NOTIFICATIONS_MAX_PER_RUN` env var) to drain backlog gradually |
 
 ### generate-documents request fields
@@ -427,7 +428,7 @@ Contact info is stored in `user_profiles` (one row per user, upserted — not in
 ## Admin Panel (`/admin`)
 
 - Protected by Clerk user ID check (`NEXT_PUBLIC_ADMIN_USER_ID`) and an admin secret stored in `localStorage` (`ea_admin_secret`), validated on unlock via `GET /api/admin/stats`
-- `app/admin/layout.tsx` — shared client layout; shows unlock gate if no secret stored, sidebar nav otherwise; "Lock admin" clears localStorage secret
+- `app/admin/layout.tsx` — shared client layout; shows unlock gate if no secret stored, sidebar nav otherwise; "Lock admin" clears localStorage secret; nav items: Overview, Notifications, API Logs, Ext Logs, Events
 - `app/admin/AdminContext.tsx` — React context that shares the secret across all admin pages without re-entry
 - `app/admin/page.tsx` — Overview: stats cards, email health (Resend status + test-send button), recent signups table
 - `app/admin/notifications/page.tsx` — Notification sender: type selector with descriptions, eligible-user count, "Preview email" modal (iframe with real rendered HTML), send results with per-user status

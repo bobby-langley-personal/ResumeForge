@@ -226,6 +226,27 @@ One row per job name (upserted on each run). Used by `GET /api/cron/notification
 
 ---
 
+### Table: `user_events`
+
+Tracks product usage events and feature interactions for admin visibility. Used for free-tier gating telemetry (cap hits, locked-feature clicks) and upgrade funnel tracking.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | string | UUID, primary key |
+| `user_id` | string \| null | Clerk user ID (null for anonymous) |
+| `event` | string | Snake\_case event name (e.g. `weekly_resume_cap_hit`) |
+| `properties` | Json \| null | Open-ended context (application\_id, count\_at\_time, etc.) |
+| `created_at` | string | ISO timestamp |
+
+**Frustration signal events** (highlighted red in admin Events tab):
+`chat_locked_click`, `interview_prep_locked_click`, `experience_interview_locked_click`, `weekly_resume_cap_hit`
+
+Written via:
+- `lib/log-user-event.ts` — server-side fire-and-forget utility (use from API routes)
+- `POST /api/log-event` — client-side events call this; the route writes to `user_events` for all events, and additionally to `ext_logs` for extension-originated events (detected by `X-Extension-Version` header)
+
+---
+
 ### `ApiUsage` (table: `api_usage`)
 
 | Column | Type | Notes |
