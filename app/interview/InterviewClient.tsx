@@ -108,6 +108,7 @@ export default function InterviewClient() {
   const [existingDocs, setExistingDocs] = useState<ExistingDoc[]>([]);
   const [useExistingDocs, setUseExistingDocs] = useState(false);
   const [existingDocsContext, setExistingDocsContext] = useState('');
+  const [interviewLocked, setInterviewLocked] = useState(false);
 
   const [totalRoles, setTotalRoles] = useState(0);
   const [completedRoles, setCompletedRoles] = useState<CompletedRole[]>([]);
@@ -150,12 +151,23 @@ export default function InterviewClient() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [displayMessages, thinking]);
 
-  // Preload existing docs + check for saved Supabase session in parallel on mount
+  // Preload existing docs + check for saved Supabase session + billing status in parallel on mount
   useEffect(() => {
     Promise.all([
       fetch('/api/resumes').then(r => r.json()).catch(() => []),
       fetch('/api/interview/sessions').then(r => r.json()).catch(() => ({ session: null })),
-    ]).then(([docs, sessionResp]) => {
+      fetch('/api/billing/status').then(r => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([docs, sessionResp, billingData]) => {
+      // Check experience interview limit for free users
+      if (
+        billingData &&
+        billingData.subscription_status !== 'pro' &&
+        billingData.experience_interview_count >= 2
+      ) {
+        setInterviewLocked(true);
+        setStep('intro'); // advance past preloading so we can show the locked UI
+        return;
+      }
       const validDocs: ExistingDoc[] = docs ?? [];
       setExistingDocs(validDocs);
 
@@ -230,6 +242,11 @@ export default function InterviewClient() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
+        if (res.status === 402) {
+          setInterviewLocked(true);
+          setStep('intro');
+          return;
+        }
         const data = await res.json();
         setSessionId(data.id);
       }
@@ -628,6 +645,27 @@ export default function InterviewClient() {
           </Button>
           <Button variant="outline" onClick={() => handleUseExistingDocs(false)} className="flex-1">
             Start from scratch
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 'intro' && interviewLocked) {
+    return (
+      <div className="max-w-lg mx-auto space-y-6 py-16 text-center">
+        <div className="text-5xl">🔒</div>
+        <h1 className="text-2xl font-bold text-foreground">Experience Interview Limit Reached</h1>
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          Free accounts include 2 experience interviews. You&apos;ve used both of yours.
+          Upgrade to Pro for unlimited interviews and all premium features.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+          <Button onClick={() => router.push('/pricing')}>
+            Upgrade to Pro
+          </Button>
+          <Button variant="outline" onClick={() => router.push('/resumes')}>
+            View My Experience
           </Button>
         </div>
       </div>

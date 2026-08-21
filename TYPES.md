@@ -68,6 +68,7 @@ Display labels map: `{ resume: 'Resume', cover_letter: 'Cover Letter Example', p
 | `question_answers` | Json \| null | `ApplicationQuestion[]` — AI-generated answers |
 | `interview_prep` | Json \| null | Stored `InterviewPrep` object |
 | `chat_history` | Json \| null | `ResumeChatMessage[]` — persisted chat turns |
+| `chat_enabled` | boolean | Whether AI chat is unlocked for this application (true for first 3 per user lifetime) |
 | `created_at` | string | ISO timestamp |
 | `updated_at` | string | ISO timestamp |
 
@@ -82,8 +83,11 @@ Exported from `app/dashboard/page.tsx`:
   id: string
   company: string
   job_title: string
+  job_description: string
   cover_letter_content: string | null
   question_answers: { question: string; answer: string }[] | null
+  fit_analysis: FitAnalysis | null
+  chat_enabled: boolean
   created_at: string
 }
 ```
@@ -428,12 +432,16 @@ Claude ends adaptive chat messages with a `CHOICES: A | B | C` line. `InterviewC
 | `tailored_resume_count` | number | Lifetime count of generated resumes (admin stat — never reset) |
 | `weekly_resume_count` | number | Count of resumes generated in the current rolling 7-day window |
 | `weekly_window_start` | string \| null | ISO timestamp — start of the current 7-day window; null if never used |
+| `chat_unlocked_count` | number | Count of applications with chat enabled (max 3 for free users) |
+| `interview_prep_count` | number | Lifetime first-time interview prep generations (max 2 for free users) |
+| `experience_interview_count` | number | Lifetime experience interview sessions started (max 2 for free users) |
 
 **Weekly window logic**: on each generation, if `now - weekly_window_start >= 7 days` (or start is null), the window is considered expired; `weekly_resume_count` resets to 0 and `weekly_window_start` is set to now. Free cap is 5/week (override via `FREE_WEEKLY_RESUME_LIMIT` env var).
 
 `GET /api/billing/status` returns:
 - `weekly_resume_count` — effective count (0 if window expired)
 - `weekly_window_ends_at` — ISO timestamp when the window ends; null if no active window
+- `chat_unlocked_count`, `interview_prep_count`, `experience_interview_count` — gating counters for UI badges
 
 ---
 

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Anthropic } from '@anthropic-ai/sdk';
 import { getModels } from '@/lib/models';
 import { supabaseServer } from '@/lib/supabase';
+import { logUserEvent } from '@/lib/log-user-event';
 import { InterviewPrep, InterviewPrepRequest } from '@/types/interview-prep';
 
 export const runtime = 'nodejs';
@@ -51,15 +52,34 @@ export async function POST(req: NextRequest) {
 
   const supabase = supabaseServer();
 
-  // Verify ownership
-  const { data: app, error: fetchError } = await supabase
-    .from('applications')
-    .select('id, user_id')
-    .eq('id', applicationId)
-    .single();
+  // Verify ownership and fetch prep/user data in parallel
+  const [{ data: app, error: fetchError }, { data: userData }] = await Promise.all([
+    supabase
+      .from('applications')
+      .select('id, user_id, interview_prep')
+      .eq('id', applicationId)
+      .single(),
+    supabase
+      .from('users')
+      .select('subscription_status, interview_prep_count')
+      .eq('id', userId)
+      .single(),
+  ]);
 
   if (fetchError || !app) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (app.user_id !== userId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+  const isPro = userData?.subscription_status === 'pro';
+  const prepCount = userData?.interview_prep_count ?? 0;
+  const isFirstTimeGen = !app.interview_prep; // regen doesn't count against the limit
+
+  if (!isPro && isFirstTimeGen && prepCount >= 2) {
+    logUserEvent(userId, 'interview_prep_locked_click', { applicationId, prepCount });
+    return NextResponse.json(
+      { error: 'PREP_LIMIT_REACHED', upgradeUrl: '/pricing' },
+      { status: 402 }
+    );
+  }
 
   const userContent = `JOB TITLE: ${jobTitle}
 COMPANY: ${company}
@@ -103,6 +123,18 @@ ${generatedResume}${toughQuestions?.length ? `\n\nTOUGH APPLICATION QUESTIONS TO
       .eq('user_id', userId);
 
     if (updateError) console.error('[interview-prep] Save error:', updateError.message);
+
+    // Increment interview_prep_count on first-time generation for free users
+    if (!isPro && isFirstTimeGen) {
+      void supabase
+        .from('users')
+        .update({ interview_prep_count: prepCount + 1 })
+        .eq('id', userId)
+        .then(({ error }) => {
+          if (error) console.error('[interview-prep] Count increment error:', error.message);
+          else console.log('[interview-prep] interview_prep_count incremented to', prepCount + 1);
+        });
+    }
 
     return NextResponse.json(prep);
   } catch (err) {

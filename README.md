@@ -105,7 +105,8 @@ Easy Apply extracts and stores your contact information so it is consistently ap
 Saves every generated resume to Supabase:
 - Card view with company, job title, and date
 - **Search bar** at the top — filter cards by company or job title in real time
-- **Target icon** — generates and displays AI interview prep (8 tailored questions with hints, resume references, and practiced tracking); opens immediately with skeleton loading UI while generating; saved to Supabase for future visits
+- **Chat icon (MessageCircle)** — opens an AI chat panel to refine the résumé; grayed with lock badge for free users beyond the 3-application chat limit
+- **Target icon** — generates and displays AI interview prep; lock badge appears when free limit (2 preps) is exhausted; regen on existing preps is always free
 - **ScrollText icon** — opens a formatted job description modal with smart paragraph/bullet detection
 - **Lightbulb icon** (yellow = insights available, slate = none) — opens the Fit Analysis modal showing strengths, gaps, suggestions, and planned improvements from when the resume was generated
 - Download resume or cover letter as PDF
@@ -113,6 +114,15 @@ Saves every generated resume to Supabase:
 - If the record has application question answers, a chat icon opens a modal showing each Q&A with word count and copy button
 - Multi-select checkboxes for bulk delete; trash icon for individual delete
 - **"← Back to resume generator"** link at the top for easy navigation
+
+### Free Tier Feature Limits
+| Feature | Free Limit | Pro |
+|---------|-----------|-----|
+| Résumé Chat | First 3 applications (lifetime) | Unlimited |
+| Interview Prep | 2 first-time generations (lifetime) | Unlimited |
+| Experience Interview | 2 sessions (lifetime) | Unlimited |
+
+Locked features show a `Lock` overlay badge on the action icon. Frustrated clicks are logged to `user_events` for admin visibility.
 
 ### 8. PDF Downloads & Preview
 Generated documents can be downloaded as formatted PDFs directly from the dashboard or immediately after generation:

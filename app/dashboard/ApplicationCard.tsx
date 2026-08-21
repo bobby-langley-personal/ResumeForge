@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
-import { FileText, Download, Trash2, MessageSquare, ScrollText, Target, X, Eye, Lightbulb, MessageCircle } from 'lucide-react';
+import { FileText, Download, Trash2, MessageSquare, ScrollText, Target, X, Eye, Lightbulb, MessageCircle, Lock } from 'lucide-react';
 import FitAnalysisModal from '@/components/FitAnalysisModal';
 import InterviewPrepPanel from '@/components/InterviewPrepPanel';
 import ResumeChatPanel from '@/components/ResumeChatPanel';
@@ -93,6 +93,9 @@ interface ApplicationCardProps {
   hasCoverLetter: boolean;
   questionAnswers: { question: string; answer: string }[] | null;
   fitAnalysis: FitAnalysis | null;
+  chatEnabled: boolean;
+  isPro: boolean;
+  interviewPrepCount: number;
   selected: boolean;
   onToggleSelect: (id: string) => void;
   onDelete: (id: string) => void;
@@ -100,8 +103,11 @@ interface ApplicationCardProps {
 
 const wordCount = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
 
+const FREE_PREP_LIMIT = 2;
+
 export default function ApplicationCard({
   id, company, jobTitle, jobDescription, createdAt, hasCoverLetter, questionAnswers, fitAnalysis,
+  chatEnabled, isPro, interviewPrepCount,
   selected, onToggleSelect, onDelete,
 }: ApplicationCardProps) {
   const [downloading, setDownloading] = useState<'resume' | 'cover-letter' | null>(null);
@@ -194,6 +200,11 @@ export default function ApplicationCard({
           toughQuestions: questionAnswers?.map(qa => qa.question),
         }),
       });
+      if (res.status === 402) {
+        setShowPrep(false);
+        setError(`Interview Prep limit reached (${FREE_PREP_LIMIT} free). Upgrade to Pro for unlimited prep.`);
+        return;
+      }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const prep: InterviewPrep = await res.json();
       setInterviewPrep(prep);
@@ -241,6 +252,17 @@ export default function ApplicationCard({
   };
 
   const handleOpenChat = async () => {
+    // Check chat entitlement before opening
+    if (!isPro && !chatEnabled) {
+      // Log frustrated click and show upgrade prompt via error message
+      fetch('/api/log-event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: 'chat_locked_click', applicationId: id }),
+      }).catch(() => {});
+      setError('Résumé Chat is included with your first 3 résumés. Upgrade to Pro for unlimited chat.');
+      return;
+    }
     setShowChat(true);
     if (previewData) {
       if (!chatCurrentResume) setChatCurrentResume(previewData.resumeContent);
@@ -344,20 +366,45 @@ export default function ApplicationCard({
           </p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <button
-            onClick={handleOpenChat}
-            className="p-1 text-muted-foreground hover:text-foreground transition-colors"
-            title="Refine résumé with AI chat"
-          >
-            <MessageCircle className="w-4 h-4" />
-          </button>
+          {/* Chat button — locked for free users after first 3 résumés */}
+          {!isPro && !chatEnabled ? (
+            <button
+              onClick={handleOpenChat}
+              className="relative p-1 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+              title="Résumé Chat included with first 3 résumés · Upgrade to Pro"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <Lock className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 text-muted-foreground/60" />
+            </button>
+          ) : (
+            <button
+              onClick={handleOpenChat}
+              className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+              title="Refine résumé with AI chat"
+            >
+              <MessageCircle className="w-4 h-4" />
+            </button>
+          )}
+          {/* Interview Prep button — shows remaining count badge for free users */}
           <button
             onClick={handleOpenPrep}
             disabled={prepLoading}
-            className={`p-1 transition-colors ${interviewPrep ? 'text-primary hover:text-primary/80' : 'text-muted-foreground hover:text-foreground'}`}
-            title={interviewPrep ? 'View interview prep' : 'Generate interview prep'}
+            className={`relative p-1 transition-colors ${interviewPrep ? 'text-primary hover:text-primary/80' : 'text-muted-foreground hover:text-foreground'}`}
+            title={
+              interviewPrep
+                ? 'View interview prep'
+                : !isPro && interviewPrepCount >= FREE_PREP_LIMIT
+                  ? `Interview Prep limit reached (${FREE_PREP_LIMIT} free) · Upgrade to Pro`
+                  : `Generate interview prep${!isPro ? ` (${FREE_PREP_LIMIT - interviewPrepCount} remaining)` : ''}`
+            }
           >
-            {prepLoading ? <span className="w-4 h-4 block animate-spin rounded-full border-2 border-current border-t-transparent" /> : <Target className="w-4 h-4" />}
+            {prepLoading
+              ? <span className="w-4 h-4 block animate-spin rounded-full border-2 border-current border-t-transparent" />
+              : <Target className="w-4 h-4" />
+            }
+            {!isPro && !interviewPrep && interviewPrepCount >= FREE_PREP_LIMIT && (
+              <Lock className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 text-muted-foreground/60" />
+            )}
           </button>
           <button
             onClick={() => setShowJD(true)}

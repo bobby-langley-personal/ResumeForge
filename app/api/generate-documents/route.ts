@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     const [{ data: userData }, { data: profileData }] = await Promise.all([
       supabase
         .from('users')
-        .select('subscription_status, tailored_resume_count, weekly_resume_count, weekly_window_start')
+        .select('subscription_status, tailored_resume_count, weekly_resume_count, weekly_window_start, chat_unlocked_count')
         .eq('id', userId)
         .single(),
       supabase
@@ -88,6 +88,7 @@ export async function POST(req: NextRequest) {
 
     const isPro = userData?.subscription_status === 'pro';
     const lifetimeCount = userData?.tailored_resume_count ?? 0;
+    const chatUnlockedCount = userData?.chat_unlocked_count ?? 0;
 
     // Rolling 7-day window check
     const WEEKLY_LIMIT = Number(process.env.FREE_WEEKLY_RESUME_LIMIT ?? 5);
@@ -324,6 +325,8 @@ Output valid JSON only, no markdown fences:
           // Save to Supabase
           console.log('[generate-documents] Starting Supabase save operation');
           const supabase = supabaseServer();
+          // Determine if this application gets AI chat (first 3 per user, lifetime)
+          const enableChat = isPro || chatUnlockedCount < 3;
           const { data: application, error } = await supabase
             .from('applications')
             .insert({
@@ -338,39 +341,46 @@ Output valid JSON only, no markdown fences:
               questions: filteredQuestions.length > 0 ? filteredQuestions as any : null,
               question_answers: questionAnswers.length > 0 ? questionAnswers as any : null,
               status: 'applied',
+              chat_enabled: enableChat,
             })
             .select('id')
             .single();
 
           if (error || !application) {
             console.error('[generate-documents] Supabase save failed:', error);
-            sendEvent('error', { 
-              message: `Failed to save application: ${error?.message || 'Unknown database error'}` 
+            sendEvent('error', {
+              message: `Failed to save application: ${error?.message || 'Unknown database error'}`
             });
             return;
           }
 
-          console.log('[generate-documents] Successfully saved application with ID:', application.id);
+          console.log('[generate-documents] Successfully saved application with ID:', application.id, 'chat_enabled:', enableChat);
 
-          // Send final result with application ID
+          // Send final result with application ID and chat status
           sendEvent('done', {
             resumeText,
             coverLetterText,
-            applicationId: application.id
+            applicationId: application.id,
+            chatEnabled: enableChat,
           });
           console.log('[generate-documents] All operations completed successfully');
 
-          // Increment resume counts for free users (lifetime stat + rolling window)
+          // Increment resume counts for free users (lifetime stat + rolling window + chat counter)
           if (!isPro) {
+            const updates: Record<string, unknown> = {
+              tailored_resume_count: lifetimeCount + 1,
+              weekly_resume_count: weeklyCount + 1,
+              // Start a new window on first use; keep existing start if window is still active
+              weekly_window_start: windowExpired ? now : (userData?.weekly_window_start ?? now),
+            };
+            if (chatUnlockedCount < 3) {
+              updates.chat_unlocked_count = chatUnlockedCount + 1;
+              console.log('[generate-documents] Chat unlocked for new application, count now:', chatUnlockedCount + 1);
+            }
             const supabaseFree = supabaseServer();
             await supabaseFree
               .from('users')
-              .update({
-                tailored_resume_count: lifetimeCount + 1,
-                weekly_resume_count: weeklyCount + 1,
-                // Start a new window on first use; keep existing start if window is still active
-                weekly_window_start: windowExpired ? now : (userData?.weekly_window_start ?? now),
-              })
+              .update(updates)
               .eq('id', userId);
           }
 
