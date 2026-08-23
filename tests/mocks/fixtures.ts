@@ -47,9 +47,9 @@ export const baseRequest = {
   backgroundExperience: 'I have 3 years of React and Node.js experience.',
 };
 
-export function makeRequest(body: Record<string, unknown>, headers: Record<string, string> = {}) {
+export function makeRequest(body: Record<string, unknown>, headers: Record<string, string> = {}, method = 'POST') {
   return new Request('http://localhost/api/test', {
-    method: 'POST',
+    method,
     headers: { 'Content-Type': 'application/json', ...headers },
     body: JSON.stringify(body),
   });
