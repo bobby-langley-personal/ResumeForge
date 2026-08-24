@@ -352,6 +352,30 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 
 ---
 
+## Testing
+
+### Unit & Integration Tests (Vitest)
+
+```bash
+npm test          # watch mode
+npm run test:run  # single run (CI)
+```
+
+Tests live in `tests/unit/` and `tests/integration/`. Integration tests mock Supabase and Anthropic to test route logic end-to-end without network calls.
+
+### E2E Tests (Playwright)
+
+```bash
+npm run test:e2e          # headless, all projects
+npm run test:e2e:public   # public routes only (no credentials needed)
+npm run test:e2e:headed   # headed mode for debugging
+npm run test:e2e:ui       # Playwright UI mode
+```
+
+Requires `E2E_TEST_EMAIL` and `E2E_TEST_PASSWORD` in `.env.local` for the authenticated test project. The auth setup saves Clerk session state to `e2e/.auth/` (gitignored).
+
+---
+
 ## Backlog / Future Features
 
 ### Job Search (built, not yet exposed to users)

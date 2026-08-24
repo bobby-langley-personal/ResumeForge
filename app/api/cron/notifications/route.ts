@@ -2,7 +2,7 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 import { NextRequest } from 'next/server';
-import { fetchAllUserStats, getEligibleNotifications, sendNotification } from '@/lib/notifications';
+import { fetchAllUserStats, getEligibleNotifications, sendNotification, MIN_DAYS_BETWEEN_EMAILS } from '@/lib/notifications';
 import { supabaseServer } from '@/lib/supabase';
 
 const CRON_NAME = 'notifications';
@@ -64,6 +64,11 @@ export async function GET(req: NextRequest) {
     }
     const eligible = getEligibleNotifications(user);
     if (eligible.length === 0) continue;
+    // Enforce a minimum gap between any two emails to the same user.
+    if (user.last_notified_at) {
+      const daysSince = (Date.now() - new Date(user.last_notified_at).getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSince < MIN_DAYS_BETWEEN_EMAILS) continue;
+    }
     // Send only the first (highest-priority) eligible notification per user per run
     // to avoid sending multiple emails to the same person in a single day.
     // Remaining eligible types will be sent on subsequent daily runs.

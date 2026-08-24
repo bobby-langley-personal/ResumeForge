@@ -199,19 +199,19 @@ export interface Database {
         Row: {
           id: string
           user_id: string
-          notification_type: 'setup_experience' | 'first_tailor' | 'add_more_experience' | 'job_hunt_checkin' | 'try_extension'
+          notification_type: 'setup_experience' | 'first_tailor' | 'add_more_experience' | 'job_hunt_checkin' | 'try_extension' | 'free_tier_update'
           sent_at: string
         }
         Insert: {
           id?: string
           user_id: string
-          notification_type: 'setup_experience' | 'first_tailor' | 'add_more_experience' | 'job_hunt_checkin' | 'try_extension'
+          notification_type: 'setup_experience' | 'first_tailor' | 'add_more_experience' | 'job_hunt_checkin' | 'try_extension' | 'free_tier_update'
           sent_at?: string
         }
         Update: {
           id?: string
           user_id?: string
-          notification_type?: 'setup_experience' | 'first_tailor' | 'add_more_experience' | 'job_hunt_checkin' | 'try_extension'
+          notification_type?: 'setup_experience' | 'first_tailor' | 'add_more_experience' | 'job_hunt_checkin' | 'try_extension' | 'free_tier_update'
           sent_at?: string
         }
         Relationships: []

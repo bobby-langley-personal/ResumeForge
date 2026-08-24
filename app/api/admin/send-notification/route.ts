@@ -10,6 +10,7 @@ const VALID_TYPES: NotificationType[] = [
   'add_more_experience',
   'job_hunt_checkin',
   'try_extension',
+  'free_tier_update',
 ];
 
 export async function POST(req: NextRequest) {

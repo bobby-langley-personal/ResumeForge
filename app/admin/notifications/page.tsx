@@ -13,6 +13,7 @@ const NOTIFICATION_LABELS: Record<NotificationType, string> = {
   add_more_experience: 'Add more experience',
   job_hunt_checkin: 'Job hunt check-in',
   try_extension: 'Try the extension',
+  free_tier_update: 'Free tier update',
 };
 
 const NOTIFICATION_DESCRIPTIONS: Record<NotificationType, string> = {
@@ -21,6 +22,7 @@ const NOTIFICATION_DESCRIPTIONS: Record<NotificationType, string> = {
   add_more_experience: 'Sent 7d after signup to users with 1 doc and at least 1 resume.',
   job_hunt_checkin: 'Sent to users inactive for 14+ days who have tailored at least once.',
   try_extension: "Sent 3d after signup to users who haven't used the Chrome extension.",
+  free_tier_update: 'One-time broadcast: informs users who hit the old 3-résumé cap that they now get 5/week.',
 };
 
 const ALL_TYPES = Object.keys(NOTIFICATION_LABELS) as NotificationType[];
@@ -225,6 +227,7 @@ function ScheduledTab({ users, loading }: { users: UserRow[]; loading: boolean }
     add_more_experience: [],
     job_hunt_checkin: [],
     try_extension: [],
+    free_tier_update: [],
   };
 
   for (const user of users) {

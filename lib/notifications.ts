@@ -5,6 +5,7 @@ import { firstTailorHtml, firstTailorSubject } from '@/lib/emails/first-tailor';
 import { addMoreExperienceHtml, addMoreExperienceSubject } from '@/lib/emails/add-more-experience';
 import { jobHuntCheckinHtml, jobHuntCheckinSubject } from '@/lib/emails/job-hunt-checkin';
 import { tryExtensionHtml, tryExtensionSubject } from '@/lib/emails/try-extension';
+import { freeTierUpdateHtml, freeTierUpdateSubject } from '@/lib/emails/free-tier-update';
 import { unsubscribeUrl } from '@/lib/unsubscribe-token';
 
 export type NotificationType =
@@ -12,7 +13,8 @@ export type NotificationType =
   | 'first_tailor'
   | 'add_more_experience'
   | 'job_hunt_checkin'
-  | 'try_extension';
+  | 'try_extension'
+  | 'free_tier_update';
 
 export interface UserStats {
   id: string;
@@ -26,6 +28,7 @@ export interface UserStats {
   email_unsubscribed: boolean;
   do_not_email: boolean;
   sent_notifications: NotificationType[];
+  last_notified_at: string | null;
 }
 
 const MS = {
@@ -79,6 +82,7 @@ function buildEmail(type: NotificationType, name: string, userId: string): { sub
     case 'add_more_experience': return { subject: addMoreExperienceSubject, html: addMoreExperienceHtml(name, unsub) };
     case 'job_hunt_checkin':    return { subject: jobHuntCheckinSubject, html: jobHuntCheckinHtml(name, unsub) };
     case 'try_extension':       return { subject: tryExtensionSubject, html: tryExtensionHtml(name, unsub) };
+    case 'free_tier_update':   return { subject: freeTierUpdateSubject, html: freeTierUpdateHtml(name, unsub) };
   }
 }
 
@@ -135,6 +139,10 @@ export async function sendNotification(
   return { ok: true };
 }
 
+// Minimum days between any two notification emails sent to the same user.
+// Prevents back-to-back sends when multiple types become eligible simultaneously.
+export const MIN_DAYS_BETWEEN_EMAILS = 7;
+
 /**
  * Fetch all users with their stats for the cron job.
  */
@@ -168,10 +176,10 @@ export async function fetchAllUserStats(): Promise<UserStats[]> {
     .in('user_id', userIds)
     .order('created_at', { ascending: false });
 
-  // Sent notifications
+  // Sent notifications + most recent send timestamp
   const { data: sentRows } = await supabase
     .from('user_notifications')
-    .select('user_id, notification_type')
+    .select('user_id, notification_type, sent_at')
     .in('user_id', userIds);
 
   const docsByUser = new Map<string, number>();
@@ -187,10 +195,16 @@ export async function fetchAllUserStats(): Promise<UserStats[]> {
   }
 
   const sentByUser = new Map<string, NotificationType[]>();
+  const lastNotifiedByUser = new Map<string, string>();
   for (const r of sentRows ?? []) {
     const arr = sentByUser.get(r.user_id) ?? [];
     arr.push(r.notification_type as NotificationType);
     sentByUser.set(r.user_id, arr);
+    // Track most recent sent_at across all notification types
+    const prev = lastNotifiedByUser.get(r.user_id);
+    if (r.sent_at && (!prev || r.sent_at > prev)) {
+      lastNotifiedByUser.set(r.user_id, r.sent_at);
+    }
   }
 
   return users.map(u => ({
@@ -205,5 +219,6 @@ export async function fetchAllUserStats(): Promise<UserStats[]> {
     email_unsubscribed: u.email_unsubscribed ?? false,
     do_not_email: u.do_not_email ?? false,
     sent_notifications: sentByUser.get(u.id) ?? [],
+    last_notified_at: lastNotifiedByUser.get(u.id) ?? null,
   }));
 }
