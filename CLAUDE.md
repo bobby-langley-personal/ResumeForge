@@ -362,15 +362,22 @@ The home page is a server component that detects user state and routes according
 
 ## Onboarding Tour (`driver.js`)
 
-- `components/TourGuide.tsx` — `'use client'` component; auto-starts the tour for first-time users; exports `startTour()` for replay
-- localStorage key: `resumeforge_tour_completed` — `'true'` means tour has been seen; absence or any other value triggers auto-start
-- Tour auto-starts 800ms after mount to allow the page to fully render
+- `components/TourGuide.tsx` — `'use client'` component; auto-starts the tailor-page tour for first-time users; exports `startTour()` for replay and `startDashboardTour()` + `DashboardTourGuide` for the dashboard coach mark
+- localStorage key: `resumeforge_tour_completed` — `'true'` means tailor tour has been seen
+- localStorage key: `resumeforge_dashboard_tour_completed` — `'true'` means dashboard coach mark has been seen
+- Tailor tour auto-starts 800ms after mount; dashboard coach mark auto-starts 1000ms after mount (when ≥1 card exists)
 - Tour replay appears in the Navbar hamburger dropdown (as "Take the Tour") — only shown after the tour has been completed once
 - Step 2 (Job Search) is **backlogged** — the job search feature is not yet implemented; tour skips from Welcome directly to Job Details
 - Tour targets use `id` attributes on the `/tailor` page: `tour-heading`, `tour-job-details`, `tour-background`, `tour-context`, `tour-questions`, `tour-generate`, `tour-my-documents`
+- Dashboard coach mark targets `id="dashboard-icon-row"` — set on the first `ApplicationCard`'s icon row only (via `isFirstCard` prop); one-step tour explaining the action icons
 - `ContextSelector` shows a dashed empty-state callout with a link to `/resumes` when the user has no library documents; the callout also carries `id="tour-context"` so the tour step targets it regardless of whether documents exist
-- **Tour only runs on `/tailor`** — the generation form page. It does not auto-start on `/` (the goal/welcome screen)
-- Dark theme CSS override in `app/globals.css` under `.resumeforge-tour` class
+- Dark theme CSS override in `app/globals.css` under `.resumeforge-tour` class (reused by both tours)
+
+## Tooltips
+
+- `components/ui/tooltip.tsx` — shadcn Tooltip primitive wrapping `@radix-ui/react-tooltip`; exports `Tooltip`, `TooltipTrigger`, `TooltipContent`, `TooltipProvider`
+- All icon-only action buttons in `ApplicationCard` use `<Tooltip>` with `delayDuration={150}` (not native `title=` attributes) and include matching `aria-label` props
+- Covered buttons: MessageCircle (chat), Target (interview prep), ScrollText (job description), Lightbulb (fit analysis), MessageSquare (Q&A answers), Trash2 (delete), Eye (preview résumé / cover letter)
 
 ## Navbar
 

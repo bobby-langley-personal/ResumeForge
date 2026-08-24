@@ -155,6 +155,7 @@ export default function Home() {
   }, []);
 
   const handleUpgrade = async (plan: 'monthly' | 'quarterly' | 'annual') => {
+    fetch('/api/log-event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'upgrade_modal_plan_clicked', plan }) }).catch(() => {});
     setUpgradeLoading(plan);
     try {
       const res = await fetch('/api/billing/create-checkout', {
@@ -423,6 +424,7 @@ export default function Home() {
           clearInterval(poll);
           if (preGenLimitReached.current) {
             preGenLimitReached.current = false;
+            fetch('/api/log-event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'upgrade_modal_shown', trigger: 'preGen' }) }).catch(() => {});
             setShowUpgradeModal(true);
             setUIState('idle');
           } else {
@@ -448,6 +450,7 @@ export default function Home() {
         if (limitData?.weekly_window_ends_at) {
           setBillingStatus(prev => prev ? { ...prev, weekly_window_ends_at: limitData.weekly_window_ends_at } : prev);
         }
+        fetch('/api/log-event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'upgrade_modal_shown', trigger: 'generate' }) }).catch(() => {});
         setShowUpgradeModal(true); setUIState('idle'); return;
       }
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -578,7 +581,7 @@ export default function Home() {
                 We&apos;ll do a comprehensive fit analysis based on your experience and then tailor your resume to match this specific role using your real experience — we never invent anything.
               </p>
               {billingStatus && billingStatus.subscription_status !== 'pro' && (
-                <p className="mt-2 text-sm text-muted-foreground">
+                <p className="mt-3 text-base text-foreground/70">
                   {billingStatus.weekly_resume_count}/5 free this week
                   {billingStatus.weekly_window_ends_at && (
                     <> · <CountdownLabel endsAt={billingStatus.weekly_window_ends_at} /></>
@@ -1107,7 +1110,7 @@ export default function Home() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
           <div className="relative bg-card border border-border rounded-2xl p-8 max-w-md w-full shadow-2xl">
             <button
-              onClick={() => setShowUpgradeModal(false)}
+              onClick={() => { fetch('/api/log-event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'upgrade_modal_dismissed' }) }).catch(() => {}); setShowUpgradeModal(false); }}
               className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
             >
               <X className="w-5 h-5" />

@@ -16,7 +16,7 @@ function formatSalary(job: Pick<JobResult, 'salaryMin' | 'salaryMax' | 'salaryCu
   return `Up to ${fmt(job.salaryMax!)}${period}`;
 }
 
-const base = { id: 'j1', title: 'Eng', company: 'Acme', location: 'NY', description: '', url: '', postedAt: '' };
+const base = { id: 'j1', title: 'Eng', company: 'Acme', location: 'NY', description: '', url: '', postedAt: '', salaryMin: null, salaryMax: null, salaryCurrency: null, salaryPeriod: null };
 
 describe('formatSalary', () => {
   it('returns "Salary n/a" when no salary data', () => {
@@ -24,7 +24,7 @@ describe('formatSalary', () => {
   });
 
   it('returns "Salary n/a" when both min and max are undefined', () => {
-    expect(formatSalary({ ...base, salaryMin: undefined, salaryMax: undefined })).toBe('Salary n/a');
+    expect(formatSalary({ ...base, salaryMin: null, salaryMax: null })).toBe('Salary n/a');
   });
 
   it('formats a full range', () => {

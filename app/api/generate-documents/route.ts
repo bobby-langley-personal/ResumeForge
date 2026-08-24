@@ -356,16 +356,8 @@ Output valid JSON only, no markdown fences:
 
           console.log('[generate-documents] Successfully saved application with ID:', application.id, 'chat_enabled:', enableChat);
 
-          // Send final result with application ID and chat status
-          sendEvent('done', {
-            resumeText,
-            coverLetterText,
-            applicationId: application.id,
-            chatEnabled: enableChat,
-          });
-          console.log('[generate-documents] All operations completed successfully');
-
-          // Increment resume counts for free users (lifetime stat + rolling window + chat counter)
+          // Increment resume counts for free users BEFORE sending done event so
+          // the client's immediate billing-status re-fetch sees the updated counts.
           if (!isPro) {
             const updates: Record<string, unknown> = {
               tailored_resume_count: lifetimeCount + 1,
@@ -383,6 +375,15 @@ Output valid JSON only, no markdown fences:
               .update(updates)
               .eq('id', userId);
           }
+
+          // Send final result with application ID and chat status
+          sendEvent('done', {
+            resumeText,
+            coverLetterText,
+            applicationId: application.id,
+            chatEnabled: enableChat,
+          });
+          console.log('[generate-documents] All operations completed successfully');
 
         } catch (error) {
           console.error('[generate-documents] Fatal error:', error);

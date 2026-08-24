@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Trash2 } from 'lucide-react';
 import ApplicationCard from './ApplicationCard';
+import { DashboardTourGuide } from '@/components/TourGuide';
 import { ApplicationItem } from './page';
 
 interface BillingStatus {
   subscription_status: 'free' | 'pro' | 'canceled' | null;
   interview_prep_count: number;
   experience_interview_count: number;
+  chat_unlocked_count: number;
 }
 
 interface Props {
@@ -82,6 +84,15 @@ export default function ApplicationList({ initialItems }: Props) {
 
   return (
     <div>
+      <DashboardTourGuide hasCards={items.length > 0} />
+      {/* Free-tier usage counts */}
+      {billing && billing.subscription_status !== 'pro' && (
+        <p className="text-sm text-muted-foreground text-center mb-4">
+          {billing.chat_unlocked_count}/3 résumés with chat ·{' '}
+          <a href="/pricing" className="text-primary hover:underline">Upgrade to Pro</a>
+        </p>
+      )}
+
       {/* Search */}
       <div className="relative mb-5">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
@@ -123,13 +134,15 @@ export default function ApplicationList({ initialItems }: Props) {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filtered.map(app => {
+        {filtered.map((app, index) => {
           const isPro = billing?.subscription_status === 'pro';
           const prepCount = billing?.interview_prep_count ?? 0;
+          const chatCount = billing?.chat_unlocked_count ?? 0;
           return (
             <ApplicationCard
               key={app.id}
               id={app.id}
+              isFirstCard={index === 0}
               company={app.company}
               jobTitle={app.job_title}
               createdAt={app.created_at}
@@ -140,6 +153,7 @@ export default function ApplicationList({ initialItems }: Props) {
               chatEnabled={app.chat_enabled}
               isPro={isPro}
               interviewPrepCount={prepCount}
+              chatUnlockedCount={chatCount}
               selected={selected.has(app.id)}
               onToggleSelect={toggleSelect}
               onDelete={handleDelete}

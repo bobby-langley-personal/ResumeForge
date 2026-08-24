@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Target, FileEdit, Plus, Brain, LayoutList, Diamond, ArrowRight, ShieldCheck } from 'lucide-react';
@@ -14,6 +14,14 @@ interface Props {
   hasApplications: boolean;
 }
 
+function logEvent(event: string, props?: Record<string, unknown>) {
+  fetch('/api/log-event', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ event, ...props }),
+  }).catch(() => {});
+}
+
 function GoalCard({
   icon,
   title,
@@ -21,6 +29,7 @@ function GoalCard({
   href,
   cta,
   primary,
+  eventName,
 }: {
   icon: React.ReactNode;
   title: string;
@@ -28,10 +37,12 @@ function GoalCard({
   href: string;
   cta: string;
   primary?: boolean;
+  eventName: string;
 }) {
   return (
     <Link
       href={href}
+      onClick={() => logEvent(eventName)}
       className={`flex items-start justify-between gap-4 border rounded-xl p-5 transition-colors group ${
         primary
           ? 'border-primary/40 hover:border-primary bg-primary/5'
@@ -55,7 +66,12 @@ function GoalCard({
 export default function GoalScreen({ firstName, hasApplications }: Props) {
   const [showATS, setShowATS] = useState(false);
 
+  useEffect(() => {
+    logEvent('goal_screen_shown', { hasApplications });
+  }, [hasApplications]);
+
   const handleSkip = () => {
+    logEvent('goal_screen_skip_clicked');
     localStorage.setItem(SKIP_KEY, 'true');
   };
 
@@ -75,6 +91,7 @@ export default function GoalScreen({ firstName, hasApplications }: Props) {
           href="/tailor"
           cta="Tailor Now"
           primary
+          eventName="goal_tailor_clicked"
         />
         <GoalCard
           icon={<Diamond className="w-5 h-5 text-foreground" />}
@@ -82,6 +99,7 @@ export default function GoalScreen({ firstName, hasApplications }: Props) {
           description="A strong standalone résumé for recruiters, networking, and broad applications"
           href="/polished-resume"
           cta="Create"
+          eventName="goal_polished_clicked"
         />
         <GoalCard
           icon={<Plus className="w-5 h-5 text-foreground" />}
@@ -89,6 +107,7 @@ export default function GoalScreen({ firstName, hasApplications }: Props) {
           description="Upload new docs or interview with AI to strengthen your profile"
           href="/interview"
           cta="Add More"
+          eventName="goal_add_experience_clicked"
         />
         {hasApplications && (
           <GoalCard
@@ -97,6 +116,7 @@ export default function GoalScreen({ firstName, hasApplications }: Props) {
             description="Get tailored questions and answer hints for a role you've already applied to"
             href="/dashboard"
             cta="Prep Now"
+            eventName="goal_prep_clicked"
           />
         )}
         <GoalCard
@@ -105,6 +125,7 @@ export default function GoalScreen({ firstName, hasApplications }: Props) {
           description="See past tailored résumés and re-download anytime"
           href="/dashboard"
           cta="View"
+          eventName="goal_applications_clicked"
         />
         <GoalCard
           icon={<FileEdit className="w-5 h-5 text-foreground" />}
@@ -112,6 +133,7 @@ export default function GoalScreen({ firstName, hasApplications }: Props) {
           description="Upload, edit, or organize your saved experience and context files"
           href="/resumes"
           cta="Open"
+          eventName="goal_manage_experience_clicked"
         />
       </div>
 

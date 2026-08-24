@@ -113,6 +113,8 @@ Saves every generated resume to Supabase:
 - Eye icon next to each download button opens a **preview modal**
 - If the record has application question answers, a chat icon opens a modal showing each Q&A with word count and copy button
 - Multi-select checkboxes for bulk delete; trash icon for individual delete
+- **Icon row tooltips** — all action icons use the shadcn Tooltip component (150ms delay) instead of native `title=` attributes; every icon button also has an `aria-label` for screen readers
+- **First-visit coach mark** — a one-step driver.js tour auto-fires the first time the dashboard is visited with ≥1 card, explaining the icon row actions; gated by `localStorage['resumeforge_dashboard_tour_completed']`
 - **"← Back to resume generator"** link at the top for easy navigation
 
 ### Free Tier Feature Limits
@@ -271,7 +273,7 @@ components/
   ResumeChatPanel.tsx       # Post-generation chat UI — page fit chips, CHANGE/ANSWER response parsing
   FeedbackModal.tsx         # Feedback form modal — general and bug report types
   PDFPreviewModal.tsx       # PDF preview modal — BlobProvider iframe, dynamically imported (ssr: false)
-  TourGuide.tsx             # driver.js onboarding tour; popoverClass: 'easy-apply-tour'; exports startTour()
+  TourGuide.tsx             # driver.js onboarding tours; exports startTour() (tailor page) + startDashboardTour() / DashboardTourGuide (dashboard coach mark)
   InterviewPrepPanel.tsx    # Interview prep UI — QuestionCard, SkeletonQuestionCard, InterviewPrepSection
 
 lib/

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { FileText, Download, Trash2, MessageSquare, ScrollText, Target, X, Eye, Lightbulb, MessageCircle, Lock } from 'lucide-react';
 import FitAnalysisModal from '@/components/FitAnalysisModal';
 import InterviewPrepPanel from '@/components/InterviewPrepPanel';
@@ -96,7 +97,9 @@ interface ApplicationCardProps {
   chatEnabled: boolean;
   isPro: boolean;
   interviewPrepCount: number;
+  chatUnlockedCount: number;
   selected: boolean;
+  isFirstCard?: boolean;
   onToggleSelect: (id: string) => void;
   onDelete: (id: string) => void;
 }
@@ -107,8 +110,8 @@ const FREE_PREP_LIMIT = 2;
 
 export default function ApplicationCard({
   id, company, jobTitle, jobDescription, createdAt, hasCoverLetter, questionAnswers, fitAnalysis,
-  chatEnabled, isPro, interviewPrepCount,
-  selected, onToggleSelect, onDelete,
+  chatEnabled, isPro, interviewPrepCount, chatUnlockedCount,
+  selected, isFirstCard, onToggleSelect, onDelete,
 }: ApplicationCardProps) {
   const [downloading, setDownloading] = useState<'resume' | 'cover-letter' | null>(null);
   const [error, setError] = useState('');
@@ -365,82 +368,128 @@ export default function ApplicationCard({
             {formattedDate}
           </p>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {/* Chat button — locked for free users after first 3 résumés */}
-          {!isPro && !chatEnabled ? (
-            <button
-              onClick={handleOpenChat}
-              className="relative p-1 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
-              title="Résumé Chat included with first 3 résumés · Upgrade to Pro"
-            >
-              <MessageCircle className="w-4 h-4" />
-              <Lock className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 text-muted-foreground/60" />
-            </button>
-          ) : (
-            <button
-              onClick={handleOpenChat}
-              className="p-1 text-muted-foreground hover:text-foreground transition-colors"
-              title="Refine résumé with AI chat"
-            >
-              <MessageCircle className="w-4 h-4" />
-            </button>
-          )}
-          {/* Interview Prep button — shows remaining count badge for free users */}
-          <button
-            onClick={handleOpenPrep}
-            disabled={prepLoading}
-            className={`relative p-1 transition-colors ${interviewPrep ? 'text-primary hover:text-primary/80' : 'text-muted-foreground hover:text-foreground'}`}
-            title={
-              interviewPrep
-                ? 'View interview prep'
-                : !isPro && interviewPrepCount >= FREE_PREP_LIMIT
-                  ? `Interview Prep limit reached (${FREE_PREP_LIMIT} free) · Upgrade to Pro`
-                  : `Generate interview prep${!isPro ? ` (${FREE_PREP_LIMIT - interviewPrepCount} remaining)` : ''}`
-            }
-          >
-            {prepLoading
-              ? <span className="w-4 h-4 block animate-spin rounded-full border-2 border-current border-t-transparent" />
-              : <Target className="w-4 h-4" />
-            }
-            {!isPro && !interviewPrep && interviewPrepCount >= FREE_PREP_LIMIT && (
-              <Lock className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 text-muted-foreground/60" />
+        <TooltipProvider delayDuration={150}>
+          <div id={isFirstCard ? 'dashboard-icon-row' : undefined} className="flex items-center gap-1 shrink-0">
+            {/* Chat button — locked for free users after first 3 résumés */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                {!isPro && !chatEnabled ? (
+                  <button
+                    onClick={handleOpenChat}
+                    aria-label="Résumé Chat included with first 3 résumés — upgrade to Pro"
+                    className="relative p-1 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <Lock className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 text-muted-foreground/60" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleOpenChat}
+                    aria-label="Refine résumé with AI chat"
+                    className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                  </button>
+                )}
+              </TooltipTrigger>
+              <TooltipContent>
+                {!isPro && !chatEnabled ? 'Chat included with first 3 résumés · Upgrade to Pro' : 'Refine résumé with AI chat'}
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Interview Prep button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleOpenPrep}
+                  disabled={prepLoading}
+                  aria-label={
+                    interviewPrep
+                      ? 'View interview prep'
+                      : !isPro && interviewPrepCount >= FREE_PREP_LIMIT
+                        ? `Interview Prep limit reached (${FREE_PREP_LIMIT} free) — upgrade to Pro`
+                        : `Generate interview prep${!isPro ? ` (${FREE_PREP_LIMIT - interviewPrepCount} remaining)` : ''}`
+                  }
+                  className={`relative p-1 transition-colors ${interviewPrep ? 'text-primary hover:text-primary/80' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  {prepLoading
+                    ? <span className="w-4 h-4 block animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    : <Target className="w-4 h-4" />
+                  }
+                  {!isPro && !interviewPrep && interviewPrepCount >= FREE_PREP_LIMIT && (
+                    <Lock className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 text-muted-foreground/60" />
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {interviewPrep
+                  ? 'View interview prep'
+                  : !isPro && interviewPrepCount >= FREE_PREP_LIMIT
+                    ? `Interview Prep limit reached (${FREE_PREP_LIMIT} free) · Upgrade to Pro`
+                    : `Generate interview prep${!isPro ? ` · ${FREE_PREP_LIMIT - interviewPrepCount} remaining` : ''}`
+                }
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setShowJD(true)}
+                  aria-label="View job description"
+                  className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ScrollText className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>View job description</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleOpenFitAnalysis}
+                  disabled={analysisLoading}
+                  aria-label={localFitAnalysis ? 'View fit analysis' : 'Run fit analysis'}
+                  className={`p-1 transition-colors ${localFitAnalysis ? 'text-yellow-400 hover:text-yellow-300' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  {analysisLoading
+                    ? <span className="w-4 h-4 block animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    : <Lightbulb className="w-4 h-4" />
+                  }
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>{localFitAnalysis ? 'View fit analysis' : 'Run fit analysis'}</TooltipContent>
+            </Tooltip>
+
+            {questionAnswers && questionAnswers.length > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setShowAnswers(true)}
+                    aria-label={`${questionAnswers.length} application answer${questionAnswers.length > 1 ? 's' : ''}`}
+                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>{questionAnswers.length} application answer{questionAnswers.length > 1 ? 's' : ''}</TooltipContent>
+              </Tooltip>
             )}
-          </button>
-          <button
-            onClick={() => setShowJD(true)}
-            className="p-1 text-muted-foreground hover:text-foreground transition-colors"
-            title="View job description"
-          >
-            <ScrollText className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleOpenFitAnalysis}
-            disabled={analysisLoading}
-            className={`p-1 transition-colors ${localFitAnalysis ? 'text-yellow-400 hover:text-yellow-300' : 'text-muted-foreground hover:text-foreground'}`}
-            title={localFitAnalysis ? 'View fit analysis' : 'Run fit analysis'}
-          >
-            {analysisLoading
-              ? <span className="w-4 h-4 block animate-spin rounded-full border-2 border-current border-t-transparent" />
-              : <Lightbulb className="w-4 h-4" />
-            }
-          </button>
-          {questionAnswers && questionAnswers.length > 0 && (
-            <button
-              onClick={() => setShowAnswers(true)}
-              className="text-muted-foreground hover:text-foreground transition-colors p-1"
-              title={`${questionAnswers.length} application answer${questionAnswers.length > 1 ? 's' : ''}`}
-            >
-              <MessageSquare className="w-4 h-4" />
-            </button>
-          )}
-          <button
-            onClick={() => onDelete(id)}
-            className="text-muted-foreground hover:text-destructive transition-colors p-1"
-            title="Delete"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => onDelete(id)}
+                  aria-label="Delete résumé"
+                  className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Delete résumé</TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
       </div>
 
       {error && <p className="text-xs text-destructive">{error}</p>}
@@ -480,28 +529,40 @@ export default function ApplicationCard({
         </div>
       )}
 
-      <div className="flex flex-col gap-2 mt-auto">
-        <div className="flex gap-2">
-          <Button size="sm" onClick={() => handleDownload('resume')} disabled={downloading !== null || loadingPreview} className="flex-1" title="Download resume as PDF">
-            <Download className="w-3.5 h-3.5 mr-2" />
-            {downloading === 'resume' ? 'Downloading…' : 'Resume'}
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => handlePreview('resume')} disabled={downloading !== null || loadingPreview} className="px-2.5" title="Preview Résumé">
-            <Eye className="w-3.5 h-3.5" />
-          </Button>
-        </div>
-        {hasCoverLetter && (
+      <TooltipProvider delayDuration={150}>
+        <div className="flex flex-col gap-2 mt-auto">
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => handleDownload('cover-letter')} disabled={downloading !== null || loadingPreview} className="flex-1" title="Download cover letter as PDF">
+            <Button size="sm" onClick={() => handleDownload('resume')} disabled={downloading !== null || loadingPreview} className="flex-1" aria-label="Download resume as PDF">
               <Download className="w-3.5 h-3.5 mr-2" />
-              {downloading === 'cover-letter' ? 'Downloading…' : 'Cover Letter'}
+              {downloading === 'resume' ? 'Downloading…' : 'Resume'}
             </Button>
-            <Button size="sm" variant="outline" onClick={() => handlePreview('cover-letter')} disabled={downloading !== null || loadingPreview} className="px-2.5" title="Preview Cover Letter">
-              <Eye className="w-3.5 h-3.5" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" onClick={() => handlePreview('resume')} disabled={downloading !== null || loadingPreview} className="px-2.5" aria-label="Preview résumé">
+                  <Eye className="w-3.5 h-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Preview résumé</TooltipContent>
+            </Tooltip>
           </div>
-        )}
-      </div>
+          {hasCoverLetter && (
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => handleDownload('cover-letter')} disabled={downloading !== null || loadingPreview} className="flex-1" aria-label="Download cover letter as PDF">
+                <Download className="w-3.5 h-3.5 mr-2" />
+                {downloading === 'cover-letter' ? 'Downloading…' : 'Cover Letter'}
+              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="outline" onClick={() => handlePreview('cover-letter')} disabled={downloading !== null || loadingPreview} className="px-2.5" aria-label="Preview cover letter">
+                    <Eye className="w-3.5 h-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Preview cover letter</TooltipContent>
+              </Tooltip>
+            </div>
+          )}
+        </div>
+      </TooltipProvider>
 
       {/* Job Description Modal */}
       {showJD && (
@@ -572,6 +633,12 @@ export default function ApplicationCard({
                   <MessageCircle className="w-4 h-4 text-primary" /> Résumé Chat
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">{company} — {jobTitle}</p>
+                {!isPro && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {chatUnlockedCount}/3 résumés include free chat ·{' '}
+                    <a href="/pricing" className="text-primary hover:underline">Upgrade to Pro</a>
+                  </p>
+                )}
               </div>
               <button onClick={() => setShowChat(false)} className="text-muted-foreground hover:text-foreground transition-colors" title="Close">
                 <X className="w-5 h-5" />
