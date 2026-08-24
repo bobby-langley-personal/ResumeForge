@@ -13,21 +13,25 @@ export async function GET(req: NextRequest) {
   const severity = searchParams.get('severity') ?? '';
   const platform = searchParams.get('platform') ?? '';
   const event = searchParams.get('event') ?? '';
+  const days = Math.min(90, Math.max(1, parseInt(searchParams.get('days') ?? '30', 10)));
   const limit = Math.min(parseInt(searchParams.get('limit') ?? '100'), 200);
 
   const supabase = supabaseServer();
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
+  // Filters before order/limit
   let query = supabase
     .from('ext_logs')
     .select('id, user_id, event, platform, method, severity, payload, ext_version, created_at')
-    .order('created_at', { ascending: false })
-    .limit(limit);
+    .gte('created_at', since);
 
   if (severity) query = query.eq('severity', severity);
   if (platform) query = query.eq('platform', platform);
   if (event) query = query.eq('event', event);
 
-  const { data: logs, error } = await query;
+  const { data: logs, error } = await query
+    .order('created_at', { ascending: false })
+    .limit(limit);
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
   // Enrich with user profiles

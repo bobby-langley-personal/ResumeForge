@@ -14,17 +14,19 @@ export async function GET(req: NextRequest) {
   const route = searchParams.get('route') ?? '';
   const hasError = searchParams.get('hasError');
   const source = searchParams.get('source') ?? '';
+  const days = Math.min(90, Math.max(1, parseInt(searchParams.get('days') ?? '30', 10)));
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
   const limit = 50;
   const offset = (page - 1) * limit;
 
   const supabase = supabaseServer();
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
+  // Filters must come before order/range
   let query = supabase
     .from('api_logs')
     .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1);
+    .gte('created_at', since);
 
   if (userId) query = query.eq('user_id', userId);
   if (route) query = query.ilike('route', `%${route}%`);
@@ -32,7 +34,9 @@ export async function GET(req: NextRequest) {
   if (hasError === 'false') query = query.is('error', null);
   if (source) query = query.eq('source', source);
 
-  const { data: logs, count, error } = await query;
+  const { data: logs, count, error } = await query
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
   // Enrich logs with user info
@@ -53,5 +57,5 @@ export async function GET(req: NextRequest) {
     user: log.user_id ? (usersMap[log.user_id] ?? null) : null,
   }));
 
-  return Response.json({ logs: enriched, total: count ?? 0, page, limit });
+  return Response.json({ logs: enriched, total: count ?? 0, page, limit, days });
 }

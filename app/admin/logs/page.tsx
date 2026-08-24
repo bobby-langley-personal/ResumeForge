@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useAdminContext } from '../AdminContext';
 import { Loader2, RefreshCw, ChevronDown, ChevronUp, AlertCircle, User } from 'lucide-react';
 
@@ -95,24 +95,30 @@ export default function AdminLogsPage() {
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  const [days, setDays] = useState(30);
   const [filterRoute, setFilterRoute] = useState('');
   const [filterUserId, setFilterUserId] = useState('');
   const [filterError, setFilterError] = useState<'' | 'true' | 'false'>('');
   const [filterSource, setFilterSource] = useState<'' | 'webapp' | 'extension'>('');
+  const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback((p: number) => {
     if (!secret) return;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
-    const params = new URLSearchParams({ page: String(p) });
+    const params = new URLSearchParams({ page: String(p), days: String(days) });
     if (filterRoute) params.set('route', filterRoute);
     if (filterUserId) params.set('userId', filterUserId);
     if (filterError) params.set('hasError', filterError);
     if (filterSource) params.set('source', filterSource);
-    fetch(`/api/admin/logs?${params}`, { headers: { 'x-admin-secret': secret } })
+    fetch(`/api/admin/logs?${params}`, { headers: { 'x-admin-secret': secret }, signal: controller.signal })
       .then(r => r.json())
       .then(data => { setLogs(data.logs ?? []); setTotal(data.total ?? 0); setPage(p); })
+      .catch(err => { if (err.name !== 'AbortError') console.error(err); })
       .finally(() => setLoading(false));
-  }, [secret, filterRoute, filterUserId, filterError, filterSource]);
+  }, [secret, days, filterRoute, filterUserId, filterError, filterSource]);
 
   useEffect(() => { load(1); }, [load]);
 
@@ -123,6 +129,15 @@ export default function AdminLogsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-zinc-100">API Logs</h1>
         <div className="flex items-center gap-2">
+          <select
+            value={days}
+            onChange={e => setDays(Number(e.target.value))}
+            className="bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-zinc-500"
+          >
+            <option value={7}>Last 7 days</option>
+            <option value={30}>Last 30 days</option>
+            <option value={90}>Last 90 days</option>
+          </select>
           <span className="text-xs text-zinc-500">{total} total</span>
           <button
             onClick={() => load(page)}

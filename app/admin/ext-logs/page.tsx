@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useAdminContext } from '../AdminContext';
 import { Loader2, RefreshCw, ChevronDown, ChevronUp, Puzzle } from 'lucide-react';
 
@@ -105,26 +105,36 @@ export default function ExtLogsPage() {
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  const [days, setDays] = useState(30);
   const [filterSeverity, setFilterSeverity] = useState<'' | 'info' | 'warning' | 'error'>('');
   const [filterPlatform, setFilterPlatform] = useState('');
   const [filterEvent, setFilterEvent] = useState('');
+  const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ days: String(days) });
     if (filterSeverity) params.set('severity', filterSeverity);
     if (filterPlatform) params.set('platform', filterPlatform);
     if (filterEvent)    params.set('event', filterEvent);
     params.set('limit', '100');
-    const res = await fetch(`/api/admin/ext-logs?${params}`, {
-      headers: { 'x-admin-secret': secret },
-    });
-    if (res.ok) {
-      const { logs } = await res.json();
-      setLogs(logs ?? []);
+    try {
+      const res = await fetch(`/api/admin/ext-logs?${params}`, {
+        headers: { 'x-admin-secret': secret },
+        signal: controller.signal,
+      });
+      if (res.ok) {
+        const { logs } = await res.json();
+        setLogs(logs ?? []);
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name !== 'AbortError') console.error(err);
     }
     setLoading(false);
-  }, [secret, filterSeverity, filterPlatform, filterEvent]);
+  }, [secret, days, filterSeverity, filterPlatform, filterEvent]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -145,14 +155,25 @@ export default function ExtLogsPage() {
             </span>
           )}
         </div>
-        <button
-          onClick={load}
-          disabled={loading}
-          className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 disabled:opacity-50 transition-colors"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <select
+            value={days}
+            onChange={e => setDays(Number(e.target.value))}
+            className="bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-zinc-500"
+          >
+            <option value={7}>Last 7 days</option>
+            <option value={30}>Last 30 days</option>
+            <option value={90}>Last 90 days</option>
+          </select>
+          <button
+            onClick={load}
+            disabled={loading}
+            className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 disabled:opacity-50 transition-colors"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
