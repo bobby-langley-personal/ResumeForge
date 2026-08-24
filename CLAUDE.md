@@ -138,7 +138,7 @@ Added in migration 012. Stores contact info extracted from uploaded resumes.
 | `POST /api/log-event` | Node | Server-side event logging — writes JSON to Vercel function logs; always returns 200 |
 | `POST /api/billing/create-checkout` | Node | Creates Stripe Checkout session; accepts `{ plan: 'monthly' \| 'quarterly' \| 'annual' }`; resolves price ID server-side from env vars; returns `{ url }` |
 | `POST /api/billing/portal` | Node | Creates Stripe Customer Portal session for subscription management; requires existing `stripe_customer_id`; returns `{ url }` |
-| `GET /api/billing/status` | Node | Returns `{ subscription_status, subscription_period_end, tailored_resume_count, document_count, chat_unlocked_count, interview_prep_count, experience_interview_count }` for current user |
+| `GET /api/billing/status` | Node | Returns `{ subscription_status, subscription_period_end, tailored_resume_count, weekly_resume_count, weekly_window_ends_at, chat_unlocked_count, interview_prep_count, experience_interview_count }` for current user |
 | `POST /api/webhooks/stripe` | Node | Stripe webhook handler — verifies signature, handles `checkout.session.completed`, `customer.subscription.updated/deleted`, `invoice.paid/payment_succeeded/payment_failed`; always returns 200 for unhandled events |
 | `POST /api/resume-chat` | Node | Sonnet non-streaming — AI chat for refining a generated resume; **gated**: returns 402 `CHAT_LOCKED` if free user and `application.chat_enabled = false`; parses `CHANGE:` vs `ANSWER:` vs `GAP_REPORT:` response format; on change, updates `applications.resume_content` and `applications.chat_history` in Supabase. **Sourcing constraint:** the bot may only add content evidenced in background documents; skills not found in background docs are flagged as gaps (GAP_REPORT) and never added silently; user-confirmed additions are permitted but noted as not document-sourced |
 | `POST /api/base-resume-chat` | Node | Sonnet non-streaming — AI chat for refining a polished resume draft; parses `CHANGE:` vs `ANSWER:` vs `GAP_REPORT:`; does NOT save to DB (caller saves explicitly); returns `{ type, content }`. **Sourcing constraint:** same rule as resume-chat — may only add content evidenced in the base resume; gaps are flagged, not silently added |
@@ -452,7 +452,7 @@ Contact info is stored in `user_profiles` (one row per user, upserted — not in
 - **Pro**: Unlimited everything. Set when `subscription_status === 'pro'`.
 - **Paywall check**: `POST /api/generate-documents` checks subscription before streaming. Returns `{ error: 'FREE_LIMIT_REACHED', upgradeUrl: '/pricing' }` with status 402. The tailor page catches 402 and shows an upgrade modal.
 - **Upgrade modal**: Shown on tailor page when 402 received. Three plan buttons (monthly/quarterly/annual) that hit `POST /api/billing/create-checkout`.
-- **Free counter**: Displayed below the tailor page header — "X/3 free resumes used · Upgrade to Pro" — only for non-Pro users.
+- **Free counter**: Displayed below the tailor page header — "X/5 free this week · resets in Xh Ym · Upgrade to Pro" — only for non-Pro users.
 - **Navbar**: Pro users see "Manage Subscription" (hits billing portal); free users with ≥1 resume used see "Upgrade to Pro" link.
 
 ### Feature Limits (Free Tier)
@@ -461,7 +461,7 @@ Contact info is stored in `user_profiles` (one row per user, upserted — not in
 |---------|-----------|--------|------|
 | Résumé Chat | First 3 applications (lifetime) | `users.chat_unlocked_count`, `applications.chat_enabled` | `resume-chat` returns 402 if `!isPro && !app.chat_enabled` |
 | Interview Prep | 2 first-time generations (lifetime, regens don't count) | `users.interview_prep_count` | `interview-prep` returns 402 if `!isPro && isFirstTimeGen && count >= 2` |
-| Experience Interview | 2 sessions (lifetime) | `users.experience_interview_count` | `interview/sessions` POST returns 402 if `!isPro && count >= 2` |
+| Experience Interview | 2 roles (lifetime) | `users.experience_interview_count` | `interview/sessions/[id]` PATCH returns 402 if `!isPro && usedRoles + newRoles > 2` |
 
 - Frustrated clicks are logged to `user_events` table via `lib/log-user-event.ts`
 - `GET /api/billing/status` returns `chat_unlocked_count`, `interview_prep_count`, `experience_interview_count` for UI badges

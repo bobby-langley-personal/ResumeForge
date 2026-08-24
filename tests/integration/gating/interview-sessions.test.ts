@@ -71,46 +71,21 @@ describe('POST /api/interview/sessions', () => {
     expect(res.status).toBe(401);
   });
 
-  it('returns 402 INTERVIEW_LIMIT_REACHED for free user with count >= 2', async () => {
-    mockFrom.mockReturnValue(makeBuilder({ data: { ...freeUser, experience_interview_count: 2 }, error: null }));
-
-    const res = await POST(makeRequest({}) as any);
-    expect(res.status).toBe(402);
-    const json = await res.json();
-    expect(json.error).toBe('INTERVIEW_LIMIT_REACHED');
-    expect(json.upgradeUrl).toBe('/pricing');
-  });
-
-  it('allows free user with count < 2', async () => {
-    mockFrom
-      .mockReturnValueOnce(makeBuilder({ data: { ...freeUser, experience_interview_count: 1 }, error: null }))
-      .mockReturnValue(makeBuilder({ data: { id: 'new_session' }, error: null }));
-
-    const res = await POST(makeRequest({}) as any);
-    expect(res.status).toBe(201);
-    const json = await res.json();
-    expect(json.id).toBe('new_session');
-  });
-
-  it('allows pro user with count >= 2', async () => {
-    mockFrom
-      .mockReturnValueOnce(makeBuilder({ data: { ...proUser, experience_interview_count: 5 }, error: null }))
-      .mockReturnValue(makeBuilder({ data: { id: 'pro_session' }, error: null }));
-
-    const res = await POST(makeRequest({}) as any);
-    expect(res.status).toBe(201);
-    const json = await res.json();
-    expect(json.id).toBe('pro_session');
-  });
-
+  // Role-based gating (FREE_ROLE_LIMIT = 2) happens in PATCH /[id] when completed_roles grows.
+  // POST just creates the session — no limit enforced here.
   it('returns 201 with session id on success', async () => {
-    mockFrom
-      .mockReturnValueOnce(makeBuilder({ data: freeUser, error: null }))
-      .mockReturnValue(makeBuilder({ data: { id: 'session_new' }, error: null }));
+    mockFrom.mockReturnValue(makeBuilder({ data: { id: 'session_new' }, error: null }));
 
     const res = await POST(makeRequest({}) as any);
     expect(res.status).toBe(201);
     const json = await res.json();
     expect(json.id).toBeDefined();
+  });
+
+  it('returns 201 even when free user has used roles (gate is in PATCH, not here)', async () => {
+    mockFrom.mockReturnValue(makeBuilder({ data: { id: 'session_any' }, error: null }));
+
+    const res = await POST(makeRequest({}) as any);
+    expect(res.status).toBe(201);
   });
 });
