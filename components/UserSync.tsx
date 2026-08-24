@@ -21,7 +21,10 @@ export default async function UserSync() {
   const supabase = supabaseServer();
   await supabase
     .from('users')
-    .upsert({ id: userId, email }, { onConflict: 'id', ignoreDuplicates: true });
+    .upsert(
+      { id: userId, email, last_sign_in_at: new Date().toISOString() },
+      { onConflict: 'id', ignoreDuplicates: false },
+    );
 
   return null;
 }

@@ -227,6 +227,7 @@ export interface Database {
           tailored_resume_count: number
           weekly_resume_count: number
           weekly_window_start: string | null
+          last_sign_in_at: string | null
           has_used_extension: boolean
           email_unsubscribed: boolean
           do_not_email: boolean
@@ -246,6 +247,7 @@ export interface Database {
           tailored_resume_count?: number
           weekly_resume_count?: number
           weekly_window_start?: string | null
+          last_sign_in_at?: string | null
           has_used_extension?: boolean
           email_unsubscribed?: boolean
           do_not_email?: boolean
@@ -265,6 +267,7 @@ export interface Database {
           tailored_resume_count?: number
           weekly_resume_count?: number
           weekly_window_start?: string | null
+          last_sign_in_at?: string | null
           has_used_extension?: boolean
           email_unsubscribed?: boolean
           do_not_email?: boolean

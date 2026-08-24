@@ -29,7 +29,7 @@ interface UserRow {
   full_name: string | null;
   created_at: string;
   subscription_status: string | null;
-  tailored_resume_count?: number;
+  resume_count?: number;
   do_not_email?: boolean;
 }
 
@@ -626,8 +626,8 @@ function UsersListPanel({
                       <BellOff className="w-3 h-3" /> DNE
                     </span>
                   )}
-                  {u.tailored_resume_count != null && (
-                    <span className="text-xs text-zinc-600">{u.tailored_resume_count} résumés</span>
+                  {u.resume_count != null && (
+                    <span className="text-xs text-zinc-600">{u.resume_count} résumés</span>
                   )}
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
