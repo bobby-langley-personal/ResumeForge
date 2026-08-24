@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
         ext_version: req.headers.get('x-extension-version') ?? undefined,
       },
       duration_ms: Date.now() - startMs,
+      source: req.headers.get('x-extension-version') ? 'extension' : 'webapp',
     });
 
     // Fetch user subscription status + profile in parallel
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
     const [{ data: userData }, { data: profileData }] = await Promise.all([
       supabase
         .from('users')
-        .select('subscription_status, tailored_resume_count')
+        .select('subscription_status, tailored_resume_count, weekly_resume_count, weekly_window_start, chat_unlocked_count')
         .eq('id', userId)
         .single(),
       supabase
@@ -86,11 +87,22 @@ export async function POST(req: NextRequest) {
     ]);
 
     const isPro = userData?.subscription_status === 'pro';
-    const resumeCount = userData?.tailored_resume_count ?? 0;
+    const lifetimeCount = userData?.tailored_resume_count ?? 0;
+    const chatUnlockedCount = userData?.chat_unlocked_count ?? 0;
 
-    if (!isPro && resumeCount >= 3) {
+    // Rolling 7-day window check
+    const WEEKLY_LIMIT = Number(process.env.FREE_WEEKLY_RESUME_LIMIT ?? 5);
+    const windowStart = userData?.weekly_window_start ? new Date(userData.weekly_window_start) : null;
+    const windowExpired = !windowStart || Date.now() - windowStart.getTime() >= 7 * 24 * 60 * 60 * 1000;
+    const weeklyCount = windowExpired ? 0 : (userData?.weekly_resume_count ?? 0);
+    const now = new Date().toISOString();
+
+    if (!isPro && weeklyCount >= WEEKLY_LIMIT) {
+      const windowEndsAt = windowStart && !windowExpired
+        ? new Date(windowStart.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        : null;
       return new Response(
-        JSON.stringify({ error: 'FREE_LIMIT_REACHED', upgradeUrl: '/pricing' }),
+        JSON.stringify({ error: 'FREE_LIMIT_REACHED', upgradeUrl: '/pricing', weekly_window_ends_at: windowEndsAt }),
         { status: 402, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -313,6 +325,8 @@ Output valid JSON only, no markdown fences:
           // Save to Supabase
           console.log('[generate-documents] Starting Supabase save operation');
           const supabase = supabaseServer();
+          // Determine if this application gets AI chat (first 3 per user, lifetime)
+          const enableChat = isPro || chatUnlockedCount < 3;
           const { data: application, error } = await supabase
             .from('applications')
             .insert({
@@ -327,36 +341,49 @@ Output valid JSON only, no markdown fences:
               questions: filteredQuestions.length > 0 ? filteredQuestions as any : null,
               question_answers: questionAnswers.length > 0 ? questionAnswers as any : null,
               status: 'applied',
+              chat_enabled: enableChat,
             })
             .select('id')
             .single();
 
           if (error || !application) {
             console.error('[generate-documents] Supabase save failed:', error);
-            sendEvent('error', { 
-              message: `Failed to save application: ${error?.message || 'Unknown database error'}` 
+            sendEvent('error', {
+              message: `Failed to save application: ${error?.message || 'Unknown database error'}`
             });
             return;
           }
 
-          console.log('[generate-documents] Successfully saved application with ID:', application.id);
+          console.log('[generate-documents] Successfully saved application with ID:', application.id, 'chat_enabled:', enableChat);
 
-          // Send final result with application ID
-          sendEvent('done', {
-            resumeText,
-            coverLetterText,
-            applicationId: application.id
-          });
-          console.log('[generate-documents] All operations completed successfully');
-
-          // Increment resume count for free users
+          // Increment resume counts for free users BEFORE sending done event so
+          // the client's immediate billing-status re-fetch sees the updated counts.
           if (!isPro) {
+            const updates: Record<string, unknown> = {
+              tailored_resume_count: lifetimeCount + 1,
+              weekly_resume_count: weeklyCount + 1,
+              // Start a new window on first use; keep existing start if window is still active
+              weekly_window_start: windowExpired ? now : (userData?.weekly_window_start ?? now),
+            };
+            if (chatUnlockedCount < 3) {
+              updates.chat_unlocked_count = chatUnlockedCount + 1;
+              console.log('[generate-documents] Chat unlocked for new application, count now:', chatUnlockedCount + 1);
+            }
             const supabaseFree = supabaseServer();
             await supabaseFree
               .from('users')
-              .update({ tailored_resume_count: resumeCount + 1 })
+              .update(updates)
               .eq('id', userId);
           }
+
+          // Send final result with application ID and chat status
+          sendEvent('done', {
+            resumeText,
+            coverLetterText,
+            applicationId: application.id,
+            chatEnabled: enableChat,
+          });
+          console.log('[generate-documents] All operations completed successfully');
 
         } catch (error) {
           console.error('[generate-documents] Fatal error:', error);

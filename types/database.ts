@@ -20,6 +20,8 @@ export interface Database {
           response_summary: Json | null
           error: string | null
           duration_ms: number | null
+          app_version: string | null
+          source: string | null
           created_at: string
         }
         Insert: {
@@ -32,6 +34,8 @@ export interface Database {
           response_summary?: Json | null
           error?: string | null
           duration_ms?: number | null
+          app_version?: string | null
+          source?: string | null
           created_at?: string
         }
         Update: {
@@ -44,7 +48,33 @@ export interface Database {
           response_summary?: Json | null
           error?: string | null
           duration_ms?: number | null
+          app_version?: string | null
+          source?: string | null
           created_at?: string
+        }
+        Relationships: []
+      }
+      cron_runs: {
+        Row: {
+          name: string
+          status: 'running' | 'succeeded' | 'failed' | null
+          started_at: string | null
+          finished_at: string | null
+          sent_count: number | null
+        }
+        Insert: {
+          name: string
+          status?: 'running' | 'succeeded' | 'failed' | null
+          started_at?: string | null
+          finished_at?: string | null
+          sent_count?: number | null
+        }
+        Update: {
+          name?: string
+          status?: 'running' | 'succeeded' | 'failed' | null
+          started_at?: string | null
+          finished_at?: string | null
+          sent_count?: number | null
         }
         Relationships: []
       }
@@ -195,9 +225,14 @@ export interface Database {
           subscription_status: 'free' | 'pro' | 'canceled' | null
           subscription_period_end: string | null
           tailored_resume_count: number
+          weekly_resume_count: number
+          weekly_window_start: string | null
           has_used_extension: boolean
           email_unsubscribed: boolean
           do_not_email: boolean
+          chat_unlocked_count: number
+          interview_prep_count: number
+          experience_interview_count: number
           created_at: string
           updated_at: string
         }
@@ -209,9 +244,14 @@ export interface Database {
           subscription_status?: 'free' | 'pro' | 'canceled' | null
           subscription_period_end?: string | null
           tailored_resume_count?: number
+          weekly_resume_count?: number
+          weekly_window_start?: string | null
           has_used_extension?: boolean
           email_unsubscribed?: boolean
           do_not_email?: boolean
+          chat_unlocked_count?: number
+          interview_prep_count?: number
+          experience_interview_count?: number
           created_at?: string
           updated_at?: string
         }
@@ -223,9 +263,14 @@ export interface Database {
           subscription_status?: 'free' | 'pro' | 'canceled' | null
           subscription_period_end?: string | null
           tailored_resume_count?: number
+          weekly_resume_count?: number
+          weekly_window_start?: string | null
           has_used_extension?: boolean
           email_unsubscribed?: boolean
           do_not_email?: boolean
+          chat_unlocked_count?: number
+          interview_prep_count?: number
+          experience_interview_count?: number
           created_at?: string
           updated_at?: string
         }
@@ -319,6 +364,7 @@ export interface Database {
           question_answers: unknown | null
           interview_prep: unknown | null
           chat_history: unknown | null
+          chat_enabled: boolean
           created_at: string
           updated_at: string
         }
@@ -338,6 +384,7 @@ export interface Database {
           question_answers?: unknown | null
           interview_prep?: unknown | null
           chat_history?: unknown | null
+          chat_enabled?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -357,6 +404,7 @@ export interface Database {
           question_answers?: unknown | null
           interview_prep?: unknown | null
           chat_history?: unknown | null
+          chat_enabled?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -376,6 +424,30 @@ export interface Database {
             referencedColumns: ["id"]
           }
         ]
+      }
+      user_events: {
+        Row: {
+          id: string
+          user_id: string | null
+          event: string
+          properties: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          event: string
+          properties?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          event?: string
+          properties?: Json | null
+          created_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {

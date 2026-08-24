@@ -45,6 +45,14 @@ export default function PricingPage() {
   const [portalLoading, setPortalLoading] = useState(false);
 
   useEffect(() => {
+    fetch('/api/log-event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'pricing_page_viewed' }),
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
     fetch('/api/billing/status')
       .then(r => r.json())
@@ -55,6 +63,11 @@ export default function PricingPage() {
   const isPro = billing?.subscription_status === 'pro';
 
   const handleGetStarted = async (plan: Plan) => {
+    fetch('/api/log-event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'pricing_plan_clicked', plan }),
+    }).catch(() => {});
     if (!isSignedIn) { router.push('/sign-in'); return; }
     setLoading(plan);
     try {
@@ -73,6 +86,11 @@ export default function PricingPage() {
   };
 
   const handleManage = async () => {
+    fetch('/api/log-event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'pricing_manage_clicked' }),
+    }).catch(() => {});
     setPortalLoading(true);
     try {
       const res = await fetch('/api/billing/portal', { method: 'POST' });

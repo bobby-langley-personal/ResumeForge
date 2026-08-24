@@ -84,6 +84,7 @@ Output valid JSON only, no markdown fences:
       request_body: { company, jobTitle },
       response_summary: { overallFit: fitAnalysis?.overallFit, roleType: fitAnalysis?.roleType },
       duration_ms: Date.now() - startMs,
+      source: req.headers.get('x-extension-version') ? 'extension' : 'webapp',
     });
 
     return Response.json(fitAnalysis);

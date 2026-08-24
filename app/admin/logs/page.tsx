@@ -15,6 +15,7 @@ interface LogEntry {
   error: string | null;
   duration_ms: number | null;
   app_version: string | null;
+  source: 'webapp' | 'extension' | null;
   created_at: string;
   user: { email: string; full_name: string | null } | null;
 }
@@ -97,6 +98,7 @@ export default function AdminLogsPage() {
   const [filterRoute, setFilterRoute] = useState('');
   const [filterUserId, setFilterUserId] = useState('');
   const [filterError, setFilterError] = useState<'' | 'true' | 'false'>('');
+  const [filterSource, setFilterSource] = useState<'' | 'webapp' | 'extension'>('');
 
   const load = useCallback((p: number) => {
     if (!secret) return;
@@ -105,11 +107,12 @@ export default function AdminLogsPage() {
     if (filterRoute) params.set('route', filterRoute);
     if (filterUserId) params.set('userId', filterUserId);
     if (filterError) params.set('hasError', filterError);
+    if (filterSource) params.set('source', filterSource);
     fetch(`/api/admin/logs?${params}`, { headers: { 'x-admin-secret': secret } })
       .then(r => r.json())
       .then(data => { setLogs(data.logs ?? []); setTotal(data.total ?? 0); setPage(p); })
       .finally(() => setLoading(false));
-  }, [secret, filterRoute, filterUserId, filterError]);
+  }, [secret, filterRoute, filterUserId, filterError, filterSource]);
 
   useEffect(() => { load(1); }, [load]);
 
@@ -153,6 +156,16 @@ export default function AdminLogsPage() {
           <option value="true">Errors only</option>
         </select>
 
+        <select
+          value={filterSource}
+          onChange={e => setFilterSource(e.target.value as '' | 'webapp' | 'extension')}
+          className="bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-zinc-500"
+        >
+          <option value="">All sources</option>
+          <option value="webapp">webapp</option>
+          <option value="extension">extension</option>
+        </select>
+
         <input
           type="text"
           placeholder="Filter by user ID"
@@ -161,9 +174,9 @@ export default function AdminLogsPage() {
           className="bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-zinc-500 w-52"
         />
 
-        {(filterRoute || filterUserId || filterError) && (
+        {(filterRoute || filterUserId || filterError || filterSource) && (
           <button
-            onClick={() => { setFilterRoute(''); setFilterUserId(''); setFilterError(''); }}
+            onClick={() => { setFilterRoute(''); setFilterUserId(''); setFilterError(''); setFilterSource(''); }}
             className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
           >
             Clear filters
@@ -205,6 +218,13 @@ export default function AdminLogsPage() {
                     <span className="text-xs text-zinc-300 font-mono truncate">
                       {log.route.replace('/api/', '')}
                     </span>
+                    {log.source && (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${
+                        log.source === 'extension' ? 'bg-purple-900/40 text-purple-400' : 'bg-zinc-800 text-zinc-400'
+                      }`}>
+                        {log.source}
+                      </span>
+                    )}
                     {log.error && (
                       <AlertCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
                     )}

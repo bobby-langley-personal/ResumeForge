@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
+import { logUserEvent } from '@/lib/log-user-event';
 import type { Json } from '@/types/database';
 
 export const runtime = 'nodejs';
@@ -34,8 +35,11 @@ export async function POST(req: NextRequest) {
   // Write to console for Vercel function log searchability
   console.log('[analytics]', JSON.stringify({ userId, ...body, ext_version: extVersion, severity, ts: new Date().toISOString() }));
 
-  // Persist to ext_logs if this came from the extension (has ext version header or known ext event)
-  if (extVersion || event) {
+  // Always persist to user_events for admin product visibility
+  logUserEvent(userId, String(event ?? 'unknown'), { ...rest, ext_version: extVersion });
+
+  // Persist to ext_logs only for extension-originated events
+  if (extVersion) {
     try {
       const supabase = supabaseServer();
       await supabase.from('ext_logs').insert({
@@ -48,7 +52,7 @@ export async function POST(req: NextRequest) {
         ext_version: extVersion ?? undefined,
       });
     } catch (err) {
-      console.error('[log-event] Supabase insert failed:', err);
+      console.error('[log-event] ext_logs insert failed:', err);
     }
   }
 

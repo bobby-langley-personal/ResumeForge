@@ -4,6 +4,7 @@ import { renderToBuffer } from '@react-pdf/renderer'
 import { createElement } from 'react'
 import { supabaseServer } from '@/lib/supabase'
 import CoverLetterPDF from '@/lib/pdf/CoverLetterPDF'
+import { stripBlankTrailingPages } from '@/lib/pdf/strip-blank-pages'
 
 export const runtime = 'nodejs'
 
@@ -53,7 +54,8 @@ export async function POST(request: NextRequest) {
     }
 
     const element = createElement(CoverLetterPDF, props)
-    const pdfBuffer = await renderToBuffer(element as React.ReactElement<any>)
+    const rawBuffer = await renderToBuffer(element as React.ReactElement<any>)
+    const pdfBuffer = await stripBlankTrailingPages(Buffer.from(rawBuffer))
 
     const slugify = (s: string) => s.replace(/\bat\b/gi, '').replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')
     const companyName = slugify(application.company)

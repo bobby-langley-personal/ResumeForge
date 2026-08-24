@@ -68,6 +68,7 @@ Display labels map: `{ resume: 'Resume', cover_letter: 'Cover Letter Example', p
 | `question_answers` | Json \| null | `ApplicationQuestion[]` — AI-generated answers |
 | `interview_prep` | Json \| null | Stored `InterviewPrep` object |
 | `chat_history` | Json \| null | `ResumeChatMessage[]` — persisted chat turns |
+| `chat_enabled` | boolean | Whether AI chat is unlocked for this application (true for first 3 per user lifetime) |
 | `created_at` | string | ISO timestamp |
 | `updated_at` | string | ISO timestamp |
 
@@ -82,8 +83,11 @@ Exported from `app/dashboard/page.tsx`:
   id: string
   company: string
   job_title: string
+  job_description: string
   cover_letter_content: string | null
   question_answers: { question: string; answer: string }[] | null
+  fit_analysis: FitAnalysis | null
+  chat_enabled: boolean
   created_at: string
 }
 ```
@@ -198,6 +202,52 @@ Company | Location
 ```typescript
 { plan: 'monthly' | 'quarterly' | 'annual' }
 ```
+
+---
+
+### `api_logs` (updated columns)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `app_version` | string \| null | Value of `NEXT_PUBLIC_APP_VERSION` env var at call time |
+| `source` | `'webapp' \| 'extension' \| null` | Set to `'extension'` when `X-Extension-Version` header is present; `'webapp'` otherwise |
+
+---
+
+### Table: `cron_runs`
+
+Tracks automated cron job invocations to prevent overlapping runs and record outcomes.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `name` | string | Primary key — cron job identifier (e.g. `'notifications'`) |
+| `status` | `'running' \| 'succeeded' \| 'failed' \| null` | Current/last run status |
+| `started_at` | string \| null | ISO timestamp — when the run began |
+| `finished_at` | string \| null | ISO timestamp — when the run ended |
+| `sent_count` | number \| null | How many emails were sent in the run |
+
+One row per job name (upserted on each run). Used by `GET /api/cron/notifications` to skip runs when a previous one is still in progress.
+
+---
+
+### Table: `user_events`
+
+Tracks product usage events and feature interactions for admin visibility. Used for free-tier gating telemetry (cap hits, locked-feature clicks) and upgrade funnel tracking.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | string | UUID, primary key |
+| `user_id` | string \| null | Clerk user ID (null for anonymous) |
+| `event` | string | Snake\_case event name (e.g. `weekly_resume_cap_hit`) |
+| `properties` | Json \| null | Open-ended context (application\_id, count\_at\_time, etc.) |
+| `created_at` | string | ISO timestamp |
+
+**Frustration signal events** (highlighted red in admin Events tab):
+`chat_locked_click`, `interview_prep_locked_click`, `experience_interview_locked_click`, `weekly_resume_cap_hit`
+
+Written via:
+- `lib/log-user-event.ts` — server-side fire-and-forget utility (use from API routes)
+- `POST /api/log-event` — client-side events call this; the route writes to `user_events` for all events, and additionally to `ext_logs` for extension-originated events (detected by `X-Extension-Version` header)
 
 ---
 
@@ -379,7 +429,19 @@ Claude ends adaptive chat messages with a `CHOICES: A | B | C` line. `InterviewC
 | `stripe_customer_id` | string \| null | Stripe customer ID — set on first checkout |
 | `subscription_status` | `'free' \| 'pro' \| 'canceled' \| null` | Defaults to `'free'` |
 | `subscription_period_end` | string \| null | ISO timestamp — current period end (not actively updated in v1) |
-| `tailored_resume_count` | number | Lifetime count of generated resumes; incremented per generation for free users |
+| `tailored_resume_count` | number | Lifetime count of generated resumes (admin stat — never reset) |
+| `weekly_resume_count` | number | Count of resumes generated in the current rolling 7-day window |
+| `weekly_window_start` | string \| null | ISO timestamp — start of the current 7-day window; null if never used |
+| `chat_unlocked_count` | number | Count of applications with chat enabled (max 3 for free users) |
+| `interview_prep_count` | number | Lifetime first-time interview prep generations (max 2 for free users) |
+| `experience_interview_count` | number | Lifetime experience interview sessions started (max 2 for free users) |
+
+**Weekly window logic**: on each generation, if `now - weekly_window_start >= 7 days` (or start is null), the window is considered expired; `weekly_resume_count` resets to 0 and `weekly_window_start` is set to now. Free cap is 5/week (override via `FREE_WEEKLY_RESUME_LIMIT` env var).
+
+`GET /api/billing/status` returns:
+- `weekly_resume_count` — effective count (0 if window expired)
+- `weekly_window_ends_at` — ISO timestamp when the window ends; null if no active window
+- `chat_unlocked_count`, `interview_prep_count`, `experience_interview_count` — gating counters for UI badges
 
 ---
 

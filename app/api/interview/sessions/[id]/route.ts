@@ -3,7 +3,10 @@ export const runtime = 'nodejs';
 import { NextRequest } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabaseServer } from '@/lib/supabase';
+import { logUserEvent } from '@/lib/log-user-event';
 import type { Json } from '@/types/database';
+
+const FREE_ROLE_LIMIT = Number(process.env.FREE_INTERVIEW_ROLE_LIMIT ?? 2);
 
 // PATCH /api/interview/sessions/[id] — update session state
 export async function PATCH(
@@ -21,6 +24,51 @@ export async function PATCH(
   }
 
   const supabase = supabaseServer();
+
+  // When completed_roles is updated, enforce the per-role free limit
+  if (body.completed_roles !== undefined) {
+    const [{ data: session }, { data: userData }] = await Promise.all([
+      supabase
+        .from('interview_sessions')
+        .select('completed_roles')
+        .eq('id', params.id)
+        .eq('user_id', userId)
+        .single(),
+      supabase
+        .from('users')
+        .select('subscription_status, experience_interview_count')
+        .eq('id', userId)
+        .single(),
+    ]);
+
+    const isPro = userData?.subscription_status === 'pro';
+
+    if (!isPro) {
+      const prevRoleCount = Array.isArray(session?.completed_roles) ? session.completed_roles.length : 0;
+      const newRoleCount = Array.isArray(body.completed_roles) ? body.completed_roles.length : 0;
+      const newRolesAdded = Math.max(0, newRoleCount - prevRoleCount);
+      const usedRoles = userData?.experience_interview_count ?? 0;
+
+      if (newRolesAdded > 0 && usedRoles + newRolesAdded > FREE_ROLE_LIMIT) {
+        logUserEvent(userId, 'experience_interview_locked_click', { usedRoles, limit: FREE_ROLE_LIMIT });
+        return Response.json(
+          { error: 'INTERVIEW_LIMIT_REACHED', upgradeUrl: '/pricing', usedRoles, limit: FREE_ROLE_LIMIT },
+          { status: 402 }
+        );
+      }
+
+      if (newRolesAdded > 0) {
+        void supabase
+          .from('users')
+          .update({ experience_interview_count: usedRoles + newRolesAdded })
+          .eq('id', userId)
+          .then(({ error: updErr }) => {
+            if (updErr) console.error('[interview/sessions PATCH] role count error:', updErr.message);
+          });
+      }
+    }
+  }
+
   const update: Record<string, unknown> = {};
   if (body.status !== undefined) update.status = body.status;
   if (body.completed_roles !== undefined) update.completed_roles = body.completed_roles as Json;
@@ -30,7 +78,7 @@ export async function PATCH(
     .from('interview_sessions')
     .update(update)
     .eq('id', params.id)
-    .eq('user_id', userId); // ensure ownership
+    .eq('user_id', userId);
 
   if (error) return new Response(error.message, { status: 500 });
   return new Response(null, { status: 204 });

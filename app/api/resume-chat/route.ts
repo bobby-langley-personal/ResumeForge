@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Anthropic } from '@anthropic-ai/sdk';
 import { getModels } from '@/lib/models';
 import { supabaseServer } from '@/lib/supabase';
+import { logUserEvent } from '@/lib/log-user-event';
 
 export const runtime = 'nodejs';
 
@@ -91,16 +92,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
-  // Verify ownership if applicationId provided
+  // Verify ownership and check chat entitlement if applicationId provided
   const supabase = supabaseServer();
   if (applicationId) {
-    const { data: app } = await supabase
-      .from('applications')
-      .select('id, user_id')
-      .eq('id', applicationId)
-      .single();
+    const [{ data: app }, { data: userData }] = await Promise.all([
+      supabase
+        .from('applications')
+        .select('id, user_id, chat_enabled')
+        .eq('id', applicationId)
+        .single(),
+      supabase
+        .from('users')
+        .select('subscription_status')
+        .eq('id', userId)
+        .single(),
+    ]);
     if (!app || app.user_id !== userId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    const isPro = userData?.subscription_status === 'pro';
+    if (!isPro && !app.chat_enabled) {
+      logUserEvent(userId, 'chat_locked_click', { applicationId });
+      return NextResponse.json(
+        { error: 'CHAT_LOCKED', upgradeUrl: '/pricing' },
+        { status: 402 }
+      );
     }
   }
 

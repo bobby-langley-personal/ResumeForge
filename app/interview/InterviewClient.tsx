@@ -108,6 +108,9 @@ export default function InterviewClient() {
   const [existingDocs, setExistingDocs] = useState<ExistingDoc[]>([]);
   const [useExistingDocs, setUseExistingDocs] = useState(false);
   const [existingDocsContext, setExistingDocsContext] = useState('');
+  const [interviewLocked, setInterviewLocked] = useState(false);
+  const [interviewCount, setInterviewCount] = useState(0);
+  const [isPro, setIsPro] = useState(false);
 
   const [totalRoles, setTotalRoles] = useState(0);
   const [completedRoles, setCompletedRoles] = useState<CompletedRole[]>([]);
@@ -150,12 +153,27 @@ export default function InterviewClient() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [displayMessages, thinking]);
 
-  // Preload existing docs + check for saved Supabase session in parallel on mount
+  // Preload existing docs + check for saved Supabase session + billing status in parallel on mount
   useEffect(() => {
     Promise.all([
       fetch('/api/resumes').then(r => r.json()).catch(() => []),
       fetch('/api/interview/sessions').then(r => r.json()).catch(() => ({ session: null })),
-    ]).then(([docs, sessionResp]) => {
+      fetch('/api/billing/status').then(r => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([docs, sessionResp, billingData]) => {
+      // Check experience interview limit for free users
+      if (billingData) {
+        setInterviewCount(billingData.experience_interview_count ?? 0);
+        setIsPro(billingData.subscription_status === 'pro');
+      }
+      if (
+        billingData &&
+        billingData.subscription_status !== 'pro' &&
+        billingData.experience_interview_count >= 2
+      ) {
+        setInterviewLocked(true);
+        setStep('intro'); // advance past preloading so we can show the locked UI
+        return;
+      }
       const validDocs: ExistingDoc[] = docs ?? [];
       setExistingDocs(validDocs);
 
@@ -219,17 +237,29 @@ export default function InterviewClient() {
     const payload = buildDraftPayload(overrideRoles);
     try {
       if (sessionId) {
-        await fetch(`/api/interview/sessions/${sessionId}`, {
+        const patchRes = await fetch(`/api/interview/sessions/${sessionId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
+        if (patchRes.status === 402) {
+          const data = await patchRes.json().catch(() => ({}));
+          setInterviewCount(data.usedRoles ?? interviewCount);
+          setInterviewLocked(true);
+          setStep('complete'); // let them see what they completed so far
+          return;
+        }
       } else {
         const res = await fetch('/api/interview/sessions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
+        if (res.status === 402) {
+          setInterviewLocked(true);
+          setStep('intro');
+          return;
+        }
         const data = await res.json();
         setSessionId(data.id);
       }
@@ -554,6 +584,13 @@ export default function InterviewClient() {
 
   // ── Renders ────────────────────────────────────────────────────────────────
 
+  const freeCounter = !isPro ? (
+    <p className="text-sm text-muted-foreground text-center">
+      {interviewCount}/2 free roles used ·{' '}
+      <a href="/pricing" className="text-blue-500 hover:underline">Upgrade to Pro</a>
+    </p>
+  ) : null;
+
   if (step === 'preloading') {
     return (
       <div className="flex items-center justify-center py-24">
@@ -603,6 +640,7 @@ export default function InterviewClient() {
   if (step === 'doc-prompt') {
     return (
       <div className="max-w-lg mx-auto space-y-6 py-8">
+        {freeCounter}
         <div className="space-y-2 text-center">
           <div className="text-3xl">📄</div>
           <h2 className="text-xl font-bold text-foreground">
@@ -634,11 +672,33 @@ export default function InterviewClient() {
     );
   }
 
+  if (step === 'intro' && interviewLocked) {
+    return (
+      <div className="max-w-lg mx-auto space-y-6 py-16 text-center">
+        <div className="text-5xl">🔒</div>
+        <h1 className="text-2xl font-bold text-foreground">Interview Role Limit Reached</h1>
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          Free accounts include 2 interview roles. You&apos;ve used both of yours.
+          Upgrade to Pro for unlimited interviews and all premium features.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+          <Button onClick={() => router.push('/pricing')}>
+            Upgrade to Pro
+          </Button>
+          <Button variant="outline" onClick={() => router.push('/resumes')}>
+            View My Experience
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (step === 'intro') {
     const activeCount = suggestedRoles.filter((_, i) => selectedSuggested[i] !== false).length + customRoles.length;
 
     return (
       <div className="max-w-lg mx-auto space-y-6 py-8">
+        {freeCounter}
         <div className="space-y-2 text-center">
           <div className="text-4xl">🎤</div>
           <h1 className="text-2xl font-bold text-foreground">Build Your Experience Document</h1>
@@ -747,6 +807,7 @@ export default function InterviewClient() {
     const valid = company.trim() && jobTitle.trim();
     return (
       <div className="max-w-lg mx-auto space-y-6 py-8">
+        {freeCounter}
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
             Role {currentRoleIndex + 1} of {totalRoles}
@@ -973,6 +1034,7 @@ export default function InterviewClient() {
   if (step === 'complete') {
     return (
       <div className="max-w-lg mx-auto space-y-6 py-8">
+        {freeCounter}
         <div className="space-y-2 text-center">
           <div className="text-4xl">✓</div>
           <h2 className="text-xl font-bold text-foreground">Interview complete</h2>

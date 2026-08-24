@@ -9,6 +9,7 @@ export interface ApiLogEntry {
   response_summary?: Record<string, unknown> | null;
   error?: string | null;
   duration_ms?: number | null;
+  source?: 'webapp' | 'extension' | null;
 }
 
 /** Truncate long string values so we don't store huge payloads in JSONB. */
@@ -50,6 +51,7 @@ export function logApiCall(entry: ApiLogEntry): void {
         error: entry.error ?? null,
         duration_ms: entry.duration_ms ?? null,
         app_version: process.env.NEXT_PUBLIC_APP_VERSION ?? null,
+        source: entry.source ?? null,
       })
     ).then(() => {}).catch((err: unknown) => console.error('[logApiCall] insert failed:', err));
   } catch (err) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Library, FileText, Zap, ArrowRight, Sparkles, Upload, MessageSquareText, ShieldCheck } from 'lucide-react';
@@ -12,8 +12,20 @@ interface Props {
   onDismiss: () => void;
 }
 
+function logEvent(event: string, props?: Record<string, unknown>) {
+  fetch('/api/log-event', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ event, ...props }),
+  }).catch(() => {});
+}
+
 export default function OnboardingOverlay({ variant, onDismiss }: Props) {
   const [showATS, setShowATS] = useState(false);
+
+  useEffect(() => {
+    logEvent('onboarding_overlay_shown', { variant });
+  }, [variant]);
 
   if (variant === 'sparse') {
     return (
@@ -69,6 +81,7 @@ export default function OnboardingOverlay({ variant, onDismiss }: Props) {
                 </p>
                 <Link
                   href="/resumes"
+                  onClick={() => logEvent('onboarding_overlay_upload_clicked')}
                   className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-400 font-medium transition-colors mt-1"
                 >
                   Go to My Experience <ArrowRight className="w-3 h-3" />
@@ -83,6 +96,7 @@ export default function OnboardingOverlay({ variant, onDismiss }: Props) {
                 </p>
                 <Link
                   href="/interview"
+                  onClick={() => logEvent('onboarding_overlay_interview_clicked')}
                   className="inline-flex items-center gap-1 text-xs text-violet-500 hover:text-violet-400 font-medium transition-colors mt-1"
                 >
                   Start the interview <ArrowRight className="w-3 h-3" />
@@ -104,13 +118,14 @@ export default function OnboardingOverlay({ variant, onDismiss }: Props) {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
               <Link
                 href="/resumes"
+                onClick={() => logEvent('onboarding_overlay_add_clicked')}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-semibold px-8 py-3.5 rounded-xl transition-colors text-base shadow-lg shadow-amber-500/20"
               >
                 Add More Experience
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <button
-                onClick={onDismiss}
+                onClick={() => { logEvent('onboarding_overlay_skip_clicked'); onDismiss(); }}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 border border-border hover:border-foreground/30 text-muted-foreground hover:text-foreground font-medium px-8 py-3.5 rounded-xl transition-colors text-base"
               >
                 I&apos;m good, continue to app
@@ -232,7 +247,7 @@ export default function OnboardingOverlay({ variant, onDismiss }: Props) {
           {/* CTA */}
           <div className="flex flex-col items-center gap-4 pt-2">
             <button
-              onClick={onDismiss}
+              onClick={() => { logEvent('onboarding_overlay_add_clicked'); onDismiss(); }}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-3.5 rounded-xl transition-colors text-base shadow-lg shadow-blue-600/25"
             >
               Add My Experience

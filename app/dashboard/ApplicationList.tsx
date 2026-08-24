@@ -1,11 +1,19 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Trash2 } from 'lucide-react';
 import ApplicationCard from './ApplicationCard';
+import { DashboardTourGuide } from '@/components/TourGuide';
 import { ApplicationItem } from './page';
+
+interface BillingStatus {
+  subscription_status: 'free' | 'pro' | 'canceled' | null;
+  interview_prep_count: number;
+  experience_interview_count: number;
+  chat_unlocked_count: number;
+}
 
 interface Props {
   initialItems: ApplicationItem[];
@@ -16,6 +24,14 @@ export default function ApplicationList({ initialItems }: Props) {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  const [billing, setBilling] = useState<BillingStatus | null>(null);
+
+  useEffect(() => {
+    fetch('/api/billing/status')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setBilling(data); })
+      .catch(() => { /* non-fatal */ });
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -68,6 +84,15 @@ export default function ApplicationList({ initialItems }: Props) {
 
   return (
     <div>
+      <DashboardTourGuide hasCards={items.length > 0} />
+      {/* Free-tier usage counts */}
+      {billing && billing.subscription_status !== 'pro' && (
+        <p className="text-sm text-muted-foreground text-center mb-4">
+          {billing.chat_unlocked_count}/3 résumés with chat ·{' '}
+          <a href="/pricing" className="text-primary hover:underline">Upgrade to Pro</a>
+        </p>
+      )}
+
       {/* Search */}
       <div className="relative mb-5">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
@@ -109,22 +134,32 @@ export default function ApplicationList({ initialItems }: Props) {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filtered.map(app => (
-          <ApplicationCard
-            key={app.id}
-            id={app.id}
-            company={app.company}
-            jobTitle={app.job_title}
-            createdAt={app.created_at}
-            jobDescription={app.job_description}
-            hasCoverLetter={!!app.cover_letter_content}
-            questionAnswers={app.question_answers ?? null}
-            fitAnalysis={app.fit_analysis ?? null}
-            selected={selected.has(app.id)}
-            onToggleSelect={toggleSelect}
-            onDelete={handleDelete}
-          />
-        ))}
+        {filtered.map((app, index) => {
+          const isPro = billing?.subscription_status === 'pro';
+          const prepCount = billing?.interview_prep_count ?? 0;
+          const chatCount = billing?.chat_unlocked_count ?? 0;
+          return (
+            <ApplicationCard
+              key={app.id}
+              id={app.id}
+              isFirstCard={index === 0}
+              company={app.company}
+              jobTitle={app.job_title}
+              createdAt={app.created_at}
+              jobDescription={app.job_description}
+              hasCoverLetter={!!app.cover_letter_content}
+              questionAnswers={app.question_answers ?? null}
+              fitAnalysis={app.fit_analysis ?? null}
+              chatEnabled={app.chat_enabled}
+              isPro={isPro}
+              interviewPrepCount={prepCount}
+              chatUnlockedCount={chatCount}
+              selected={selected.has(app.id)}
+              onToggleSelect={toggleSelect}
+              onDelete={handleDelete}
+            />
+          );
+        })}
       </div>
     </div>
   );

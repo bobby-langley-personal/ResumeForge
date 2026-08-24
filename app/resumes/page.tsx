@@ -65,11 +65,8 @@ export default async function ResumesPage() {
             </p>
           </div>
           <Link href="/interview">
-            <Button variant="outline" className="relative">
+            <Button variant="outline">
               Build experience doc →
-              <span className="absolute -top-2 -right-2 text-[9px] font-semibold uppercase tracking-wide bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full leading-none">
-                Beta
-              </span>
             </Button>
           </Link>
         </div>

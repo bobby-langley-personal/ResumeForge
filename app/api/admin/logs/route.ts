@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
   const userId = searchParams.get('userId') ?? '';
   const route = searchParams.get('route') ?? '';
   const hasError = searchParams.get('hasError');
+  const source = searchParams.get('source') ?? '';
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
   const limit = 50;
   const offset = (page - 1) * limit;
@@ -29,6 +30,7 @@ export async function GET(req: NextRequest) {
   if (route) query = query.ilike('route', `%${route}%`);
   if (hasError === 'true') query = query.not('error', 'is', null);
   if (hasError === 'false') query = query.is('error', null);
+  if (source) query = query.eq('source', source);
 
   const { data: logs, count, error } = await query;
   if (error) return Response.json({ error: error.message }, { status: 500 });

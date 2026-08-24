@@ -24,6 +24,7 @@ export async function GET() {
 }
 
 // POST /api/interview/sessions — create a new draft session
+// No role-level gate here — gating happens per role completion in PATCH /[id]
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return new Response('Unauthorized', { status: 401 });
@@ -36,6 +37,7 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = supabaseServer();
+
   const { data, error } = await supabase
     .from('interview_sessions')
     .insert({

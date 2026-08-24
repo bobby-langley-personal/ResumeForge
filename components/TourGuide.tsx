@@ -153,3 +153,49 @@ export default function TourGuide() {
 
   return null;
 }
+
+// ── Dashboard tour ────────────────────────────────────────────────────────────
+
+const DASHBOARD_TOUR_KEY = 'resumeforge_dashboard_tour_completed';
+
+export function startDashboardTour() {
+  const driverObj = driver({
+    nextBtnText: 'Got it →',
+    doneBtnText: 'Got it',
+    overlayColor: 'rgba(0,0,0,0.7)',
+    stagePadding: 8,
+    stageRadius: 8,
+    popoverClass: 'easy-apply-tour',
+    onDestroyStarted: () => {
+      localStorage.setItem(DASHBOARD_TOUR_KEY, 'true');
+      driverObj.destroy();
+    },
+    steps: [
+      {
+        element: '#dashboard-icon-row',
+        popover: {
+          title: 'Quick actions on every résumé',
+          description:
+            'Check your fit score, prep for the interview, or revisit the job post — right from this card. The <strong>target</strong> icon generates interview questions, the <strong>lightbulb</strong> runs a fit analysis.',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+    ],
+  });
+
+  driverObj.drive();
+}
+
+export function DashboardTourGuide({ hasCards }: { hasCards: boolean }) {
+  useEffect(() => {
+    if (!hasCards) return;
+    const completed = localStorage.getItem(DASHBOARD_TOUR_KEY);
+    if (completed === 'true') return;
+
+    const timer = setTimeout(() => startDashboardTour(), 1000);
+    return () => clearTimeout(timer);
+  }, [hasCards]);
+
+  return null;
+}
