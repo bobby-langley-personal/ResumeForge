@@ -10,6 +10,7 @@ const isPublicRoute = createRouteMatcher([
   '/api/unsubscribe',
   '/api/webhooks/clerk',
   '/api/webhooks/stripe',
+  '/api/cron/(.*)',
 ]);
 // /tailor is auth-protected — Clerk middleware handles the redirect
 
