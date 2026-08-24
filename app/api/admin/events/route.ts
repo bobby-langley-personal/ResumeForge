@@ -30,18 +30,18 @@ export async function GET(req: NextRequest) {
   const supabase = supabaseServer();
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
-  // Recent events (paginated)
+  // Recent events (paginated) — filters must come before order/range
   let query = supabase
     .from('user_events')
     .select('*', { count: 'exact' })
-    .gte('created_at', since)
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1);
+    .gte('created_at', since);
 
   if (userId) query = query.eq('user_id', userId);
   if (event) query = query.eq('event', event);
 
-  const { data: events, count, error } = await query;
+  const { data: events, count, error } = await query
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
   // Enrich with user info

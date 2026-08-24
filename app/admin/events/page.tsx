@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useAdminContext } from '../AdminContext';
 import { Loader2, RefreshCw, AlertTriangle, User } from 'lucide-react';
 
@@ -56,14 +56,19 @@ export default function AdminEventsPage() {
 
   const [filterEvent, setFilterEvent] = useState('');
   const [filterUserId, setFilterUserId] = useState('');
+  const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback((p: number) => {
     if (!secret) return;
+    // Cancel any in-flight request to prevent stale results overwriting current ones
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
     const params = new URLSearchParams({ page: String(p), days: String(days) });
     if (filterEvent) params.set('event', filterEvent);
     if (filterUserId) params.set('userId', filterUserId);
-    fetch(`/api/admin/events?${params}`, { headers: { 'x-admin-secret': secret } })
+    fetch(`/api/admin/events?${params}`, { headers: { 'x-admin-secret': secret }, signal: controller.signal })
       .then(r => r.json())
       .then(data => {
         setEvents(data.events ?? []);
@@ -71,6 +76,7 @@ export default function AdminEventsPage() {
         setTotal(data.total ?? 0);
         setPage(p);
       })
+      .catch(err => { if (err.name !== 'AbortError') console.error(err); })
       .finally(() => setLoading(false));
   }, [secret, filterEvent, filterUserId, days]);
 
