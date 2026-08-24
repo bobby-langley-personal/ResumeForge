@@ -1,4 +1,5 @@
 import { SignIn } from '@clerk/nextjs';
+import Link from 'next/link';
 
 export default function SignInPage() {
   return (
@@ -8,9 +9,12 @@ export default function SignInPage() {
         <h1 className="text-3xl font-bold text-foreground">
           Easy Apply<sup className="text-blue-500 text-sm font-bold ml-0.5 align-super">AI</sup>
         </h1>
+        <Link href="/pricing" className="text-sm text-blue-500 hover:text-blue-400 mt-2 inline-block">
+          See what&apos;s free →
+        </Link>
       </div>
-      
-      <SignIn 
+
+      <SignIn
         appearance={{
           elements: {
             formButtonPrimary: "bg-primary hover:bg-primary/90 text-primary-foreground",

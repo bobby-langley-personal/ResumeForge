@@ -30,11 +30,15 @@ const PRO_FEATURES = [
   'Application Q&A answers',
 ];
 
-const FREE_LIMITS = [
-  '3 free tailored resumes (lifetime)',
-  'No cover letters',
-  'No polished resume',
-  'No interview prep',
+const COMPARE_ROWS: { label: string; free: string | boolean; pro: string | boolean }[] = [
+  { label: 'Tailored résumés',        free: '5 / week',   pro: 'Unlimited' },
+  { label: 'Cover letters',           free: false,        pro: true },
+  { label: 'Polished resume builder', free: false,        pro: true },
+  { label: 'Chrome extension',        free: 'Basic',      pro: 'Full access' },
+  { label: 'Interview prep',          free: '2 sessions', pro: 'Unlimited' },
+  { label: 'AI experience interview', free: '2 roles',    pro: 'Unlimited' },
+  { label: 'Résumé chat',             free: '3 résumés',  pro: 'Unlimited' },
+  { label: 'Application Q&A',         free: false,        pro: true },
 ];
 
 export default function PricingPage() {
@@ -199,26 +203,46 @@ export default function PricingPage() {
           ))}
         </div>
 
-        {/* Free tier callout */}
-        <div className="border border-border rounded-xl p-6 bg-card max-w-md mx-auto text-center">
-          <h3 className="font-semibold text-foreground mb-2">Free plan</h3>
-          <p className="text-sm text-muted-foreground mb-4">Try it out, no credit card required.</p>
-          <ul className="space-y-1.5 text-left inline-block">
-            {FREE_LIMITS.map(l => (
-              <li key={l} className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span className="text-destructive font-bold">✕</span>
-                {l}
-              </li>
-            ))}
-          </ul>
-          {!isSignedIn && (
-            <div className="mt-4">
-              <Link href="/sign-up">
-                <Button variant="outline" size="sm">Start for free</Button>
-              </Link>
+        {/* Free vs Pro comparison table */}
+        <div className="border border-border rounded-xl overflow-hidden">
+          <div className="grid grid-cols-3 bg-muted/40 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <div>Feature</div>
+            <div className="text-center">Free</div>
+            <div className="text-center text-primary">Pro</div>
+          </div>
+          {COMPARE_ROWS.map((row, i) => (
+            <div
+              key={row.label}
+              className={`grid grid-cols-3 px-4 py-3 text-sm items-center ${i < COMPARE_ROWS.length - 1 ? 'border-b border-border' : ''}`}
+            >
+              <div className="text-foreground">{row.label}</div>
+              <div className="text-center">
+                {row.free === false ? (
+                  <span className="text-destructive font-bold text-base leading-none">✕</span>
+                ) : (
+                  <span className="text-muted-foreground">{row.free === true ? <Check className="w-4 h-4 text-primary mx-auto" /> : row.free}</span>
+                )}
+              </div>
+              <div className="text-center">
+                {row.pro === true ? (
+                  <Check className="w-4 h-4 text-primary mx-auto" />
+                ) : (
+                  <span className="text-foreground font-medium">{row.pro}</span>
+                )}
+              </div>
             </div>
-          )}
+          ))}
         </div>
+
+        {/* Free plan CTA */}
+        {!isSignedIn && (
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground mb-3">No credit card required — try it free.</p>
+            <Link href="/sign-up">
+              <Button variant="outline">Start for free</Button>
+            </Link>
+          </div>
+        )}
       </main>
     </div>
   );

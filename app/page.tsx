@@ -466,19 +466,16 @@ export default async function HomePage() {
         <section id="extension" className="bg-slate-900 text-white py-16 sm:py-20 px-4">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
-              <div className="inline-flex items-center gap-2 bg-blue-600/20 text-blue-300 text-xs font-semibold px-3 py-1.5 rounded-full mb-3 border border-blue-500/30">
-                <span className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
-                Chrome Extension
-              </div>
-              {/* Live on Chrome Web Store */}
+              <p className="text-xs font-semibold uppercase tracking-widest text-blue-400 mb-3">Chrome Extension</p>
               <a
                 href="https://chromewebstore.google.com/detail/foodpkmblpknlbkmdnnlgjkbnnhmbcid?utm_source=item-share-cb"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-emerald-500/15 text-emerald-300 text-sm font-semibold px-5 py-2.5 rounded-full mb-6 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors"
+                className="inline-flex items-center gap-2 text-emerald-400 text-sm font-semibold hover:text-emerald-300 transition-colors mb-5 underline underline-offset-2"
               >
-                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
                 Add to Chrome — It&apos;s Free
+                <ArrowRight className="w-3.5 h-3.5" />
               </a>
               <h2 className="text-2xl sm:text-3xl font-bold mb-4">
                 One click from any job board.
@@ -579,22 +576,80 @@ export default async function HomePage() {
           <TestimonialMarquee />
         </section>
 
-        {/* CTA Strip */}
-        <section className="bg-blue-600 py-14 sm:py-16 px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
-              Ready to apply smarter?
-            </h2>
-            <p className="text-white/80 mb-8 text-base sm:text-lg">
-              Join job seekers who use <Brand /> to tailor every application and land more interviews.
-            </p>
-            <Link
-              href="/sign-up"
-              className="inline-flex items-center gap-2 bg-white text-blue-600 font-bold px-7 sm:px-8 py-3.5 rounded-xl hover:bg-blue-50 transition-colors text-base shadow-lg"
-            >
-              Get Started Free
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+        {/* Pricing comparison */}
+        <section className="bg-blue-600 py-16 sm:py-20 px-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-10">
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">Simple, transparent pricing</h2>
+              <p className="text-white/70 text-base">Start free. Upgrade when you&apos;re ready to go all in.</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {/* Free card */}
+              <div className="bg-slate-800/60 border border-white/10 rounded-2xl p-7 flex flex-col">
+                <div className="mb-6">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-white/40 mb-1">Basic</p>
+                  <p className="text-4xl font-bold text-white">Free</p>
+                </div>
+                <ul className="space-y-3 flex-1 mb-8">
+                  {[
+                    '5 tailored résumés per week',
+                    'Chrome extension (basic)',
+                    '2 interview prep sessions',
+                    'AI résumé chat (3 résumés)',
+                    'Fit analysis on every job',
+                  ].map((f) => (
+                    <li key={f} className="flex items-start gap-2.5 text-sm text-white/70">
+                      <Check className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/sign-up"
+                  className="block text-center bg-white/10 hover:bg-white/20 text-white font-semibold px-6 py-3 rounded-xl transition-colors text-sm"
+                >
+                  Get Started Free
+                </Link>
+              </div>
+
+              {/* Pro card */}
+              <div className="relative bg-slate-900 border border-blue-400/40 rounded-2xl p-7 flex flex-col shadow-xl shadow-blue-900/30">
+                <div className="absolute -top-3 right-5 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                  Most Popular
+                </div>
+                <div className="mb-6">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-blue-400 mb-1">Pro</p>
+                  <div className="flex items-end gap-1.5">
+                    <p className="text-4xl font-bold text-white">$9</p>
+                    <p className="text-white/50 mb-1">/mo</p>
+                  </div>
+                  <p className="text-xs text-white/30 mt-0.5">or $79/yr — save 27%</p>
+                </div>
+                <ul className="space-y-3 flex-1 mb-8">
+                  {[
+                    'Unlimited tailored résumés',
+                    'Cover letters',
+                    'Polished resume builder',
+                    'Full Chrome extension access',
+                    'Unlimited interview prep',
+                    'Unlimited résumé chat',
+                    'Application Q&A answers',
+                  ].map((f) => (
+                    <li key={f} className="flex items-start gap-2.5 text-sm text-white/80">
+                      <Check className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/pricing"
+                  className="block text-center bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-3 rounded-xl transition-colors text-sm"
+                >
+                  See Pro Plans →
+                </Link>
+              </div>
+            </div>
           </div>
         </section>
 
