@@ -16,7 +16,9 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_APP_VERSION: `${major}.${yy}${m}.${dd}${h}`,
   },
-  serverExternalPackages: ['pdf-parse', 'pdfjs-dist'],
+  experimental: {
+    serverComponentsExternalPackages: ['pdf-parse', 'pdfjs-dist'],
+  },
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.externals = [

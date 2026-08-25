@@ -9,9 +9,9 @@ const mammoth = require('mammoth');
 let _pdfjs: typeof import('pdfjs-dist') | null = null;
 function getPdfjs() {
   if (!_pdfjs) {
-    _pdfjs = require('pdfjs-dist/legacy/build/pdf.mjs');
+    _pdfjs = require('pdfjs-dist/legacy/build/pdf.js');
     // Point to worker so pdfjs can spawn a Node.js worker thread
-    _pdfjs!.GlobalWorkerOptions.workerSrc = require.resolve('pdfjs-dist/legacy/build/pdf.worker.mjs');
+    _pdfjs!.GlobalWorkerOptions.workerSrc = require.resolve('pdfjs-dist/legacy/build/pdf.worker.js');
   }
   return _pdfjs!;
 }
@@ -19,7 +19,7 @@ function getPdfjs() {
 async function extractPdfText(buffer: Buffer): Promise<string> {
   const pdfjs = getPdfjs();
   const data = new Uint8Array(buffer);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line
   const doc = await (pdfjs.getDocument as any)({
     data,
     useWorkerFetch: false,
