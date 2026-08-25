@@ -5,7 +5,6 @@ import { auth, currentUser } from '@clerk/nextjs/server';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { createElement } from 'react';
 import { supabaseServer } from '@/lib/supabase';
-import ResumePDF from '@/lib/pdf/ResumePDF';
 import DocumentPDF from '@/lib/pdf/DocumentPDF';
 
 export async function POST(request: NextRequest) {
@@ -37,23 +36,14 @@ export async function POST(request: NextRequest) {
     const fullName = profileResult.data?.full_name || user?.fullName || user?.firstName || 'User';
     const safeName = item.title.replace(/[^a-zA-Z0-9_\- ]/g, '_').trim() || 'document';
 
-    let pdfBuffer: Buffer;
-
-    if (item.item_type === 'resume') {
-      const element = createElement(ResumePDF, {
-        resumeText,
-        candidateName: fullName,
-        company: '',
-        jobTitle: '',
-      });
-      pdfBuffer = await renderToBuffer(element as React.ReactElement);
-    } else {
-      const element = createElement(DocumentPDF, {
-        text: resumeText,
-        title: item.title,
-      });
-      pdfBuffer = await renderToBuffer(element as React.ReactElement);
-    }
+    // Always use DocumentPDF (raw text renderer) for experience files.
+    // ResumePDF expects AI-generated structured format — uploaded PDFs produce
+    // raw extracted text that doesn't match, so sections never parse.
+    const element = createElement(DocumentPDF, {
+      text: resumeText,
+      title: item.title,
+    });
+    const pdfBuffer = await renderToBuffer(element as React.ReactElement);
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
