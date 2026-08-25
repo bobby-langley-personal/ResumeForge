@@ -17,15 +17,7 @@ const nextConfig = {
     NEXT_PUBLIC_APP_VERSION: `${major}.${yy}${m}.${dd}${h}`,
   },
   experimental: {
-    serverComponentsExternalPackages: ['pdf-parse', 'pdfjs-dist'],
-  },
-  // Force Vercel's file tracer to include the pdfjs worker file.
-  // It's only referenced as a string path (not require()), so the tracer
-  // doesn't know to include it — the function deploys without it and crashes.
-  outputFileTracingIncludes: {
-    '/api/extract-resume': [
-      './node_modules/pdfjs-dist/legacy/build/pdf.worker.js',
-    ],
+    serverComponentsExternalPackages: ['pdf-parse', 'pdf2json'],
   },
 };
 
