@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
+import { withApiLogging } from '@/lib/with-api-logging';
 
 async function getOwned(userId: string, id: string) {
   const supabase = supabaseServer();
@@ -15,7 +16,8 @@ async function getOwned(userId: string, id: string) {
 }
 
 // PUT /api/resumes/[id] — update title, content, or item_type
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PUT = withApiLogging('/api/resumes/[id]', async (req: NextRequest, ctx: unknown) => {
+  const { params } = ctx as { params: Promise<{ id: string }> };
   const { userId } = await auth();
   if (!userId) return new Response('Unauthorized', { status: 401 });
   const { id } = await params;
@@ -38,10 +40,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   if (error) return new Response(error.message, { status: 500 });
   return Response.json(data);
-}
+});
 
 // DELETE /api/resumes/[id]
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withApiLogging('/api/resumes/[id]', async (_req: NextRequest, ctx: unknown) => {
+  const { params } = ctx as { params: Promise<{ id: string }> };
   const { userId } = await auth();
   if (!userId) return new Response('Unauthorized', { status: 401 });
   const { id } = await params;
@@ -52,4 +55,4 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const { error } = await supabase.from('resumes').delete().eq('id', id);
   if (error) return new Response(error.message, { status: 500 });
   return new Response(null, { status: 204 });
-}
+});

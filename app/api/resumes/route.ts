@@ -1,9 +1,10 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
+import { withApiLogging } from '@/lib/with-api-logging';
 
 // GET /api/resumes — list all items for the current user
-export async function GET() {
+export const GET = withApiLogging('/api/resumes', async () => {
   try {
     const { userId } = await auth();
     if (!userId) return new Response('Unauthorized', { status: 401 });
@@ -31,10 +32,10 @@ export async function GET() {
     console.error('[GET /api/resumes] Unexpected error:', err);
     return new Response(err instanceof Error ? err.message : 'Internal server error', { status: 500 });
   }
-}
+});
 
 // POST /api/resumes — create a new item
-export async function POST(req: NextRequest) {
+export const POST = withApiLogging('/api/resumes', async (req: NextRequest) => {
   const { userId } = await auth();
   if (!userId) return new Response('Unauthorized', { status: 401 });
 
@@ -60,4 +61,4 @@ export async function POST(req: NextRequest) {
 
   if (error) return new Response(error.message, { status: 500 });
   return Response.json(data, { status: 201 });
-}
+});

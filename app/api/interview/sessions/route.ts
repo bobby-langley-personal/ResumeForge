@@ -3,9 +3,10 @@ export const runtime = 'nodejs';
 import { NextRequest } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabaseServer } from '@/lib/supabase';
+import { withApiLogging } from '@/lib/with-api-logging';
 
 // GET /api/interview/sessions — fetch the most recent draft session
-export async function GET() {
+export const GET = withApiLogging('/api/interview/sessions', async () => {
   const { userId } = await auth();
   if (!userId) return new Response('Unauthorized', { status: 401 });
 
@@ -21,11 +22,11 @@ export async function GET() {
 
   if (error) return new Response(error.message, { status: 500 });
   return Response.json({ session: data });
-}
+});
 
 // POST /api/interview/sessions — create a new draft session
 // Role-level gating happens in PATCH /[id] when completed_roles is updated
-export async function POST(req: NextRequest) {
+export const POST = withApiLogging('/api/interview/sessions', async (req: NextRequest) => {
   const { userId } = await auth();
   if (!userId) return new Response('Unauthorized', { status: 401 });
 
@@ -51,4 +52,4 @@ export async function POST(req: NextRequest) {
 
   if (error) return new Response(error.message, { status: 500 });
   return Response.json({ id: data.id }, { status: 201 });
-}
+});

@@ -7,9 +7,13 @@ const { mockAuth, mockFrom } = vi.hoisted(() => ({
 
 vi.mock('@clerk/nextjs/server', () => ({ auth: mockAuth }));
 vi.mock('@/lib/supabase', () => ({ supabaseServer: () => ({ from: mockFrom }) }));
+vi.mock('@/lib/log-api', () => ({ logApiCall: vi.fn() }));
 
 import { GET } from '@/app/api/billing/status/route';
+import { NextRequest } from 'next/server';
 import { freeUser, proUser } from '../../mocks/fixtures';
+
+const makeGetRequest = () => new NextRequest('http://localhost/api/billing/status', { method: 'GET' });
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -43,7 +47,7 @@ describe('GET /api/billing/status', () => {
 
   it('returns 401 when unauthenticated', async () => {
     mockAuth.mockResolvedValue({ userId: null });
-    const res = await GET();
+    const res = await GET(makeGetRequest());
     expect(res.status).toBe(401);
   });
 
@@ -53,7 +57,7 @@ describe('GET /api/billing/status', () => {
       .mockReturnValueOnce(makeBuilder({ data: userData, error: null }))
       .mockReturnValue(makeCountBuilder(3));
 
-    const res = await GET();
+    const res = await GET(makeGetRequest());
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.subscription_status).toBe('free');
@@ -70,7 +74,7 @@ describe('GET /api/billing/status', () => {
       .mockReturnValueOnce(makeBuilder({ data: userData, error: null }))
       .mockReturnValue(makeCountBuilder(0));
 
-    const res = await GET();
+    const res = await GET(makeGetRequest());
     const json = await res.json();
     expect(json.weekly_resume_count).toBe(0);
     expect(json.weekly_window_ends_at).toBeNull();
@@ -83,7 +87,7 @@ describe('GET /api/billing/status', () => {
       .mockReturnValueOnce(makeBuilder({ data: userData, error: null }))
       .mockReturnValue(makeCountBuilder(0));
 
-    const res = await GET();
+    const res = await GET(makeGetRequest());
     const json = await res.json();
     expect(json.weekly_resume_count).toBe(3);
     expect(json.weekly_window_ends_at).not.toBeNull();
@@ -96,7 +100,7 @@ describe('GET /api/billing/status', () => {
       .mockReturnValueOnce(makeBuilder({ data: userData, error: null }))
       .mockReturnValue(makeCountBuilder(0));
 
-    const res = await GET();
+    const res = await GET(makeGetRequest());
     const json = await res.json();
     expect(json.weekly_window_ends_at).toMatch(/^\d{4}-\d{2}-\d{2}T/); // ISO date string
   });
@@ -106,7 +110,7 @@ describe('GET /api/billing/status', () => {
       .mockReturnValueOnce(makeBuilder({ data: null, error: null }))
       .mockReturnValue(makeCountBuilder(0));
 
-    const res = await GET();
+    const res = await GET(makeGetRequest());
     const json = await res.json();
     expect(json.subscription_status).toBe('free');
     expect(json.tailored_resume_count).toBe(0);
@@ -118,7 +122,7 @@ describe('GET /api/billing/status', () => {
       .mockReturnValueOnce(makeBuilder({ data: proUser, error: null }))
       .mockReturnValue(makeCountBuilder(10));
 
-    const res = await GET();
+    const res = await GET(makeGetRequest());
     const json = await res.json();
     expect(json.subscription_status).toBe('pro');
   });

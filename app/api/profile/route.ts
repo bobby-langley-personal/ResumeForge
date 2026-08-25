@@ -1,10 +1,11 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
+import { withApiLogging } from '@/lib/with-api-logging';
 
 export const runtime = 'nodejs';
 
-export async function GET() {
+export const GET = withApiLogging('/api/profile', async () => {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -16,9 +17,9 @@ export async function GET() {
     .single();
 
   return NextResponse.json(data ?? { full_name: '', email: '', location: '', linkedin_url: '' });
-}
+});
 
-export async function PUT(req: NextRequest) {
+export const PUT = withApiLogging('/api/profile', async (req: NextRequest) => {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -37,4 +38,4 @@ export async function PUT(req: NextRequest) {
   }
 
   return NextResponse.json(data);
-}
+});

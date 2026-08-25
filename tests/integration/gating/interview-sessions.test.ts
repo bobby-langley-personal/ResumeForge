@@ -11,7 +11,10 @@ vi.mock('@/lib/log-api', () => ({ logApiCall: vi.fn() }));
 vi.mock('@/lib/log-user-event', () => ({ logUserEvent: vi.fn() }));
 
 import { GET, POST } from '@/app/api/interview/sessions/route';
+import { NextRequest } from 'next/server';
 import { makeRequest, freeUser, proUser } from '../../mocks/fixtures';
+
+const makeGetRequest = () => new NextRequest('http://localhost/api/interview/sessions', { method: 'GET' });
 
 function makeBuilder(result: unknown) {
   const b: Record<string, unknown> = {};
@@ -38,13 +41,13 @@ describe('GET /api/interview/sessions', () => {
 
   it('returns 401 when unauthenticated', async () => {
     mockAuth.mockResolvedValue({ userId: null });
-    const res = await GET();
+    const res = await GET(makeGetRequest());
     expect(res.status).toBe(401);
   });
 
   it('returns session when found', async () => {
     mockFrom.mockReturnValue(makeBuilder({ data: SESSION, error: null }));
-    const res = await GET();
+    const res = await GET(makeGetRequest());
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.session.id).toBe(SESSION.id);
@@ -52,7 +55,7 @@ describe('GET /api/interview/sessions', () => {
 
   it('returns null session when none exists', async () => {
     mockFrom.mockReturnValue(makeBuilder({ data: null, error: null }));
-    const res = await GET();
+    const res = await GET(makeGetRequest());
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.session).toBeNull();

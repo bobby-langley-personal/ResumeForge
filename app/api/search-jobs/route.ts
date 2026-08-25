@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
+import { withApiLogging } from '@/lib/with-api-logging';
 
 export const runtime = 'nodejs';
 
@@ -45,7 +46,7 @@ async function checkAndIncrementUsage(supabase: ReturnType<typeof supabaseServer
   return { allowed: true };
 }
 
-export async function GET(req: NextRequest) {
+export const GET = withApiLogging('/api/search-jobs', async (req: NextRequest) => {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -100,4 +101,4 @@ export async function GET(req: NextRequest) {
   }));
 
   return NextResponse.json({ jobs });
-}
+});

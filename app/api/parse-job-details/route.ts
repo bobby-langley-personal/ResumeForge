@@ -2,8 +2,9 @@ import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 import { Anthropic } from '@anthropic-ai/sdk';
 import { getModels } from '@/lib/models';
+import { withApiLogging } from '@/lib/with-api-logging';
 
-export async function POST(req: NextRequest) {
+export const POST = withApiLogging('/api/parse-job-details', async (req: NextRequest) => {
   try {
     if (!process.env.ANTHROPIC_API_KEY) {
       return new Response('ANTHROPIC_API_KEY not set', { status: 500 });
@@ -70,4 +71,4 @@ Rules:
     console.error('[parse-job-details] Failed:', message);
     return new Response(message, { status: 500 });
   }
-}
+});

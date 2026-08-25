@@ -1,9 +1,11 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
+import { withApiLogging } from '@/lib/with-api-logging';
 
 // GET /api/applications/[id] — fetch content for PDF preview
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withApiLogging('/api/applications/[id]', async (_req: NextRequest, ctx: unknown) => {
+  const { params } = ctx as { params: Promise<{ id: string }> };
   const { userId } = await auth();
   if (!userId) return new Response('Unauthorized', { status: 401 });
   const { id } = await params;
@@ -30,10 +32,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     chatHistory: application.chat_history ?? null,
     candidateName,
   });
-}
+});
 
 // PATCH /api/applications/[id] — update specific fields (e.g. fit_analysis)
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withApiLogging('/api/applications/[id]', async (req: NextRequest, ctx: unknown) => {
+  const { params } = ctx as { params: Promise<{ id: string }> };
   const { userId } = await auth();
   if (!userId) return new Response('Unauthorized', { status: 401 });
   const { id } = await params;
@@ -55,10 +58,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   if (error) return new Response(error.message, { status: 500 });
   return new Response(null, { status: 204 });
-}
+});
 
 // DELETE /api/applications/[id]
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withApiLogging('/api/applications/[id]', async (_req: NextRequest, ctx: unknown) => {
+  const { params } = ctx as { params: Promise<{ id: string }> };
   const { userId } = await auth();
   if (!userId) return new Response('Unauthorized', { status: 401 });
   const { id } = await params;
@@ -72,4 +76,4 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
   if (error) return new Response(error.message, { status: 500 });
   return new Response(null, { status: 204 });
-}
+});

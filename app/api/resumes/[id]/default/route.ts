@@ -1,9 +1,11 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
+import { withApiLogging } from '@/lib/with-api-logging';
 
 // PATCH /api/resumes/[id]/default — set as default (clears others)
-export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withApiLogging('/api/resumes/[id]/default', async (_req: NextRequest, ctx: unknown) => {
+  const { params } = ctx as { params: Promise<{ id: string }> };
   const { userId } = await auth();
   if (!userId) return new Response('Unauthorized', { status: 401 });
   const { id } = await params;
@@ -35,4 +37,4 @@ export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ i
 
   if (error) return new Response(error.message, { status: 500 });
   return Response.json(data);
-}
+});

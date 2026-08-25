@@ -5,6 +5,7 @@ import { getModels } from '@/lib/models';
 import { supabaseServer } from '@/lib/supabase';
 import { logUserEvent } from '@/lib/log-user-event';
 import { InterviewPrep, InterviewPrepRequest } from '@/types/interview-prep';
+import { withApiLogging } from '@/lib/with-api-logging';
 
 export const runtime = 'nodejs';
 
@@ -34,7 +35,7 @@ Output ONLY valid JSON in this exact format, no markdown fences, no preamble:
   ]
 }`;
 
-export async function POST(req: NextRequest) {
+export const POST = withApiLogging('/api/interview-prep', async (req: NextRequest) => {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -141,4 +142,4 @@ ${generatedResume}${toughQuestions?.length ? `\n\nTOUGH APPLICATION QUESTIONS TO
     console.error('[interview-prep] Error:', err);
     return NextResponse.json({ error: 'Generation failed' }, { status: 500 });
   }
-}
+});

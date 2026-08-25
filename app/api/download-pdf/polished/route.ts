@@ -5,10 +5,11 @@ import { createElement } from 'react';
 import { supabaseServer } from '@/lib/supabase';
 import ResumePDF from '@/lib/pdf/ResumePDF';
 import { stripBlankTrailingPages } from '@/lib/pdf/strip-blank-pages';
+import { withApiLogging } from '@/lib/with-api-logging';
 
 export const runtime = 'nodejs';
 
-export async function POST(request: NextRequest) {
+export const POST = withApiLogging('/api/download-pdf/polished', async (request: NextRequest) => {
   try {
     const { userId } = await auth();
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -45,4 +46,4 @@ export async function POST(request: NextRequest) {
     console.error('[download-pdf/polished]', error);
     return NextResponse.json({ error: 'Failed to generate PDF' }, { status: 500 });
   }
-}
+});

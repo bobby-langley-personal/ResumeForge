@@ -7,9 +7,13 @@ const { mockAuth, mockFrom } = vi.hoisted(() => ({
 
 vi.mock('@clerk/nextjs/server', () => ({ auth: mockAuth }));
 vi.mock('@/lib/supabase', () => ({ supabaseServer: () => ({ from: mockFrom }) }));
+vi.mock('@/lib/log-api', () => ({ logApiCall: vi.fn() }));
 
 import { GET, PUT } from '@/app/api/profile/route';
+import { NextRequest } from 'next/server';
 import { makeRequest, freeUser } from '../../mocks/fixtures';
+
+const makeGetRequest = () => new NextRequest('http://localhost/api/profile', { method: 'GET' });
 
 const PROFILE = { full_name: 'John Doe', email: 'john@example.com', location: 'New York, NY', linkedin_url: 'https://linkedin.com/in/johndoe' };
 
@@ -32,13 +36,13 @@ describe('GET /api/profile', () => {
 
   it('returns 401 when unauthenticated', async () => {
     mockAuth.mockResolvedValue({ userId: null });
-    const res = await GET();
+    const res = await GET(makeGetRequest());
     expect(res.status).toBe(401);
   });
 
   it('returns profile when it exists', async () => {
     mockFrom.mockReturnValue(makeBuilder({ data: PROFILE, error: null }));
-    const res = await GET();
+    const res = await GET(makeGetRequest());
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.full_name).toBe('John Doe');
@@ -47,7 +51,7 @@ describe('GET /api/profile', () => {
 
   it('returns empty defaults when no profile exists', async () => {
     mockFrom.mockReturnValue(makeBuilder({ data: null, error: null }));
-    const res = await GET();
+    const res = await GET(makeGetRequest());
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.full_name).toBe('');

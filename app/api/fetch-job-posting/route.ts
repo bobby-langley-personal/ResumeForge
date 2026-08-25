@@ -5,6 +5,7 @@ import { NextRequest } from 'next/server';
 import { Anthropic } from '@anthropic-ai/sdk';
 import { getModels } from '@/lib/models';
 import { parseStageJSON } from '@/lib/pipeline-utils';
+import { withApiLogging } from '@/lib/with-api-logging';
 
 const TRUNCATE_AT = [
   'Apply for this job',
@@ -110,7 +111,7 @@ function detectJobTitle(html: string): string | undefined {
   return undefined;
 }
 
-export async function POST(req: NextRequest) {
+export const POST = withApiLogging('/api/fetch-job-posting', async (req: NextRequest) => {
   const { userId } = await auth();
   if (!userId) return new Response('Unauthorized', { status: 401 });
 
@@ -260,4 +261,4 @@ If none qualify, return {"questions": []}`,
 
   console.log('[fetch-job-posting] Final JD length:', jobDescription.length);
   return Response.json({ jobDescription, company, jobTitle, detectedQuestions });
-}
+});

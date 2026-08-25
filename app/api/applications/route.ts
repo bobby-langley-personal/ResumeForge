@@ -1,9 +1,10 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
+import { withApiLogging } from '@/lib/with-api-logging';
 
 // DELETE /api/applications — bulk delete by ids
-export async function DELETE(req: NextRequest) {
+export const DELETE = withApiLogging('/api/applications', async (req: NextRequest) => {
   const { userId } = await auth();
   if (!userId) return new Response('Unauthorized', { status: 401 });
 
@@ -21,4 +22,4 @@ export async function DELETE(req: NextRequest) {
 
   if (error) return new Response(error.message, { status: 500 });
   return new Response(null, { status: 204 });
-}
+});

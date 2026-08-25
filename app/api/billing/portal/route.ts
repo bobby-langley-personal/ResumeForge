@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { stripe } from '@/lib/stripe';
 import { supabaseServer } from '@/lib/supabase';
+import { withApiLogging } from '@/lib/with-api-logging';
 
 export const runtime = 'nodejs';
 
-export async function POST(_req: NextRequest): Promise<NextResponse> {
+export const POST = withApiLogging('/api/billing/portal', async (_req: NextRequest): Promise<NextResponse> => {
   try {
     const { userId } = await auth();
     if (!userId) {
@@ -34,4 +35,4 @@ export async function POST(_req: NextRequest): Promise<NextResponse> {
     const message = err instanceof Error ? err.message : 'Portal failed';
     return NextResponse.json({ error: message }, { status: 500 });
   }
-}
+});

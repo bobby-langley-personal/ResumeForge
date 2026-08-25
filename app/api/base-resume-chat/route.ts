@@ -2,13 +2,14 @@ import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 import { Anthropic } from '@anthropic-ai/sdk';
 import { getModels } from '@/lib/models';
+import { withApiLogging } from '@/lib/with-api-logging';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
 }
 
-export async function POST(req: NextRequest) {
+export const POST = withApiLogging('/api/base-resume-chat', async (req: NextRequest) => {
   try {
     const { userId } = await auth();
     if (!userId) return new Response('Unauthorized', { status: 401 });
@@ -104,4 +105,4 @@ When writing ANSWER:, GAP_REPORT:, or change summaries, you may use markdown for
     console.error('[base-resume-chat]', msg);
     return new Response(msg, { status: 500 });
   }
-}
+});

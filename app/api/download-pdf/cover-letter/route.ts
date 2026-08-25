@@ -5,10 +5,11 @@ import { createElement } from 'react'
 import { supabaseServer } from '@/lib/supabase'
 import CoverLetterPDF from '@/lib/pdf/CoverLetterPDF'
 import { stripBlankTrailingPages } from '@/lib/pdf/strip-blank-pages'
+import { withApiLogging } from '@/lib/with-api-logging'
 
 export const runtime = 'nodejs'
 
-export async function POST(request: NextRequest) {
+export const POST = withApiLogging('/api/download-pdf/cover-letter', async (request: NextRequest) => {
   try {
     const { userId } = await auth()
     if (!userId) {
@@ -73,4 +74,4 @@ export async function POST(request: NextRequest) {
     console.error('PDF generation error:', error)
     return NextResponse.json({ error: 'Failed to generate PDF' }, { status: 500 })
   }
-}
+});

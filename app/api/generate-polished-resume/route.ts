@@ -3,8 +3,9 @@ import { NextRequest } from 'next/server';
 import { Anthropic } from '@anthropic-ai/sdk';
 import { getModels } from '@/lib/models';
 import { supabaseServer } from '@/lib/supabase';
+import { withApiLogging } from '@/lib/with-api-logging';
 
-export async function POST(req: NextRequest) {
+export const POST = withApiLogging('/api/generate-polished-resume', async (req: NextRequest) => {
   try {
     const { userId } = await auth();
     if (!userId) return new Response('Unauthorized', { status: 401 });
@@ -117,4 +118,4 @@ EDUCATION:
     console.error('[generate-polished-resume]', msg);
     return new Response(msg, { status: 500 });
   }
-}
+});

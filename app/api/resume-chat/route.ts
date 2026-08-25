@@ -4,6 +4,7 @@ import { Anthropic } from '@anthropic-ai/sdk';
 import { getModels } from '@/lib/models';
 import { supabaseServer } from '@/lib/supabase';
 import { logUserEvent } from '@/lib/log-user-event';
+import { withApiLogging } from '@/lib/with-api-logging';
 
 export const runtime = 'nodejs';
 
@@ -71,7 +72,7 @@ interface ChatMessage {
   content: string;
 }
 
-export async function POST(req: NextRequest) {
+export const POST = withApiLogging('/api/resume-chat', async (req: NextRequest) => {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -187,4 +188,4 @@ ${originalResumeText && originalResumeText !== currentResumeText ? `\nORIGINAL R
     console.error('[resume-chat]', err);
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
-}
+});

@@ -7,9 +7,13 @@ const { mockAuth, mockFrom } = vi.hoisted(() => ({
 
 vi.mock('@clerk/nextjs/server', () => ({ auth: mockAuth }));
 vi.mock('@/lib/supabase', () => ({ supabaseServer: () => ({ from: mockFrom }) }));
+vi.mock('@/lib/log-api', () => ({ logApiCall: vi.fn() }));
 
 import { GET, POST } from '@/app/api/resumes/route';
+import { NextRequest } from 'next/server';
 import { makeRequest, freeUser } from '../../mocks/fixtures';
+
+const makeGetRequest = () => new NextRequest('http://localhost/api/resumes', { method: 'GET' });
 
 const RESUMES = [
   { id: 'r1', user_id: freeUser.id, title: 'My Resume', content: { text: 'Experience...' }, item_type: 'resume', is_default: true, created_at: '2026-01-01', updated_at: '2026-01-01' },
@@ -37,7 +41,7 @@ describe('GET /api/resumes', () => {
 
   it('returns 401 when unauthenticated', async () => {
     mockAuth.mockResolvedValue({ userId: null });
-    const res = await GET();
+    const res = await GET(makeGetRequest());
     expect(res.status).toBe(401);
   });
 
@@ -45,7 +49,7 @@ describe('GET /api/resumes', () => {
     const builder = makeBuilder({ data: RESUMES, error: null });
     mockFrom.mockReturnValue(builder);
 
-    const res = await GET();
+    const res = await GET(makeGetRequest());
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(Array.isArray(json)).toBe(true);
@@ -57,7 +61,7 @@ describe('GET /api/resumes', () => {
     const builder = makeBuilder({ data: [], error: null });
     mockFrom.mockReturnValue(builder);
 
-    const res = await GET();
+    const res = await GET(makeGetRequest());
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json).toEqual([]);
@@ -68,7 +72,7 @@ describe('GET /api/resumes', () => {
     const builder = makeBuilder({ data: withStringContent, error: null });
     mockFrom.mockReturnValue(builder);
 
-    const res = await GET();
+    const res = await GET(makeGetRequest());
     const json = await res.json();
     expect(json[0].content).toEqual({ text: 'Parsed' });
   });

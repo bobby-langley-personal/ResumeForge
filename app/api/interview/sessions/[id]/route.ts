@@ -5,14 +5,16 @@ import { auth } from '@clerk/nextjs/server';
 import { supabaseServer } from '@/lib/supabase';
 import { logUserEvent } from '@/lib/log-user-event';
 import type { Json } from '@/types/database';
+import { withApiLogging } from '@/lib/with-api-logging';
 
 const FREE_ROLE_LIMIT = Number(process.env.FREE_INTERVIEW_ROLE_LIMIT ?? 2);
 
 // PATCH /api/interview/sessions/[id] — update session state
-export async function PATCH(
+export const PATCH = withApiLogging('/api/interview/sessions/[id]', async (
   req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+  ctx: unknown
+) => {
+  const { params } = ctx as { params: { id: string } };
   const { userId } = await auth();
   if (!userId) return new Response('Unauthorized', { status: 401 });
 
@@ -82,13 +84,14 @@ export async function PATCH(
 
   if (error) return new Response(error.message, { status: 500 });
   return new Response(null, { status: 204 });
-}
+});
 
 // DELETE /api/interview/sessions/[id] — delete a session
-export async function DELETE(
+export const DELETE = withApiLogging('/api/interview/sessions/[id]', async (
   _req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+  ctx: unknown
+) => {
+  const { params } = ctx as { params: { id: string } };
   const { userId } = await auth();
   if (!userId) return new Response('Unauthorized', { status: 401 });
 
@@ -101,4 +104,4 @@ export async function DELETE(
 
   if (error) return new Response(error.message, { status: 500 });
   return new Response(null, { status: 204 });
-}
+});

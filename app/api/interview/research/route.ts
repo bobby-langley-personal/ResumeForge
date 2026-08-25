@@ -4,8 +4,9 @@ import { NextRequest } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { Anthropic } from '@anthropic-ai/sdk';
 import { getModels } from '@/lib/models';
+import { withApiLogging } from '@/lib/with-api-logging';
 
-export async function POST(req: NextRequest) {
+export const POST = withApiLogging('/api/interview/research', async (req: NextRequest) => {
   const { userId } = await auth();
   if (!userId) return new Response('Unauthorized', { status: 401 });
 
@@ -41,4 +42,4 @@ Be specific and factual. If the company is not well-known, infer from the name a
   if (content.type !== 'text') return new Response('Unexpected AI response', { status: 500 });
 
   return Response.json({ summary: content.text });
-}
+});

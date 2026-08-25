@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { supabaseServer } from '@/lib/supabase';
+import { withApiLogging } from '@/lib/with-api-logging';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET(): Promise<NextResponse> {
+export const GET = withApiLogging('/api/billing/status', async (): Promise<NextResponse> => {
   try {
     const { userId } = await auth();
     if (!userId) {
@@ -46,4 +47,4 @@ export async function GET(): Promise<NextResponse> {
     console.error('[/api/billing/status]', err);
     return NextResponse.json({ error: 'Failed to fetch status' }, { status: 500 });
   }
-}
+});
