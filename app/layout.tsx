@@ -49,9 +49,6 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
         >
           <UserSync />
-          <div className="w-full bg-amber-500 text-black text-xs font-medium text-center py-2 px-4">
-            ⚠ We&apos;re experiencing issues with resume uploads and are working on a fix. Sorry for the inconvenience!
-          </div>
           {children}
           <Footer />
         </body>
