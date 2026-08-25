@@ -16,7 +16,21 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_APP_VERSION: `${major}.${yy}${m}.${dd}${h}`,
   },
-  serverExternalPackages: ['pdf-parse'],
+  serverExternalPackages: ['pdf-parse', 'pdfjs-dist'],
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals = [
+        ...(Array.isArray(config.externals) ? config.externals : [config.externals]),
+        ({ request }, callback) => {
+          if (request && request.includes('pdfjs-dist')) {
+            return callback(null, 'commonjs ' + request);
+          }
+          callback();
+        },
+      ];
+    }
+    return config;
+  },
 };
 
 export default nextConfig;
