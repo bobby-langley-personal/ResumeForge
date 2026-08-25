@@ -2,11 +2,12 @@ export const runtime = 'nodejs';
 
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
+import { withApiLogging } from '@/lib/with-api-logging';
 
 const pdf = require('pdf-parse/lib/pdf-parse');
 const mammoth = require('mammoth');
 
-export async function POST(req: NextRequest) {
+export const POST = withApiLogging('/api/extract-resume', async (req: NextRequest) => {
   console.log('[extract-resume] Request received');
   
   try {
@@ -77,4 +78,4 @@ export async function POST(req: NextRequest) {
     console.error('[extract-resume] API error:', error);
     return new Response('Internal server error', { status: 500 });
   }
-}
+});
