@@ -55,6 +55,7 @@ interface ParsedResume {
     location: string;
     degree: string;
   }>;
+  certifications: string[];
 }
 
 function makeStyles(compact: boolean) {
@@ -216,6 +217,7 @@ function parseResumeText(resumeText: string): ParsedResume {
     projects: [],
     skills: [],
     education: [],
+    certifications: [],
   };
 
   let currentSection = '';
@@ -242,21 +244,47 @@ function parseResumeText(resumeText: string): ParsedResume {
       continue;
     }
 
-    // Also detect inline LinkedIn URLs in header lines (first 10 lines)
-    if (i < 10 && !parsed.header.linkedin) {
-      const linkedInMatch = line.match(/linkedin\.com\/in\/[\w-]+/i);
-      if (linkedInMatch) {
-        parsed.header.linkedin = linkedInMatch[0];
+    // Inline contact detection in pre-section header lines (first 15 lines)
+    if (!currentSection && i < 15) {
+      if (!parsed.header.phone) {
+        const phoneMatch = line.match(/\(?\d{3}\)?[\s.\-]\d{3}[\s.\-]\d{4}/);
+        if (phoneMatch) parsed.header.phone = phoneMatch[0].trim();
+      }
+      if (!parsed.header.email) {
+        const emailMatch = line.match(/[\w.+\-]+@[\w\-]+\.[a-z]{2,}/i);
+        if (emailMatch) parsed.header.email = emailMatch[0];
+      }
+      if (!parsed.header.linkedin) {
+        const linkedInMatch = line.match(/linkedin\.com\/in\/[\w\-]+/i);
+        if (linkedInMatch) parsed.header.linkedin = linkedInMatch[0];
+      }
+      if (!parsed.header.location) {
+        const locMatch = line.match(/^([A-Z][a-zA-Z\s]+,\s*[A-Z]{2})\b/);
+        if (locMatch) parsed.header.location = locMatch[0].trim();
+      }
+      // First non-empty, non-contact, non-section line is the name
+      if (!parsed.header.name && !line.match(/[@\d|]/)) {
+        parsed.header.name = line.replace(/[*#`_~]/g, '').trim();
       }
     }
 
+    // Also detect inline LinkedIn URLs in header lines (first 10 lines, keep for AI format)
+    if (i < 10 && !parsed.header.linkedin) {
+      const linkedInMatch = line.match(/linkedin\.com\/in\/[\w-]+/i);
+      if (linkedInMatch) parsed.header.linkedin = linkedInMatch[0];
+    }
+
     // Section headers — normalize to handle AI format drift (missing colon, markdown
-    // bold, alternate names like "Professional Experience", etc.)
+    // bold, alternate names like "Work History", "Employment", etc.)
     const sectionKey = line.replace(/[*#`_~]/g, '').replace(/:+$/, '').trim().toUpperCase();
-    if (sectionKey === 'SUMMARY' || sectionKey === 'PROFESSIONAL SUMMARY') {
+    if (sectionKey === 'SUMMARY' || sectionKey === 'PROFESSIONAL SUMMARY' ||
+        sectionKey === 'OBJECTIVE' || sectionKey === 'CAREER OBJECTIVE' || sectionKey === 'PROFILE') {
       currentSection = 'summary'; continue;
     }
-    if (sectionKey === 'EXPERIENCE' || sectionKey === 'PROFESSIONAL EXPERIENCE' || sectionKey === 'WORK EXPERIENCE') {
+    if (sectionKey === 'EXPERIENCE' || sectionKey === 'PROFESSIONAL EXPERIENCE' ||
+        sectionKey === 'WORK EXPERIENCE' || sectionKey === 'WORK HISTORY' ||
+        sectionKey === 'EMPLOYMENT HISTORY' || sectionKey === 'EMPLOYMENT' ||
+        sectionKey === 'RELEVANT EXPERIENCE' || sectionKey === 'CAREER HISTORY') {
       currentSection = 'experience'; continue;
     }
     if (sectionKey === 'PROJECTS' || sectionKey === 'PERSONAL PROJECTS' || sectionKey === 'SIDE PROJECTS') {
@@ -265,15 +293,24 @@ function parseResumeText(resumeText: string): ParsedResume {
       currentSection = 'projects';
       continue;
     }
-    if (sectionKey === 'SKILLS' || sectionKey === 'TECHNICAL SKILLS' || sectionKey === 'CORE SKILLS' || sectionKey === 'SKILLS & EXPERTISE') {
+    if (sectionKey === 'SKILLS' || sectionKey === 'TECHNICAL SKILLS' || sectionKey === 'CORE SKILLS' ||
+        sectionKey === 'SKILLS & EXPERTISE' || sectionKey === 'KEY SKILLS' || sectionKey === 'AREAS OF EXPERTISE' ||
+        sectionKey === 'CORE COMPETENCIES' || sectionKey === 'COMPETENCIES' || sectionKey === 'TECHNOLOGIES' ||
+        sectionKey === 'TOOLS & TECHNOLOGIES' || sectionKey === 'TOOLS AND TECHNOLOGIES') {
       if (currentGroup) { parsed.experience.push(currentGroup); currentGroup = null; }
       if (currentProject) { parsed.projects.push(currentProject); currentProject = null; }
       currentSection = 'skills';
       continue;
     }
-    if (sectionKey === 'EDUCATION') {
+    if (sectionKey === 'EDUCATION' || sectionKey === 'EDUCATION & TRAINING' || sectionKey === 'ACADEMIC BACKGROUND') {
       if (currentGroup) { parsed.experience.push(currentGroup); currentGroup = null; }
       currentSection = 'education';
+      continue;
+    }
+    if (sectionKey === 'CERTIFICATIONS' || sectionKey === 'CERTIFICATES' || sectionKey === 'LICENSES' ||
+        sectionKey === 'AWARDS' || sectionKey === 'HONORS' || sectionKey === 'ACHIEVEMENTS') {
+      if (currentGroup) { parsed.experience.push(currentGroup); currentGroup = null; }
+      currentSection = 'certifications';
       continue;
     }
 
@@ -360,15 +397,29 @@ function parseResumeText(resumeText: string): ParsedResume {
         break;
       }
 
-      case 'skills':
+      case 'skills': {
         if (line.includes(':')) {
+          // Category: item1, item2 format
           const colonIndex = line.indexOf(':');
           const category = line.slice(0, colonIndex).trim();
           const skillsStr = line.slice(colonIndex + 1);
-          const skills = skillsStr.split(',').map(s => s.trim()).filter(Boolean);
-          parsed.skills.push({ category, items: skills });
+          const skills = skillsStr.split(/[,•|]/).map(s => s.trim()).filter(Boolean);
+          if (skills.length > 0) parsed.skills.push({ category, items: skills });
+        } else {
+          // Flat list: comma-separated, bullet-separated, or plain line
+          const items = line.replace(/^[•\-]\s*/, '').split(/[,•|]/).map(s => s.trim()).filter(Boolean);
+          if (items.length > 0) {
+            // Append to last skills group if it has no category, else create new one
+            const last = parsed.skills[parsed.skills.length - 1];
+            if (last && last.category === '') {
+              last.items.push(...items);
+            } else {
+              parsed.skills.push({ category: '', items });
+            }
+          }
         }
         break;
+      }
 
       case 'education':
         if (line.includes(' | ')) {
@@ -380,8 +431,21 @@ function parseResumeText(resumeText: string): ParsedResume {
             degree: nextLine?.trim() || '',
           });
           if (nextLine) i++;
-        } else if (parsed.education.length === 0) {
-          parsed.education.push({ institution: line, location: '', degree: '' });
+        } else if (parsed.education.length === 0 || !looksLikeDateRange(line)) {
+          if (parsed.education.length === 0) {
+            parsed.education.push({ institution: line, location: '', degree: '' });
+          } else {
+            const last = parsed.education[parsed.education.length - 1];
+            if (!last.degree) last.degree = line;
+          }
+        }
+        break;
+
+      case 'certifications':
+        if (!line.startsWith('•') && !line.startsWith('-')) {
+          parsed.certifications.push(line);
+        } else {
+          parsed.certifications.push(line.replace(/^[•\-]\s*/, '').trim());
         }
         break;
     }
@@ -510,17 +574,35 @@ export default function ResumePDF({ resumeText, candidateName, company, jobTitle
         {/* Skills */}
         {parsed.skills.length > 0 && (
           <View style={{ flexShrink: 1, width: '100%' }}>
-            {/* Header + first skills line kept together — prevents orphaned section title */}
             <View wrap={false}>
               <Text style={styles.sectionTitle}>Skills</Text>
               <Text style={styles.skillsList} wrap={true}>
-                <Text style={styles.jobTitle}>{parsed.skills[0].category}:</Text> {parsed.skills[0].items.join(', ')}
+                {parsed.skills[0].category
+                  ? <><Text style={styles.jobTitle}>{parsed.skills[0].category}:</Text> {parsed.skills[0].items.join(', ')}</>
+                  : parsed.skills[0].items.join(', ')
+                }
               </Text>
             </View>
             {parsed.skills.slice(1).map((skillGroup, index) => (
               <Text key={index + 1} style={styles.skillsList} wrap={true}>
-                <Text style={styles.jobTitle}>{skillGroup.category}:</Text> {skillGroup.items.join(', ')}
+                {skillGroup.category
+                  ? <><Text style={styles.jobTitle}>{skillGroup.category}:</Text> {skillGroup.items.join(', ')}</>
+                  : skillGroup.items.join(', ')
+                }
               </Text>
+            ))}
+          </View>
+        )}
+
+        {/* Certifications */}
+        {parsed.certifications.length > 0 && (
+          <View style={{ flexShrink: 1, width: '100%' }}>
+            <View wrap={false}>
+              <Text style={styles.sectionTitle}>Certifications</Text>
+              <Text style={styles.text} wrap={true}>{parsed.certifications[0]}</Text>
+            </View>
+            {parsed.certifications.slice(1).map((cert, index) => (
+              <Text key={index + 1} style={styles.text} wrap={true}>{cert}</Text>
             ))}
           </View>
         )}
