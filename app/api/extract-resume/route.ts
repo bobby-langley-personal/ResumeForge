@@ -3,7 +3,7 @@ export const runtime = 'nodejs';
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 
-const pdf = require('pdf-parse');
+const pdf = require('pdf-parse/lib/pdf-parse');
 const mammoth = require('mammoth');
 
 export async function POST(req: NextRequest) {
