@@ -1,17 +1,11 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 
-Font.register({
-  family: 'Inter',
-  fonts: [
-    { src: 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff', fontWeight: 400 },
-    { src: 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuGKYAZ9hiJ-Ek-_EeA.woff', fontWeight: 700 },
-  ],
-});
-
+// Use built-in PDF fonts — @react-pdf/renderer only supports .ttf/.otf,
+// not .woff/.woff2, so external Google Fonts CDN links cause "Unknown font format".
 const styles = StyleSheet.create({
   page: {
-    fontFamily: 'Inter',
+    fontFamily: 'Helvetica',
     fontSize: 10.5,
     color: '#1a1a1a',
     paddingTop: 48,
@@ -22,7 +16,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 14,
-    fontWeight: 700,
+    fontFamily: 'Helvetica-Bold',
     marginBottom: 16,
     color: '#111',
   },
