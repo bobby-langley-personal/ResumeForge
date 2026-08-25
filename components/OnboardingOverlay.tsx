@@ -150,11 +150,11 @@ export default function OnboardingOverlay({ variant, onDismiss }: Props) {
         </span>
       </div>
 
-      <div className="flex-1 flex items-start sm:items-center justify-center px-4 py-12">
-        <div className="w-full max-w-2xl space-y-10">
+      <div className="flex-1 flex items-start sm:items-center justify-center px-4 py-6 sm:py-10">
+        <div className="w-full max-w-2xl space-y-6">
 
           {/* Heading */}
-          <div className="text-center space-y-3">
+          <div className="text-center space-y-2">
             <div className="inline-flex items-center gap-2 bg-blue-500/10 text-blue-500 text-xs font-semibold px-3 py-1.5 rounded-full border border-blue-500/20">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
               One quick thing before you start
@@ -170,7 +170,7 @@ export default function OnboardingOverlay({ variant, onDismiss }: Props) {
           </div>
 
           {/* The key insight */}
-          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-6 sm:p-8 text-center space-y-3">
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 text-center space-y-2">
             <Library className="w-9 h-9 text-amber-500 mx-auto" />
             <p className="text-lg sm:text-xl font-semibold text-foreground leading-snug">
               Your tailored resumes will only be as good as the experience you share with us.
@@ -232,20 +232,8 @@ export default function OnboardingOverlay({ variant, onDismiss }: Props) {
             </div>
           </div>
 
-          {/* ATS badge */}
-          <div className="flex justify-center">
-            <button
-              onClick={() => setShowATS(true)}
-              className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/25 hover:border-emerald-500/50 text-emerald-500 hover:text-emerald-400 text-xs font-medium px-4 py-2 rounded-full transition-colors"
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              ATS-formatted output
-              <sup className="text-[10px] font-bold -mt-1">*</sup>
-            </button>
-          </div>
-
           {/* CTA */}
-          <div className="flex flex-col items-center gap-4 pt-2">
+          <div className="flex flex-col items-center gap-3">
             <button
               onClick={() => { logEvent('onboarding_overlay_add_clicked'); onDismiss(); }}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-3.5 rounded-xl transition-colors text-base shadow-lg shadow-blue-600/25"

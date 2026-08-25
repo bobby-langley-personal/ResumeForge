@@ -70,12 +70,14 @@ export const POST = withApiLogging('/api/extract-resume', async (req: NextReques
       });
 
     } catch (extractError) {
+      const msg = extractError instanceof Error ? extractError.message : String(extractError);
       console.error('[extract-resume] Text extraction failed:', extractError);
-      return new Response('Failed to extract text from file', { status: 500 });
+      // Surface error in admin logs via withApiLogging by throwing
+      throw new Error(`PDF extraction failed: ${msg}`);
     }
 
   } catch (error) {
-    console.error('[extract-resume] API error:', error);
-    return new Response('Internal server error', { status: 500 });
+    // Re-throw so withApiLogging captures it in api_logs
+    throw error;
   }
 });
