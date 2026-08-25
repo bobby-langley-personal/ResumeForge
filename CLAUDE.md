@@ -480,6 +480,18 @@ Contact info is stored in `user_profiles` (one row per user, upserted — not in
 
 ---
 
+## Next.js Version — Config Key Gotchas
+
+**This project runs Next.js 14.2.x on Vercel.** Several config keys changed between Next.js 14 and 15. Using the wrong key causes **silent no-ops** — Next.js prints a warning but does not error, so the setting is just ignored in production.
+
+| What you want | Next.js 14 key (this project) | Next.js 15+ key (WRONG — silent no-op on this project) |
+|---|---|---|
+| Exclude packages from webpack server bundle | `experimental.serverComponentsExternalPackages: ['pkg']` | `serverExternalPackages: ['pkg']` |
+
+**Lesson learned (Aug 2025):** Three consecutive failed attempts to fix PDF extraction on Vercel were caused by `serverExternalPackages` (Next.js 15 key) being silently ignored. Webpack was bundling `pdf-parse` on every Vercel build, corrupting its internal pdfjs. The correct key `experimental.serverComponentsExternalPackages` fixed it immediately.
+
+**Rule:** Before adding any top-level `next.config.mjs` key, verify it exists in the Next.js 14 docs, not just the latest docs.
+
 ## Branch Naming
 
 All feature/fix branches: `claude/issue-{number}-{YYYYMMDD}-{HHMM}` — Vercel skips deployment on non-main branches.
