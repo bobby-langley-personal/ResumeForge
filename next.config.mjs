@@ -17,7 +17,7 @@ const nextConfig = {
     NEXT_PUBLIC_APP_VERSION: `${major}.${yy}${m}.${dd}${h}`,
   },
   experimental: {
-    serverComponentsExternalPackages: ['pdf-parse'],
+    serverComponentsExternalPackages: ['pdf-parse', 'pdfjs-dist'],
   },
 };
 

@@ -4,8 +4,57 @@ import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 import { withApiLogging } from '@/lib/with-api-logging';
 
-const pdf = require('pdf-parse/lib/pdf-parse');
+const path = require('path');
 const mammoth = require('mammoth');
+
+// Lazy-init pdfjs-dist v3 (CommonJS build). We use path.join(process.cwd(), ...)
+// for the worker path instead of require.resolve() — webpack intercepts
+// require.resolve and returns a module ID (not a file path) even when the
+// package is marked external, which breaks pdfjs's workerSrc validation.
+let _pdfjs: typeof import('pdfjs-dist') | null = null;
+function getPdfjs() {
+  if (!_pdfjs) {
+    _pdfjs = require('pdfjs-dist/legacy/build/pdf.js');
+    _pdfjs!.GlobalWorkerOptions.workerSrc = path.join(
+      process.cwd(),
+      'node_modules/pdfjs-dist/legacy/build/pdf.worker.js'
+    );
+  }
+  return _pdfjs!;
+}
+
+async function extractPdfText(buffer: Buffer): Promise<string> {
+  const pdfjs = getPdfjs();
+  const data = new Uint8Array(buffer);
+  // eslint-disable-next-line
+  const doc = await (pdfjs.getDocument as any)({
+    data,
+    useWorkerFetch: false,
+    useSystemFonts: true,
+    stopAtErrors: false,
+  }).promise;
+
+  let text = '';
+  for (let i = 1; i <= doc.numPages; i++) {
+    try {
+      const page = await doc.getPage(i);
+      const content = await page.getTextContent();
+      let lastY: number | null = null;
+      for (const item of content.items as Array<{ str: string; transform: number[] }>) {
+        if (lastY === null || lastY === item.transform[5]) {
+          text += item.str;
+        } else {
+          text += '\n' + item.str;
+        }
+        lastY = item.transform[5];
+      }
+      text += '\n\n';
+    } catch {
+      // skip unreadable pages
+    }
+  }
+  return text;
+}
 
 export const POST = withApiLogging('/api/extract-resume', async (req: NextRequest) => {
   console.log('[extract-resume] Request received');
@@ -48,8 +97,7 @@ export const POST = withApiLogging('/api/extract-resume', async (req: NextReques
       const buffer = Buffer.from(await file.arrayBuffer());
 
       if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-        const data = await pdf(buffer);
-        extractedText = data.text;
+        extractedText = await extractPdfText(buffer);
 
       } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
                  file.name.toLowerCase().endsWith('.docx')) {
