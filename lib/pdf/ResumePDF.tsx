@@ -325,7 +325,6 @@ function parseResumeText(resumeText: string): ParsedResume {
 
           if (parts.length >= 3) {
             // Legacy format backward compat: "Company | Location | Dates"
-            // Start a new company group; dates roll into first role for fallback display
             if (currentGroup) parsed.experience.push(currentGroup);
             currentGroup = {
               company: parts[0].trim(),
@@ -334,38 +333,39 @@ function parseResumeText(resumeText: string): ParsedResume {
             };
           } else if (parts.length === 2) {
             if (looksLikeDateRange(parts[1])) {
-              // New format role line: "Job Title | Dates"
+              // Role line: "Job Title | Dates"
               if (currentGroup) {
-                // If there's an empty-title placeholder (from legacy 3-part company line), fill it
                 const last = currentGroup.roles[currentGroup.roles.length - 1];
                 if (last && !last.title) {
                   last.title = parts[0].trim();
-                  // Keep the dates from the company line if we don't have per-role dates yet
-                  if (!last.dates) last.dates = parts[1].trim();
-                  else last.dates = parts[1].trim(); // prefer per-role dates
+                  last.dates = parts[1].trim();
                 } else {
                   currentGroup.roles.push({ title: parts[0].trim(), dates: parts[1].trim(), bulletPoints: [] });
                 }
               }
             } else {
-              // New format company line: "Company | Location"
+              // Company line: "Company | Location"
               if (currentGroup) parsed.experience.push(currentGroup);
               currentGroup = { company: parts[0].trim(), location: parts[1].trim(), roles: [] };
             }
           }
-        } else if ((line.startsWith('•') || line.startsWith('-')) && currentGroup?.roles.length) {
-          // Bullet point — strip leading • or -
-          const lastRole = currentGroup.roles[currentGroup.roles.length - 1];
-          lastRole.bulletPoints.push(line.replace(/^[•\-]\s*/, '').trim());
-        } else if (currentGroup) {
-          // Plain line — job title for the latest role if it has no title yet,
-          // or start a new title-only role if no roles exist yet
-          if (currentGroup.roles.length === 0) {
-            currentGroup.roles.push({ title: line, dates: '', bulletPoints: [] });
-          } else {
+        } else if (currentGroup?.roles.length) {
+          // Any non-pipe line when we have an active role — treat as bullet.
+          // PDFs use many bullet chars (•, ◦, ▪, ▸, *, -, custom glyphs) or none at all.
+          // Strip any leading bullet-like character and treat the content as a bullet point.
+          const stripped = line.replace(/^[\s\u2022\u25E6\u25AA\u25B8\u2192\u00B7•◦▪▸→·\-\*–—]+/, '').trim();
+          if (stripped && !looksLikeDateRange(stripped)) {
             const lastRole = currentGroup.roles[currentGroup.roles.length - 1];
-            if (!lastRole.title) lastRole.title = line;
+            // If this line looks like a standalone date, update the role dates instead
+            if (looksLikeDateRange(line) && !lastRole.dates) {
+              lastRole.dates = line.trim();
+            } else if (stripped) {
+              lastRole.bulletPoints.push(stripped);
+            }
           }
+        } else if (currentGroup) {
+          // Company set but no roles yet — this line is the job title
+          currentGroup.roles.push({ title: line, dates: '', bulletPoints: [] });
         }
         break;
       }
