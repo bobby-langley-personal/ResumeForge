@@ -55,7 +55,7 @@ export default function AdminEventsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const [filterEvent, setFilterEvent] = useState('');
-  const [filterUserId, setFilterUserId] = useState('');
+  const [filterSearch, setFilterSearch] = useState('');
   const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback((p: number) => {
@@ -67,7 +67,7 @@ export default function AdminEventsPage() {
     setLoading(true);
     const params = new URLSearchParams({ page: String(p), days: String(days) });
     if (filterEvent) params.set('event', filterEvent);
-    if (filterUserId) params.set('userId', filterUserId);
+    if (filterSearch) params.set('q', filterSearch);
     fetch(`/api/admin/events?${params}`, { headers: { 'x-admin-secret': secret }, signal: controller.signal })
       .then(r => r.json())
       .then(data => {
@@ -78,7 +78,7 @@ export default function AdminEventsPage() {
       })
       .catch(err => { if (err.name !== 'AbortError') console.error(err); })
       .finally(() => setLoading(false));
-  }, [secret, filterEvent, filterUserId, days]);
+  }, [secret, filterEvent, filterSearch, days]);
 
   useEffect(() => { load(1); }, [load]);
 
@@ -173,14 +173,14 @@ export default function AdminEventsPage() {
         />
         <input
           type="text"
-          placeholder="Filter by user ID"
-          value={filterUserId}
-          onChange={e => setFilterUserId(e.target.value)}
+          placeholder="Search name, email, event…"
+          value={filterSearch}
+          onChange={e => setFilterSearch(e.target.value)}
           className="bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-zinc-500 w-52"
         />
-        {(filterEvent || filterUserId) && (
+        {(filterEvent || filterSearch) && (
           <button
-            onClick={() => { setFilterEvent(''); setFilterUserId(''); }}
+            onClick={() => { setFilterEvent(''); setFilterSearch(''); }}
             className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
           >
             Clear filters

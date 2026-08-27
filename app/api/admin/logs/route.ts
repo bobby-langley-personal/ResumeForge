@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const userId = searchParams.get('userId') ?? '';
+  const q = searchParams.get('q') ?? '';
   const route = searchParams.get('route') ?? '';
   const hasError = searchParams.get('hasError');
   const source = searchParams.get('source') ?? '';
@@ -22,13 +22,33 @@ export async function GET(req: NextRequest) {
   const supabase = supabaseServer();
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
+  // If there's a search query, find matching user IDs first
+  let matchedUserIds: string[] = [];
+  if (q) {
+    const { data: matchedUsers } = await supabase
+      .from('users')
+      .select('id')
+      .or(`email.ilike.%${q}%,full_name.ilike.%${q}%`);
+    matchedUserIds = (matchedUsers ?? []).map(u => u.id);
+  }
+
   // Filters must come before order/range
   let query = supabase
     .from('api_logs')
     .select('*', { count: 'exact' })
     .gte('created_at', since);
 
-  if (userId) query = query.eq('user_id', userId);
+  if (q) {
+    // Build OR across: matching user IDs, route, error
+    const conditions: string[] = [
+      `route.ilike.%${q}%`,
+      `error.ilike.%${q}%`,
+    ];
+    if (matchedUserIds.length > 0) {
+      conditions.push(`user_id.in.(${matchedUserIds.join(',')})`);
+    }
+    query = query.or(conditions.join(','));
+  }
   if (route) query = query.ilike('route', `%${route}%`);
   if (hasError === 'true') query = query.not('error', 'is', null);
   if (hasError === 'false') query = query.is('error', null);

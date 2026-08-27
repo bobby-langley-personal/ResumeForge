@@ -161,6 +161,7 @@ Added in migration 012. Stores contact info extracted from uploaded resumes.
 | `GET /api/admin/ext-logs` | Node | Admin-only; returns `ext_logs` rows; accepts `?severity=&platform=&event=&days=&limit=` (days default 30, max 90, limit max 200) |
 | `GET /api/cron/notifications` | Node | Vercel cron (daily 14:00 UTC); sends lifecycle emails to eligible non-unsubscribed users; auth via `Authorization: Bearer <CRON_SECRET>`; overlap guard via `cron_runs` table; per-run cap of 25 (override via `NOTIFICATIONS_MAX_PER_RUN` env var) to drain backlog gradually |
 | `GET /api/cron/cleanup-logs` | Node | Vercel cron (daily 03:00 UTC); deletes rows older than 90 days from `api_logs`, `ext_logs`, and `user_events`; auth via `Authorization: Bearer <CRON_SECRET>`; returns `{ ok, cutoff, tables }` |
+| `GET /api/cron/error-alerts` | Node | Vercel cron (every 30 min); checks `api_logs` for 5xx errors since last run; sends Resend email to `ADMIN_NOTIFICATION_EMAIL` if count ≥ `ERROR_ALERT_THRESHOLD` (default 3); includes 4xx count as informational; tracks last-check time via `cron_runs` row `name='error_alerts'`; logs run outcome to `api_logs` as route `/cron/error-alerts`; returns `{ fivexxCount, fourxxCount, emailSent, threshold, since, now }` |
 
 ### generate-documents request fields
 - `company`, `jobTitle`, `jobDescription`, `backgroundExperience` — required
@@ -447,6 +448,7 @@ Contact info is stored in `user_profiles` (one row per user, upserted — not in
 - **New member notification**: `app/api/webhooks/clerk/route.ts` sends an email to `ADMIN_NOTIFICATION_EMAIL` on every `user.created` event
 - **Email lifecycle**: `lib/notifications.ts` `fetchAllUserStats()` uses `.or('email_unsubscribed.is.null,email_unsubscribed.eq.false')` to include users where the column was never set (defensive against NULL)
 - Required env vars: `ADMIN_SECRET`, `ADMIN_NOTIFICATION_EMAIL`, `RESEND_API_KEY`, `NOTIFICATION_FROM_EMAIL`, `UNSUBSCRIBE_SECRET`, `CRON_SECRET` (Vercel auto-injects for cron auth)
+- Optional env var: `ERROR_ALERT_THRESHOLD` (integer, default 3) — minimum 5xx error count in a 30-min window before an alert email fires
 
 ---
 

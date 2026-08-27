@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const userId = searchParams.get('userId') ?? '';
+  const q = searchParams.get('q') ?? '';
   const event = searchParams.get('event') ?? '';
   const days = Math.min(90, Math.max(1, parseInt(searchParams.get('days') ?? '30', 10)));
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
@@ -30,13 +30,30 @@ export async function GET(req: NextRequest) {
   const supabase = supabaseServer();
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
+  // If there's a search query, find matching user IDs first
+  let matchedUserIds: string[] = [];
+  if (q) {
+    const { data: matchedUsers } = await supabase
+      .from('users')
+      .select('id')
+      .or(`email.ilike.%${q}%,full_name.ilike.%${q}%`);
+    matchedUserIds = (matchedUsers ?? []).map(u => u.id);
+  }
+
   // Recent events (paginated) — filters must come before order/range
   let query = supabase
     .from('user_events')
     .select('*', { count: 'exact' })
     .gte('created_at', since);
 
-  if (userId) query = query.eq('user_id', userId);
+  if (q) {
+    // Search across: matching user IDs and event name
+    const conditions: string[] = [`event.ilike.%${q}%`];
+    if (matchedUserIds.length > 0) {
+      conditions.push(`user_id.in.(${matchedUserIds.join(',')})`);
+    }
+    query = query.or(conditions.join(','));
+  }
   if (event) query = query.eq('event', event);
 
   const { data: events, count, error } = await query

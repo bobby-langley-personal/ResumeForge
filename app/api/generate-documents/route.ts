@@ -50,11 +50,11 @@ export async function POST(req: NextRequest) {
       return new Response('Missing required fields', { status: 400 });
     }
 
-    logApiCall({
+    // Capture common log fields â€” actual logApiCall fires at stream end
+    const logBase = {
       user_id: userId,
       route: '/api/generate-documents',
       method: 'POST',
-      status_code: 200,
       request_body: {
         company,
         jobTitle,
@@ -67,9 +67,8 @@ export async function POST(req: NextRequest) {
         questionCount: questions?.length ?? 0,
         ext_version: req.headers.get('x-extension-version') ?? undefined,
       },
-      duration_ms: Date.now() - startMs,
-      source: req.headers.get('x-extension-version') ? 'extension' : 'webapp',
-    });
+      source: (req.headers.get('x-extension-version') ? 'extension' : 'webapp') as 'extension' | 'webapp',
+    };
 
     // Fetch user subscription status + profile in parallel
     const supabase = supabaseServer();
@@ -115,6 +114,7 @@ export async function POST(req: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
+        let streamError: string | undefined;
 
         const sendEvent = (type: string, data?: any) => {
           const event = { type, ...data };
@@ -217,13 +217,12 @@ Output the resume in EXACTLY this format. Do NOT put dates on the company line â
 
           } catch (resumeError) {
             console.error('[generate-documents] Resume generation failed:', resumeError);
-            console.error('[generate-documents] Resume error message:', 
+            console.error('[generate-documents] Resume error message:',
               resumeError instanceof Error ? resumeError.message : String(resumeError));
-            console.error('[generate-documents] Resume error stack:', 
+            console.error('[generate-documents] Resume error stack:',
               resumeError instanceof Error ? resumeError.stack : 'no stack');
-            sendEvent('error', { 
-              message: `Resume generation failed: ${resumeError instanceof Error ? resumeError.message : 'Unknown error'}` 
-            });
+            streamError = `Resume generation failed: ${resumeError instanceof Error ? resumeError.message : 'Unknown error'}`;
+            sendEvent('error', { message: streamError });
             return;
           }
 
@@ -262,9 +261,8 @@ Output the resume in EXACTLY this format. Do NOT put dates on the company line â
 
             } catch (coverLetterError) {
               console.error('[generate-documents] Cover letter generation failed:', coverLetterError);
-              sendEvent('error', {
-                message: `Cover letter generation failed: ${coverLetterError instanceof Error ? coverLetterError.message : 'Unknown error'}`
-              });
+              streamError = `Cover letter generation failed: ${coverLetterError instanceof Error ? coverLetterError.message : 'Unknown error'}`;
+              sendEvent('error', { message: streamError });
               return;
             }
 
@@ -348,9 +346,8 @@ Output valid JSON only, no markdown fences:
 
           if (error || !application) {
             console.error('[generate-documents] Supabase save failed:', error);
-            sendEvent('error', {
-              message: `Failed to save application: ${error?.message || 'Unknown database error'}`
-            });
+            streamError = `Failed to save application: ${error?.message || 'Unknown database error'}`;
+            sendEvent('error', { message: streamError });
             return;
           }
 
@@ -387,14 +384,21 @@ Output valid JSON only, no markdown fences:
 
         } catch (error) {
           console.error('[generate-documents] Fatal error:', error);
-          console.error('[generate-documents] Error message:', 
+          console.error('[generate-documents] Error message:',
             error instanceof Error ? error.message : String(error));
-          console.error('[generate-documents] Error stack:', 
+          console.error('[generate-documents] Error stack:',
             error instanceof Error ? error.stack : 'no stack');
-          sendEvent('error', { 
+          streamError = error instanceof Error ? error.message : 'Fatal error in stream';
+          sendEvent('error', {
             message: error instanceof Error ? error.message : 'Failed to generate documents'
           });
         } finally {
+          logApiCall({
+            ...logBase,
+            status_code: streamError ? 500 : 200,
+            error: streamError,
+            duration_ms: Date.now() - startMs,
+          });
           controller.close();
         }
       }

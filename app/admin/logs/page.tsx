@@ -97,7 +97,7 @@ export default function AdminLogsPage() {
 
   const [days, setDays] = useState(30);
   const [filterRoute, setFilterRoute] = useState('');
-  const [filterUserId, setFilterUserId] = useState('');
+  const [filterSearch, setFilterSearch] = useState('');
   const [filterError, setFilterError] = useState<'' | 'true' | 'false'>('');
   const [filterSource, setFilterSource] = useState<'' | 'webapp' | 'extension'>('');
   const abortRef = useRef<AbortController | null>(null);
@@ -110,7 +110,7 @@ export default function AdminLogsPage() {
     setLoading(true);
     const params = new URLSearchParams({ page: String(p), days: String(days) });
     if (filterRoute) params.set('route', filterRoute);
-    if (filterUserId) params.set('userId', filterUserId);
+    if (filterSearch) params.set('q', filterSearch);
     if (filterError) params.set('hasError', filterError);
     if (filterSource) params.set('source', filterSource);
     fetch(`/api/admin/logs?${params}`, { headers: { 'x-admin-secret': secret }, signal: controller.signal })
@@ -118,7 +118,7 @@ export default function AdminLogsPage() {
       .then(data => { setLogs(data.logs ?? []); setTotal(data.total ?? 0); setPage(p); })
       .catch(err => { if (err.name !== 'AbortError') console.error(err); })
       .finally(() => setLoading(false));
-  }, [secret, days, filterRoute, filterUserId, filterError, filterSource]);
+  }, [secret, days, filterRoute, filterSearch, filterError, filterSource]);
 
   useEffect(() => { load(1); }, [load]);
 
@@ -183,15 +183,15 @@ export default function AdminLogsPage() {
 
         <input
           type="text"
-          placeholder="Filter by user ID"
-          value={filterUserId}
-          onChange={e => setFilterUserId(e.target.value)}
-          className="bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-zinc-500 w-52"
+          placeholder="Search name, email, route, error…"
+          value={filterSearch}
+          onChange={e => setFilterSearch(e.target.value)}
+          className="bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs rounded px-2 py-1.5 focus:outline-none focus:border-zinc-500 w-60"
         />
 
-        {(filterRoute || filterUserId || filterError || filterSource) && (
+        {(filterRoute || filterSearch || filterError || filterSource) && (
           <button
-            onClick={() => { setFilterRoute(''); setFilterUserId(''); setFilterError(''); setFilterSource(''); }}
+            onClick={() => { setFilterRoute(''); setFilterSearch(''); setFilterError(''); setFilterSource(''); }}
             className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
           >
             Clear filters
