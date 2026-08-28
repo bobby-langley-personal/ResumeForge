@@ -5,8 +5,9 @@ import { logApiCall } from '@/lib/log-api';
 type Handler = (req: NextRequest, ctx?: unknown) => Promise<Response>;
 
 /**
- * Wraps a route handler and automatically logs any 4xx/5xx response (or uncaught throw)
- * to api_logs. Fire-and-forget — never delays or alters the response.
+ * Wraps a route handler and logs every request to api_logs — successes and errors alike.
+ * Success rows are lightweight (no request body). Error rows include the error message.
+ * Fire-and-forget — never delays or alters the response.
  */
 export function withApiLogging(route: string, handler: Handler): Handler {
   return async (req: NextRequest, ctx?: unknown) => {
@@ -30,8 +31,12 @@ export function withApiLogging(route: string, handler: Handler): Handler {
       throw err;
     }
 
-    if (res.status >= 400) {
-      // Log errors — fire-and-forget, don't await
+    // Always log errors. For successes, only log state-changing methods (POST/PUT/PATCH/DELETE)
+    // — GET successes are high-frequency reads (billing/status, me, resumes list) that would
+    // flood the table with noise without adding meaningful user-journey visibility.
+    const isError = res.status >= 400;
+    const isMutation = req.method !== 'GET';
+    if (isError || isMutation) {
       auth()
         .then(({ userId }) => {
           logApiCall({
@@ -39,6 +44,7 @@ export function withApiLogging(route: string, handler: Handler): Handler {
             route,
             method: req.method,
             status_code: res.status,
+            error: isError ? `HTTP ${res.status}` : undefined,
             duration_ms: Date.now() - start,
           });
         })
