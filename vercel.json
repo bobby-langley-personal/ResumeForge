@@ -7,10 +7,6 @@
     {
       "path": "/api/cron/cleanup-logs",
       "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/cron/error-alerts",
-      "schedule": "*/30 * * * *"
     }
   ]
 }
