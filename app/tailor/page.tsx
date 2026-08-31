@@ -495,7 +495,7 @@ export default function Home() {
     }
   };
 
-  const handleDownload = async (type: 'resume' | 'cover-letter') => {
+  const handleDownload = async (type: 'resume' | 'cover-letter', format: 'pdf' | 'docx' = 'pdf') => {
     if (!applicationId) {
       setErrorMessage('No application ID available');
       setUIState('error');
@@ -503,7 +503,8 @@ export default function Home() {
     }
 
     try {
-      const response = await fetch(`/api/download-pdf/${type}`, {
+      const route = format === 'docx' ? `/api/download-docx/${type}` : `/api/download-pdf/${type}`;
+      const response = await fetch(route, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ applicationId }),
@@ -517,14 +518,14 @@ export default function Home() {
       a.href = url;
       const contentDisposition = response.headers.get('Content-Disposition');
       const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
-      a.download = filenameMatch?.[1] || `${type}.pdf`;
+      a.download = filenameMatch?.[1] || `${type}.${format}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Download failed:', error);
-      setErrorMessage('Failed to download PDF');
+      setErrorMessage(`Failed to download ${format.toUpperCase()}`);
       setUIState('error');
     }
   };
@@ -897,13 +898,21 @@ export default function Home() {
             {uiState === 'done' && (resumeContent || coverLetterContent) && (
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex gap-2 flex-wrap">
-                  <Button size="sm" onClick={() => handleDownload('resume')}>
-                    <Download className="w-3.5 h-3.5 mr-1.5" />Download Resume
+                  <Button size="sm" onClick={() => handleDownload('resume', 'pdf')}>
+                    <Download className="w-3.5 h-3.5 mr-1.5" />Resume PDF
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => handleDownload('resume', 'docx')}>
+                    <Download className="w-3.5 h-3.5 mr-1.5" />Resume DOCX
                   </Button>
                   {includeCoverLetter && coverLetterContent && (
-                    <Button size="sm" variant="outline" onClick={() => handleDownload('cover-letter')}>
-                      <Download className="w-3.5 h-3.5 mr-1.5" />Download Cover Letter
-                    </Button>
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => handleDownload('cover-letter', 'pdf')}>
+                        <Download className="w-3.5 h-3.5 mr-1.5" />Cover Letter PDF
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleDownload('cover-letter', 'docx')}>
+                        <Download className="w-3.5 h-3.5 mr-1.5" />Cover Letter DOCX
+                      </Button>
+                    </>
                   )}
                 </div>
                 <Button size="sm" variant="outline" onClick={resetForm}>
@@ -920,9 +929,12 @@ export default function Home() {
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold text-foreground">Résumé</h3>
                       {uiState === 'done' && (
-                        <div className="flex items-center gap-3">
-                          <Button size="sm" variant="outline" onClick={() => handleDownload('resume')}>
-                            <Download className="w-3.5 h-3.5 mr-1.5" />Download PDF
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="outline" onClick={() => handleDownload('resume', 'pdf')}>
+                            <Download className="w-3.5 h-3.5 mr-1.5" />PDF
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleDownload('resume', 'docx')}>
+                            <Download className="w-3.5 h-3.5 mr-1.5" />DOCX
                           </Button>
                           <button
                             onClick={() => setShowPdfView(v => !v)}
@@ -956,9 +968,12 @@ export default function Home() {
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold text-foreground">Cover Letter</h3>
                       {uiState === 'done' && (
-                        <div className="flex items-center gap-3">
-                          <Button size="sm" variant="outline" onClick={() => handleDownload('cover-letter')}>
-                            <Download className="w-3.5 h-3.5 mr-1.5" />Download PDF
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="outline" onClick={() => handleDownload('cover-letter', 'pdf')}>
+                            <Download className="w-3.5 h-3.5 mr-1.5" />PDF
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleDownload('cover-letter', 'docx')}>
+                            <Download className="w-3.5 h-3.5 mr-1.5" />DOCX
                           </Button>
                           <button
                             onClick={() => setShowPdfView(v => !v)}
@@ -993,17 +1008,23 @@ export default function Home() {
             {/* Bottom action bar */}
             {uiState === 'done' && (
               <div className="flex flex-col items-center gap-4">
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Button size="lg" onClick={() => handleDownload('resume')} className="px-8">
-                    <Download className="w-4 h-4 mr-2" />Download Resume PDF
+                <div className="flex flex-col sm:flex-row gap-3 flex-wrap justify-center">
+                  <Button size="lg" onClick={() => handleDownload('resume', 'pdf')} className="px-8">
+                    <Download className="w-4 h-4 mr-2" />Resume PDF
+                  </Button>
+                  <Button size="lg" variant="outline" onClick={() => handleDownload('resume', 'docx')} className="px-8">
+                    <Download className="w-4 h-4 mr-2" />Resume DOCX
                   </Button>
                   <Button size="lg" variant="outline" onClick={() => setPreviewType('resume')}>
                     <Eye className="w-4 h-4 mr-2" />Preview
                   </Button>
                   {includeCoverLetter && coverLetterContent && (
                     <>
-                      <Button size="lg" onClick={() => handleDownload('cover-letter')} className="px-8">
-                        <Download className="w-4 h-4 mr-2" />Download Cover Letter PDF
+                      <Button size="lg" variant="outline" onClick={() => handleDownload('cover-letter', 'pdf')} className="px-8">
+                        <Download className="w-4 h-4 mr-2" />Cover Letter PDF
+                      </Button>
+                      <Button size="lg" variant="outline" onClick={() => handleDownload('cover-letter', 'docx')} className="px-8">
+                        <Download className="w-4 h-4 mr-2" />Cover Letter DOCX
                       </Button>
                       <Button size="lg" variant="outline" onClick={() => setPreviewType('cover-letter')}>
                         <Eye className="w-4 h-4 mr-2" />Preview

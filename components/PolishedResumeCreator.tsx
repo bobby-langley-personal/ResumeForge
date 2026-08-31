@@ -182,11 +182,12 @@ export default function PolishedResumeCreator({ sourceDocuments }: Props) {
     }
   };
 
-  const handleDownloadOnly = async () => {
+  const handleDownloadOnly = async (format: 'pdf' | 'docx' = 'pdf') => {
     setSaving(true);
     setSaveError('');
     try {
-      const res = await fetch('/api/download-pdf/polished', {
+      const route = format === 'docx' ? '/api/download-docx/polished' : '/api/download-pdf/polished';
+      const res = await fetch(route, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resumeText, fileName: saveName.trim() || 'Polished_Resume' }),
@@ -197,7 +198,7 @@ export default function PolishedResumeCreator({ sourceDocuments }: Props) {
       const a = document.createElement('a');
       a.href = url;
       const cd = res.headers.get('Content-Disposition');
-      a.download = cd?.match(/filename="(.+)"/)?.[1] || 'Polished_Resume.pdf';
+      a.download = cd?.match(/filename="(.+)"/)?.[1] || `Polished_Resume.${format}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -496,15 +497,26 @@ export default function PolishedResumeCreator({ sourceDocuments }: Props) {
                 >
                   Save as Base Resume
                 </Button>
-                <Button
-                  variant="ghost"
-                  className="w-full"
-                  onClick={handleDownloadOnly}
-                  disabled={isSaving}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Just download — don&apos;t save
-                </Button>
+                <div className="flex gap-2 w-full">
+                  <Button
+                    variant="ghost"
+                    className="flex-1"
+                    onClick={() => handleDownloadOnly('pdf')}
+                    disabled={isSaving}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    PDF
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="flex-1"
+                    onClick={() => handleDownloadOnly('docx')}
+                    disabled={isSaving}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    DOCX
+                  </Button>
+                </div>
               </div>
             )}
 
