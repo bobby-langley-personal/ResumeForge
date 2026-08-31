@@ -18,6 +18,8 @@ interface Props {
   company: string;
   jobTitle: string;
   createdAt?: string;
+  /** Score of the generated resume vs the JD (shown as the "after" in the before→after delta) */
+  resumeMatchScore?: number;
   /** On the home page, the close button resets the form instead */
   onClose: () => void;
   /** Extra actions rendered below the analysis (e.g. "Generate Resume" button) */
@@ -65,13 +67,41 @@ function FitSection({
   );
 }
 
-export default function FitAnalysisModal({ fitAnalysis, company, jobTitle, createdAt, onClose, actions }: Props) {
+function ScoreBar({ score, label, color }: { score: number; label: string; color: string }) {
+  return (
+    <div className="space-y-1">
+      <div className="flex justify-between items-center text-xs">
+        <span className="text-muted-foreground">{label}</span>
+        <span className={`font-bold text-sm ${color}`}>{score}%</span>
+      </div>
+      <div className="h-2 bg-muted rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${color.replace('text-', 'bg-')}`}
+          style={{ width: `${score}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function scoreColor(score: number): string {
+  if (score >= 75) return 'text-green-600';
+  if (score >= 50) return 'text-blue-600';
+  if (score >= 30) return 'text-amber-600';
+  return 'text-red-600';
+}
+
+export default function FitAnalysisModal({ fitAnalysis, company, jobTitle, createdAt, resumeMatchScore, onClose, actions }: Props) {
+
+  const [showKeywords, setShowKeywords] = useState(false);
 
   const formattedDate = createdAt
     ? new Date(createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     : null;
 
   const isValid = fitAnalysis?.strengths && fitAnalysis?.gaps && fitAnalysis?.suggestions;
+  const hasScore = typeof fitAnalysis?.matchScore === 'number';
+  const hasKeywords = fitAnalysis?.keywords && (fitAnalysis.keywords.matched.length > 0 || fitAnalysis.keywords.missing.length > 0);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
@@ -101,6 +131,100 @@ export default function FitAnalysisModal({ fitAnalysis, company, jobTitle, creat
             </p>
           ) : (
             <>
+              {/* Score panel — only shown when matchScore is present */}
+              {hasScore && (
+                <div className="bg-muted/50 rounded-lg p-4 space-y-3 border border-border">
+                  {typeof resumeMatchScore === 'number' ? (
+                    // Before → After view (post-generation on tailor page)
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-foreground">Keyword Match</span>
+                        <span className="text-xs text-muted-foreground">background → résumé</span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex-1 space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Background</span>
+                            <span className={`font-bold ${scoreColor(fitAnalysis.matchScore!)}`}>{fitAnalysis.matchScore}%</span>
+                          </div>
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${scoreColor(fitAnalysis.matchScore!).replace('text-', 'bg-')}`}
+                              style={{ width: `${fitAnalysis.matchScore}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div className="text-lg font-bold text-muted-foreground">→</div>
+                        <div className="flex-1 space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Résumé</span>
+                            <span className={`font-bold ${scoreColor(resumeMatchScore)}`}>{resumeMatchScore}%</span>
+                          </div>
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${scoreColor(resumeMatchScore).replace('text-', 'bg-')}`}
+                              style={{ width: `${resumeMatchScore}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      {resumeMatchScore > fitAnalysis.matchScore! && (
+                        <p className="text-xs text-green-600 font-medium">
+                          +{resumeMatchScore - fitAnalysis.matchScore!} points — the generated résumé covers more keywords from the job description
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    // Single score (dashboard / no generated resume yet)
+                    <ScoreBar
+                      score={fitAnalysis.matchScore!}
+                      label="Background keyword match"
+                      color={scoreColor(fitAnalysis.matchScore!)}
+                    />
+                  )}
+
+                  {/* Keyword detail toggle */}
+                  {hasKeywords && (
+                    <button
+                      onClick={() => setShowKeywords(v => !v)}
+                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showKeywords ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                      {showKeywords ? 'Hide keywords' : `View ${fitAnalysis.keywords!.matched.length + fitAnalysis.keywords!.missing.length} keywords`}
+                    </button>
+                  )}
+
+                  {showKeywords && hasKeywords && (
+                    <div className="grid grid-cols-2 gap-4 pt-1">
+                      <div>
+                        <p className="text-xs font-semibold text-green-700 mb-1.5">
+                          Matched ({fitAnalysis.keywords!.matched.length})
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {fitAnalysis.keywords!.matched.map((kw, i) => (
+                            <span key={i} className="text-xs bg-green-50 text-green-700 border border-green-200 rounded px-1.5 py-0.5">
+                              {kw}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-red-700 mb-1.5">
+                          Missing ({fitAnalysis.keywords!.missing.length})
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {fitAnalysis.keywords!.missing.map((kw, i) => (
+                            <span key={i} className="text-xs bg-red-50 text-red-700 border border-red-200 rounded px-1.5 py-0.5">
+                              {kw}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Overall Fit Badge */}
               <div className={`inline-flex items-center px-4 py-2 rounded-full border text-sm font-semibold ${FIT_COLORS[fitAnalysis.overallFit] ?? 'text-foreground bg-muted border-border'}`}>
                 {fitAnalysis.overallFit}

@@ -4,6 +4,7 @@ import { Anthropic } from '@anthropic-ai/sdk';
 import { getModels } from '@/lib/models';
 import { parseStageJSON, buildContextBlock } from '@/lib/pipeline-utils';
 import { FitAnalysis } from '@/types/fit-analysis';
+import { computeMatchScore } from '@/lib/keyword-score';
 import { logApiCall } from '@/lib/log-api';
 
 export async function POST(req: NextRequest) {
@@ -33,11 +34,13 @@ export async function POST(req: NextRequest) {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const { HAIKU } = await getModels();
 
-    const response = await anthropic.messages.create({
-      model: HAIKU,
-      max_tokens: 4000,
-      temperature: 0.2,
-      system: `You are a brutally honest but constructive career advisor.
+    // Run both Haiku calls in parallel: fit analysis + keyword extraction from JD
+    const [response, keywordResponse] = await Promise.all([
+      anthropic.messages.create({
+        model: HAIKU,
+        max_tokens: 4000,
+        temperature: 0.2,
+        system: `You are a brutally honest but constructive career advisor.
 Analyze how well the candidate's background matches the job description. Be specific — name actual skills, tools, and experiences that match or are missing. Do not be generic.
 Adapt your analysis based on the role type (technical, management, sales, customer success, research).
 
@@ -61,13 +64,32 @@ Output valid JSON only, no markdown fences:
   "plannedImprovements": ["string", "string", "string"],
   "roleType": "technical" | "management" | "sales" | "customer_success" | "research" | "other"
 }`,
-      messages: [
-        {
-          role: 'user',
-          content: `Job Title: ${jobTitle}\nCompany: ${company}\nJob Description: ${jobDescription}${artifactList}\n\nPrimary Resume / Background:\n${backgroundExperience}${contextBlock}\n\nAnalyze the fit between this candidate and the role.`
-        }
-      ]
-    });
+        messages: [
+          {
+            role: 'user',
+            content: `Job Title: ${jobTitle}\nCompany: ${company}\nJob Description: ${jobDescription}${artifactList}\n\nPrimary Resume / Background:\n${backgroundExperience}${contextBlock}\n\nAnalyze the fit between this candidate and the role.`
+          }
+        ]
+      }),
+
+      // Keyword extraction: normalized lowercase lemmas from JD requirements
+      anthropic.messages.create({
+        model: HAIKU,
+        max_tokens: 1000,
+        temperature: 0.2,
+        system: `Extract every required and preferred skill, tool, technology, methodology, and qualification from the job description.
+Normalize each to a lowercase lemma (e.g. "React.js" → "react", "Machine Learning" → "machine learning").
+Include both hard skills (languages, tools, platforms) and soft skills only if explicitly required (e.g. "excellent written communication").
+Exclude generic filler phrases like "team player", "self-starter", "fast-paced environment".
+Output valid JSON only, no markdown fences: { "keywords": ["keyword1", "keyword2", ...] }`,
+        messages: [
+          {
+            role: 'user',
+            content: `Job Title: ${jobTitle}\nJob Description: ${jobDescription}\n\nExtract all required and preferred keywords.`
+          }
+        ]
+      })
+    ]);
 
     const text = response.content[0].type === 'text' ? response.content[0].text : '';
     console.log('[analyze-fit] Raw model response length:', text.length);
@@ -75,6 +97,22 @@ Output valid JSON only, no markdown fences:
 
     const fitAnalysis = parseStageJSON<FitAnalysis>(text);
     console.log('[analyze-fit] Parsed successfully:', JSON.stringify(fitAnalysis).slice(0, 300));
+
+    // Parse keywords and compute deterministic match score
+    const kwText = keywordResponse.content[0].type === 'text' ? keywordResponse.content[0].text : '';
+    let keywords: string[] = [];
+    try {
+      const parsed = parseStageJSON<{ keywords: string[] }>(kwText);
+      keywords = Array.isArray(parsed?.keywords) ? parsed.keywords.map(k => k.toLowerCase()) : [];
+    } catch {
+      console.warn('[analyze-fit] Keyword extraction failed to parse, skipping score');
+    }
+
+    const { score: matchScore, matched, missing } = computeMatchScore(keywords, backgroundExperience);
+    if (fitAnalysis && keywords.length > 0) {
+      fitAnalysis.matchScore = matchScore;
+      fitAnalysis.keywords = { matched, missing };
+    }
 
     logApiCall({
       user_id: userId,

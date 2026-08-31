@@ -282,6 +282,14 @@ Unique constraint on `(api_name, month)`. Checked before every JSearch call; ret
 }
 ```
 
+### `KeywordMatch`
+```typescript
+{
+  matched: string[]   // keywords from the JD found in the candidate text
+  missing: string[]   // keywords from the JD not found in the candidate text
+}
+```
+
 ### `FitAnalysis`
 ```typescript
 {
@@ -291,8 +299,11 @@ Unique constraint on `(api_name, month)`. Checked before every JSearch call; ret
   suggestions: FitPoint[]
   plannedImprovements: string[]   // 3–5 concrete resume changes the generator will make
   roleType: RoleType
+  matchScore?: number             // 0–100 deterministic keyword match: background vs JD (absent on pre-ticket rows)
+  keywords?: KeywordMatch         // matched/missing keyword lists (absent on pre-ticket rows)
 }
 ```
+Score is computed deterministically in `lib/keyword-score.ts` — not by the LLM — so identical inputs always produce the same number. Keyword extraction uses a parallel Haiku call in `analyze-fit`.
 
 ### `FitAnalysisModalProps`
 ```typescript

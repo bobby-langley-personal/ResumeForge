@@ -197,6 +197,10 @@ Added in migration 012. Stores contact info extracted from uploaded resumes.
 - `plannedImprovements` — `string[]` of 3–5 concrete resume changes
 - `overallFit` — `"Strong Fit" | "Good Fit" | "Stretch Role"`
 - `roleType` — `"technical" | "management" | "sales" | "customer_success" | "research" | "other"`
+- `matchScore` — `number` (0–100) deterministic keyword match score (background vs JD); absent on pre-ticket saved rows
+- `keywords` — `{ matched: string[], missing: string[] }` JD keyword lists; absent on pre-ticket saved rows
+- Score is computed in `lib/keyword-score.ts` (pure TypeScript, not LLM); keyword extraction uses a parallel Haiku call alongside the main analysis. Same inputs always produce the same score.
+- `FitAnalysisModal` accepts optional `resumeMatchScore?: number` to show a before→after delta. The tailor page computes this client-side from `resumeContent` + `fitAnalysis.keywords` using `computeMatchScore`.
 
 ---
 
