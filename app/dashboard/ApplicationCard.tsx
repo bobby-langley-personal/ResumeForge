@@ -113,7 +113,7 @@ export default function ApplicationCard({
   chatEnabled, isPro, interviewPrepCount, chatUnlockedCount,
   selected, isFirstCard, onToggleSelect, onDelete,
 }: ApplicationCardProps) {
-  const [downloading, setDownloading] = useState<'resume' | 'cover-letter' | null>(null);
+  const [downloading, setDownloading] = useState<'resume-pdf' | 'resume-docx' | 'cover-letter-pdf' | 'cover-letter-docx' | null>(null);
   const [error, setError] = useState('');
   const [showAnswers, setShowAnswers] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
@@ -324,11 +324,13 @@ export default function ApplicationCard({
     }
   };
 
-  const handleDownload = async (type: 'resume' | 'cover-letter') => {
-    setDownloading(type);
+  const handleDownload = async (type: 'resume' | 'cover-letter', format: 'pdf' | 'docx') => {
+    const key = `${type}-${format}` as typeof downloading;
+    setDownloading(key);
     setError('');
     try {
-      const res = await fetch(`/api/download-pdf/${type}`, {
+      const route = format === 'docx' ? `/api/download-docx/${type}` : `/api/download-pdf/${type}`;
+      const res = await fetch(route, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ applicationId: id }),
@@ -339,7 +341,7 @@ export default function ApplicationCard({
       const a = document.createElement('a');
       a.href = url;
       const cd = res.headers.get('Content-Disposition');
-      a.download = cd?.match(/filename="(.+)"/)?.[1] ?? `${type}.pdf`;
+      a.download = cd?.match(/filename="(.+)"/)?.[1] ?? `${type}.${format}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -531,11 +533,26 @@ export default function ApplicationCard({
 
       <TooltipProvider delayDuration={150}>
         <div className="flex flex-col gap-2 mt-auto">
+          {/* Resume download row */}
           <div className="flex gap-2">
-            <Button size="sm" onClick={() => handleDownload('resume')} disabled={downloading !== null || loadingPreview} className="flex-1" aria-label="Download resume as PDF">
-              <Download className="w-3.5 h-3.5 mr-2" />
-              {downloading === 'resume' ? 'Downloading…' : 'Resume'}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" onClick={() => handleDownload('resume', 'pdf')} disabled={downloading !== null || loadingPreview} className="flex-1" aria-label="Download resume as PDF">
+                  <Download className="w-3.5 h-3.5 mr-2" />
+                  {downloading === 'resume-pdf' ? 'Downloading…' : 'PDF'}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Download résumé as PDF</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" onClick={() => handleDownload('resume', 'docx')} disabled={downloading !== null || loadingPreview} className="flex-1" aria-label="Download resume as Word document">
+                  <Download className="w-3.5 h-3.5 mr-2" />
+                  {downloading === 'resume-docx' ? 'Downloading…' : 'DOCX'}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Download résumé as Word (.docx)</TooltipContent>
+            </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button size="sm" variant="outline" onClick={() => handlePreview('resume')} disabled={downloading !== null || loadingPreview} className="px-2.5" aria-label="Preview résumé">
@@ -545,12 +562,27 @@ export default function ApplicationCard({
               <TooltipContent>Preview résumé</TooltipContent>
             </Tooltip>
           </div>
+          {/* Cover letter download row */}
           {hasCoverLetter && (
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => handleDownload('cover-letter')} disabled={downloading !== null || loadingPreview} className="flex-1" aria-label="Download cover letter as PDF">
-                <Download className="w-3.5 h-3.5 mr-2" />
-                {downloading === 'cover-letter' ? 'Downloading…' : 'Cover Letter'}
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="outline" onClick={() => handleDownload('cover-letter', 'pdf')} disabled={downloading !== null || loadingPreview} className="flex-1" aria-label="Download cover letter as PDF">
+                    <Download className="w-3.5 h-3.5 mr-2" />
+                    {downloading === 'cover-letter-pdf' ? 'Downloading…' : 'CL PDF'}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Download cover letter as PDF</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="outline" onClick={() => handleDownload('cover-letter', 'docx')} disabled={downloading !== null || loadingPreview} className="flex-1" aria-label="Download cover letter as Word document">
+                    <Download className="w-3.5 h-3.5 mr-2" />
+                    {downloading === 'cover-letter-docx' ? 'Downloading…' : 'CL DOCX'}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Download cover letter as Word (.docx)</TooltipContent>
+              </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button size="sm" variant="outline" onClick={() => handlePreview('cover-letter')} disabled={downloading !== null || loadingPreview} className="px-2.5" aria-label="Preview cover letter">

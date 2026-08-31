@@ -244,6 +244,7 @@ app/
     parse-job-details/      # POST — Haiku extraction of company, job title, and questions from pasted JD text
     extract-resume/         # POST — PDF/DOCX text extraction
     download-pdf/[type]/    # POST — PDF generation and download; all types prefer profile.full_name for candidateName
+    download-docx/[type]/   # POST — DOCX generation and download (resume, cover-letter, polished); same pattern as PDF routes
     generate-polished-resume/ # POST — Sonnet builds standalone resume from selected docs; injects profile contact info
     base-resume-chat/       # POST — Sonnet CHANGE/ANSWER chat for polished resume refinement
     resumes/                # GET/POST — My Experience CRUD

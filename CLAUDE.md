@@ -131,6 +131,7 @@ Added in migration 012. Stores contact info extracted from uploaded resumes.
 | `GET /api/search-jobs` | Node | JSearch (RapidAPI) job search; checks `api_usage` table before calling; returns `{ jobs: JobResult[] }`; 429 when monthly limit hit |
 | `POST /api/extract-resume` | Node | PDF/DOCX text extraction |
 | `POST /api/download-pdf/[type]` | Node | PDF generation and download (`/resume`, `/cover-letter`, `/polished`); all three prefer `profile.full_name` over Clerk name for `candidateName` |
+| `POST /api/download-docx/[type]` | Node | DOCX generation and download (`/resume`, `/cover-letter`, `/polished`); mirrors PDF routes; uses `lib/docx/ResumeDocx.ts` and `lib/docx/CoverLetterDocx.ts` generators; same auth/ownership pattern as PDF routes |
 | `GET /api/resumes` | Node | List My Experience (default first, then created_at desc) |
 | `POST /api/resumes` | Node | Save new document to library |
 | `GET /api/applications/[id]` | Node | Fetch application content + candidateName for PDF preview |
