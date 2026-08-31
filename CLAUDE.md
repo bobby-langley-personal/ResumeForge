@@ -159,6 +159,7 @@ Added in migration 012. Stores contact info extracted from uploaded resumes.
 | `GET /api/admin/events` | Node | Admin-only; returns paginated user_events with aggregate counts per event type; accepts `?page=&event=&userId=&days=` (days default 30, max 90) |
 | `GET /api/admin/logs` | Node | Admin-only; returns paginated `api_logs` rows; accepts `?userId=&route=&hasError=&source=&days=&page=` (days default 30, max 90); filters applied before order/range |
 | `GET /api/admin/ext-logs` | Node | Admin-only; returns `ext_logs` rows; accepts `?severity=&platform=&event=&days=&limit=` (days default 30, max 90, limit max 200) |
+| `GET /api/admin/resumes/[resumeId]` | Node | Admin-only; returns a single experience doc with `content` (`{ text, fileName? }`) field for admin doc preview |
 | `GET /api/cron/notifications` | Node | Vercel cron (daily 14:00 UTC); sends lifecycle emails to eligible non-unsubscribed users; auth via `Authorization: Bearer <CRON_SECRET>`; overlap guard via `cron_runs` table; per-run cap of 25 (override via `NOTIFICATIONS_MAX_PER_RUN` env var) to drain backlog gradually |
 | `GET /api/cron/cleanup-logs` | Node | Vercel cron (daily 03:00 UTC); deletes rows older than 90 days from `api_logs`, `ext_logs`, and `user_events`; auth via `Authorization: Bearer <CRON_SECRET>`; returns `{ ok, cutoff, tables }` |
 | `GET /api/cron/error-alerts` | Node | Vercel cron (every 30 min); checks `api_logs` for 5xx errors since last run; sends Resend email to `ADMIN_NOTIFICATION_EMAIL` if count ≥ `ERROR_ALERT_THRESHOLD` (default 3); includes 4xx count as informational; tracks last-check time via `cron_runs` row `name='error_alerts'`; logs run outcome to `api_logs` as route `/cron/error-alerts`; returns `{ fivexxCount, fourxxCount, emailSent, threshold, since, now }` |
@@ -442,7 +443,9 @@ Contact info is stored in `user_profiles` (one row per user, upserted — not in
 - `app/admin/layout.tsx` — shared client layout; shows unlock gate if no secret stored, sidebar nav otherwise; "Lock admin" clears localStorage secret; nav items: Overview, Notifications, API Logs, Ext Logs, Events
 - **API Logs / Ext Logs pages** — both accept a `days` dropdown (7 / 30 / 90); client uses `AbortController` to cancel in-flight requests when filters change, preventing stale results from overwriting current ones
 - `app/admin/AdminContext.tsx` — React context that shares the secret across all admin pages without re-entry
-- `app/admin/page.tsx` — Overview: stats cards, email health (Resend status + test-send button), recent signups table
+- `app/admin/page.tsx` — Overview: stats cards, email health (Resend status + test-send button), recent signups table; clicking a stat card or signup row opens a right side-panel with user list → user detail
+- `app/admin/users/page.tsx` — Full user table with search/sort/segment filters; clicking any row opens a modal overlay with `UserDetailPanel`
+- `app/admin/components/UserDetailPanel.tsx` — Shared user detail component (Account / Docs / Résumés / API Logs tabs); Docs tab: click a doc to fetch and render its text content via `GET /api/admin/resumes/[id]`; Résumés tab: click to expand with PDF preview via `AdminPDFRenderer`; exports `UserDetailPanel`, `timeAgo`, `planBadge`, `Section`, `Row`
 - `app/admin/notifications/page.tsx` — Notification sender: type selector with descriptions, eligible-user count, "Preview email" modal (iframe with real rendered HTML), send results with per-user status
 - All admin API routes require `x-admin-secret` header matching `ADMIN_SECRET` env var
 - **New member notification**: `app/api/webhooks/clerk/route.ts` sends an email to `ADMIN_NOTIFICATION_EMAIL` on every `user.created` event

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAdminContext } from '../AdminContext';
+import { UserDetailPanel } from '../components/UserDetailPanel';
 import { Loader2, ChevronUp, ChevronDown, ChevronsUpDown, Search, X } from 'lucide-react';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -79,6 +80,7 @@ export default function AdminUsersPage() {
   const [sortKey, setSortKey] = useState<SortKey>('created_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [segment, setSegment] = useState('all');
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -213,7 +215,8 @@ export default function AdminUsersPage() {
               ) : filtered.map((u, i) => (
                 <tr
                   key={u.id}
-                  className={`${i < filtered.length - 1 ? 'border-b border-zinc-800/50' : ''} hover:bg-zinc-800/30 transition-colors`}
+                  onClick={() => setSelectedUserId(u.id)}
+                  className={`${i < filtered.length - 1 ? 'border-b border-zinc-800/50' : ''} hover:bg-zinc-800/30 transition-colors cursor-pointer`}
                 >
                   <td className="px-4 py-3">
                     <p className="text-zinc-200 text-sm">{u.full_name || u.email}</p>
@@ -239,6 +242,22 @@ export default function AdminUsersPage() {
               {search && ` matching "${search}"`}
             </div>
           )}
+        </div>
+      )}
+
+      {/* User detail modal */}
+      {selectedUserId && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          onClick={e => { if (e.target === e.currentTarget) setSelectedUserId(null); }}
+        >
+          <div className="w-full max-w-xl h-[85vh] bg-zinc-950 border border-zinc-800 rounded-xl flex flex-col overflow-hidden shadow-2xl">
+            <UserDetailPanel
+              userId={selectedUserId}
+              secret={secret}
+              onBack={() => setSelectedUserId(null)}
+            />
+          </div>
         </div>
       )}
     </div>
