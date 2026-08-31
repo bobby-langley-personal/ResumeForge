@@ -9,6 +9,7 @@ import FitAnalysisModal from '@/components/FitAnalysisModal';
 import InterviewPrepPanel from '@/components/InterviewPrepPanel';
 import ResumeChatPanel from '@/components/ResumeChatPanel';
 import { FitAnalysis } from '@/types/fit-analysis';
+import { computeMatchScore } from '@/lib/keyword-score';
 import { InterviewPrep } from '@/types/interview-prep';
 
 const PDFPreviewModal = dynamic(() => import('@/components/PDFPreviewModal'), { ssr: false });
@@ -136,6 +137,7 @@ export default function ApplicationCard({
   } | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [localFitAnalysis, setLocalFitAnalysis] = useState<FitAnalysis | null>(fitAnalysis);
+  const [resumeMatchScore, setResumeMatchScore] = useState<number | undefined>(undefined);
   const [analysisLoading, setAnalysisLoading] = useState(false);
 
   const copyAnswer = (text: string, idx: number) => {
@@ -285,7 +287,29 @@ export default function ApplicationCard({
   };
 
   const handleOpenFitAnalysis = async () => {
-    if (localFitAnalysis) { setShowInsights(true); return; }
+    if (localFitAnalysis) {
+      // Compute resume score from stored keywords if available
+      if (localFitAnalysis.keywords && typeof localFitAnalysis.matchScore === 'number') {
+        let resumeText = previewData?.resumeContent ?? null;
+        if (!resumeText) {
+          try {
+            const res = await fetch(`/api/applications/${id}`);
+            if (res.ok) {
+              const data = await res.json();
+              setPreviewData(data);
+              resumeText = data.resumeContent;
+            }
+          } catch {/* non-critical */}
+        }
+        if (resumeText) {
+          const allKw = [...localFitAnalysis.keywords.matched, ...localFitAnalysis.keywords.missing];
+          const { score } = computeMatchScore(allKw, resumeText);
+          setResumeMatchScore(score);
+        }
+      }
+      setShowInsights(true);
+      return;
+    }
     setAnalysisLoading(true);
     setError('');
     try {
@@ -310,6 +334,8 @@ export default function ApplicationCard({
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const analysis: FitAnalysis = await res.json();
       setLocalFitAnalysis(analysis);
+      // Dashboard fit analysis runs on the generated resume — so matchScore IS the resume score
+      // No before score available in this context; resumeMatchScore stays undefined
       setShowInsights(true);
       // Save back to DB in background — don't block the modal
       fetch(`/api/applications/${id}`, {
@@ -651,6 +677,7 @@ export default function ApplicationCard({
           company={company}
           jobTitle={jobTitle}
           createdAt={createdAt}
+          resumeMatchScore={resumeMatchScore}
           onClose={() => setShowInsights(false)}
         />
       )}

@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { readSSEStream } from '@/lib/sse-reader';
 import { Loader2, Eye, Download, RotateCcw, X, Crown } from 'lucide-react';
 import { FitAnalysis } from '@/types/fit-analysis';
+import { computeMatchScore } from '@/lib/keyword-score';
 import { ResumeItem } from '@/types/resume';
 import ExperiencePanel from '@/components/ExperiencePanel';
 import TourGuide from '@/components/TourGuide';
@@ -893,6 +894,25 @@ export default function Home() {
                 })()}
               </div>
             )}
+
+            {/* Keyword score callout — shown post-generation when fit analysis has score data */}
+            {uiState === 'done' && resumeContent && fitAnalysis?.keywords && typeof fitAnalysis.matchScore === 'number' && (() => {
+              const allKw = [...fitAnalysis.keywords.matched, ...fitAnalysis.keywords.missing];
+              const { score: resumeScore } = computeMatchScore(allKw, resumeContent);
+              const before = fitAnalysis.matchScore;
+              const delta = resumeScore - before;
+              const color = resumeScore >= 75 ? 'text-green-600' : resumeScore >= 50 ? 'text-blue-600' : 'text-amber-600';
+              return (
+                <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-muted/60 border border-border text-sm flex-wrap">
+                  <span className="text-muted-foreground">Keyword match:</span>
+                  <span className="font-semibold text-muted-foreground">{before}%</span>
+                  <span className="text-muted-foreground">→</span>
+                  <span className={`font-bold ${color}`}>{resumeScore}%</span>
+                  {delta > 0 && <span className="text-green-600 text-xs font-medium">(+{delta} points)</span>}
+                  <span className="text-xs text-muted-foreground ml-auto">{fitAnalysis.keywords.matched.length + fitAnalysis.keywords.missing.length} JD keywords tracked</span>
+                </div>
+              );
+            })()}
 
             {/* Top action bar — shown once generation is done */}
             {uiState === 'done' && (resumeContent || coverLetterContent) && (
