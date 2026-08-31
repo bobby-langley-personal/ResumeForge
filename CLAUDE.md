@@ -112,9 +112,11 @@ Added in migration 012. Stores contact info extracted from uploaded resumes.
 
 **If a new column is genuinely needed:**
 1. Add it to TYPES.md FIRST
-2. Write a migration in `/supabase/migrations/` (e.g. `006_add_column.sql`)
-3. Include instructions comment: `-- Run in Supabase SQL editor → Dashboard → SQL Editor`
+2. Write a migration file in `/supabase/migrations/` using sequential naming (e.g. `029_add_column.sql`)
+3. Apply it via the Supabase MCP (`apply_migration`) or the Supabase CLI (`supabase db push`) — **do NOT paste into the SQL editor manually**, as that skips `supabase_migrations.schema_migrations` tracking and breaks branch/staging replay
 4. Only then write application code using the new column
+
+**Migration history (as of 2026-08-31):** All 28 migrations (001–028) are registered in `supabase_migrations.schema_migrations`. Migrations 001–026 were applied manually before tracking existed and were backfilled on 2026-08-31. All future migrations must go through `apply_migration` or the CLI.
 
 ---
 
