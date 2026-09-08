@@ -122,12 +122,30 @@ export default function Home() {
   const router = useRouter();
   const candidateName = user?.fullName ?? user?.firstName ?? '';
 
-  // Redirect to onboarding if the user has no experience files
+  // Redirect to onboarding if the user has no experience files.
+  // Single-attempt fetches were bouncing users with real documents back to '/' on a slow/racy
+  // read (e.g. right after their first upload), which also re-triggers the un-persisted
+  // onboarding overlay on the home page — see HomeRouter.tsx. Retry once before redirecting.
   useEffect(() => {
-    fetch('/api/resumes')
-      .then(r => r.json())
-      .then(data => { if (!Array.isArray(data) || data.length === 0) router.replace('/'); })
+    let cancelled = false;
+    const checkHasDocs = () =>
+      fetch('/api/resumes').then(r => (r.ok ? r.json() : null));
+
+    checkHasDocs()
+      .then(data => {
+        if (cancelled) return null;
+        if (Array.isArray(data) && data.length > 0) return null; // has docs, done
+        // Empty (or unexpected) response — wait briefly and confirm with one retry
+        // before bouncing the user, in case this was a transient/racy read.
+        return new Promise(resolve => setTimeout(resolve, 800)).then(checkHasDocs);
+      })
+      .then(data => {
+        if (cancelled || data === null) return;
+        if (!Array.isArray(data) || data.length === 0) router.replace('/');
+      })
       .catch(() => {}); // fail open — don't block on network error
+
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [billingStatus, setBillingStatus] = useState<{
