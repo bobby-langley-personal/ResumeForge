@@ -7,6 +7,10 @@ import GoalScreen from '@/components/GoalScreen';
 import OnboardingOverlay from '@/components/OnboardingOverlay';
 
 const SKIP_KEY = 'resumeforge_skip_goal_screen';
+// Persists across remounts of HomeRouter (e.g. the /tailor "no docs" guard bouncing the
+// user back to '/') so the full-screen "sparse" overlay doesn't re-show every time —
+// see the sibling fix in app/tailor/page.tsx for the redirect side of this.
+const SPARSE_OVERLAY_SEEN_KEY = 'resumeforge_seen_sparse_overlay';
 
 interface Props {
   firstName: string | null;
@@ -25,6 +29,10 @@ export default function HomeRouter({ firstName, documentCount, hasApplications }
       router.replace('/tailor');
       return;
     }
+    // Sparse-overlay dismissal is sticky — don't re-show it on every remount.
+    if (documentCount === 1 && localStorage.getItem(SPARSE_OVERLAY_SEEN_KEY) === 'true') {
+      setOverlayDismissed(true);
+    }
     setChecked(true);
   }, [documentCount, router]);
 
@@ -41,7 +49,15 @@ export default function HomeRouter({ firstName, documentCount, hasApplications }
   // Exactly one document — nudge to enrich the library, then GoalScreen
   if (documentCount === 1) {
     if (!overlayDismissed) {
-      return <OnboardingOverlay variant="sparse" onDismiss={() => setOverlayDismissed(true)} />;
+      return (
+        <OnboardingOverlay
+          variant="sparse"
+          onDismiss={() => {
+            try { localStorage.setItem(SPARSE_OVERLAY_SEEN_KEY, 'true'); } catch {}
+            setOverlayDismissed(true);
+          }}
+        />
+      );
     }
   }
 
