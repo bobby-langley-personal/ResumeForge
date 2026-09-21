@@ -78,24 +78,26 @@ function buildResumeDoc(parsed: ParsedResume, candidateName: string): Document {
   if (parsed.experience.length > 0) {
     children.push(sectionHeading('Experience'))
 
-    for (const group of parsed.experience) {
-      // Company | Location
+    for (let gi = 0; gi < parsed.experience.length; gi++) {
+      const group = parsed.experience[gi]
+      // Non-first groups get extra top spacing to match PDF experienceGroup.marginBottom gap
       const companyLine = group.location
         ? `${group.company} | ${group.location}`
         : group.company
       children.push(
         new Paragraph({
-          spacing: { before: pt(6), after: pt(2) },
+          spacing: { before: gi === 0 ? pt(2) : pt(12), after: pt(2) },
           children: [new TextRun({ text: companyLine, bold: true, size: pt(10) })],
         })
       )
 
-      for (const role of group.roles) {
-        // Role title (left) + dates (right) on same line via tab stop
+      for (let ri = 0; ri < group.roles.length; ri++) {
+        const role = group.roles[ri]
+        // Non-first roles at the same company get a small top gap (PDF additionalRoleEntry.marginTop)
         children.push(
           new Paragraph({
             tabStops: [{ type: TabStopType.RIGHT, position: RIGHT_TAB }],
-            spacing: { after: pt(2) },
+            spacing: { before: ri === 0 ? 0 : pt(3), after: pt(2) },
             children: [
               new TextRun({ text: role.title, bold: true, size: pt(10) }),
               ...(role.dates
@@ -108,12 +110,14 @@ function buildResumeDoc(parsed: ParsedResume, candidateName: string): Document {
           })
         )
 
-        for (const bullet of role.bulletPoints) {
+        for (let bi = 0; bi < role.bulletPoints.length; bi++) {
+          const isLastBullet = bi === role.bulletPoints.length - 1
           children.push(
             new Paragraph({
               indent: { left: 360 },
-              spacing: { after: pt(2) },
-              children: [new TextRun({ text: `\u2022 ${bullet}`, size: pt(10) })],
+              // Last bullet of each role gets extra bottom spacing (PDF roleEntry.marginBottom: 5)
+              spacing: { after: isLastBullet ? pt(5) : pt(2) },
+              children: [new TextRun({ text: `\u2022 ${role.bulletPoints[bi]}`, size: pt(10) })],
             })
           )
         }

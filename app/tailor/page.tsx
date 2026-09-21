@@ -23,6 +23,7 @@ import ResumeChatPanel from '@/components/ResumeChatPanel';
 
 const PDFPreviewModal = dynamic(() => import('@/components/PDFPreviewModal'), { ssr: false });
 const InlinePDFViewer = dynamic(() => import('@/components/InlinePDFViewer'), { ssr: false });
+const KeywordDeltaModal = dynamic(() => import('@/components/KeywordDeltaModal'), { ssr: false });
 
 type UIState = 'idle' | 'analyzing' | 'review' | 'generating' | 'done' | 'error';
 
@@ -181,6 +182,7 @@ export default function Home() {
   const [errorMessage, setErrorMessage] = useState('');
   const [fitAnalysis, setFitAnalysis] = useState<FitAnalysis | null>(null);
   const [pendingFormData, setPendingFormData] = useState<FormData | null>(null);
+  const [showDeltaModal, setShowDeltaModal] = useState(false);
   const [additionalContext, setAdditionalContext] = useState<ResumeItem[]>([]);
   const [includeCoverLetter, setIncludeCoverLetter] = useState(false);
   const [includeSummary, setIncludeSummary] = useState(false);
@@ -910,6 +912,12 @@ export default function Home() {
                   <span className={`font-bold ${color}`}>{resumeScore}%</span>
                   {delta > 0 && <span className="text-green-600 text-xs font-medium">(+{delta} points)</span>}
                   <span className="text-xs text-muted-foreground ml-auto">{fitAnalysis.keywords.matched.length + fitAnalysis.keywords.missing.length} JD keywords tracked</span>
+                  <button
+                    onClick={() => setShowDeltaModal(true)}
+                    className="text-xs text-blue-500 hover:text-blue-400 underline underline-offset-2 transition-colors ml-2"
+                  >
+                    See what changed
+                  </button>
                 </div>
               );
             })()}
@@ -1145,6 +1153,16 @@ export default function Home() {
           </div>
         </SignedIn>
       </main>
+
+      {/* Keyword delta modal */}
+      {showDeltaModal && fitAnalysis?.keywords && resumeContent && (
+        <KeywordDeltaModal
+          allKeywords={[...fitAnalysis.keywords.matched, ...fitAnalysis.keywords.missing]}
+          missingBefore={fitAnalysis.keywords.missing}
+          resumeContent={resumeContent}
+          onClose={() => setShowDeltaModal(false)}
+        />
+      )}
 
       {/* Upgrade modal — shown when free limit hit */}
       {showUpgradeModal && (

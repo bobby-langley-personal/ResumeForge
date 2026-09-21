@@ -19,12 +19,16 @@ export default async function UserSync() {
   if (!email) return null;
 
   const supabase = supabaseServer();
-  await supabase
+  const { error } = await supabase
     .from('users')
     .upsert(
       { id: userId, email, last_sign_in_at: new Date().toISOString() },
       { onConflict: 'id', ignoreDuplicates: false },
     );
+
+  if (error) {
+    console.error('[UserSync] upsert failed:', { userId, email, error: error.message });
+  }
 
   return null;
 }

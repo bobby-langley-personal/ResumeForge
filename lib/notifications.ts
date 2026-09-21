@@ -6,6 +6,7 @@ import { addMoreExperienceHtml, addMoreExperienceSubject } from '@/lib/emails/ad
 import { jobHuntCheckinHtml, jobHuntCheckinSubject } from '@/lib/emails/job-hunt-checkin';
 import { tryExtensionHtml, tryExtensionSubject } from '@/lib/emails/try-extension';
 import { freeTierUpdateHtml, freeTierUpdateSubject } from '@/lib/emails/free-tier-update';
+import { grandfatherPricingHtml, grandfatherPricingSubject } from '@/lib/emails/grandfather-pricing';
 import { unsubscribeUrl } from '@/lib/unsubscribe-token';
 
 export type NotificationType =
@@ -14,7 +15,8 @@ export type NotificationType =
   | 'add_more_experience'
   | 'job_hunt_checkin'
   | 'try_extension'
-  | 'free_tier_update';
+  | 'free_tier_update'
+  | 'grandfather_pricing';
 
 export interface UserStats {
   id: string;
@@ -81,8 +83,9 @@ function buildEmail(type: NotificationType, name: string, userId: string): { sub
     case 'first_tailor':        return { subject: firstTailorSubject, html: firstTailorHtml(name, unsub) };
     case 'add_more_experience': return { subject: addMoreExperienceSubject, html: addMoreExperienceHtml(name, unsub) };
     case 'job_hunt_checkin':    return { subject: jobHuntCheckinSubject, html: jobHuntCheckinHtml(name, unsub) };
-    case 'try_extension':       return { subject: tryExtensionSubject, html: tryExtensionHtml(name, unsub) };
-    case 'free_tier_update':   return { subject: freeTierUpdateSubject, html: freeTierUpdateHtml(name, unsub) };
+    case 'try_extension':        return { subject: tryExtensionSubject, html: tryExtensionHtml(name, unsub) };
+    case 'free_tier_update':     return { subject: freeTierUpdateSubject, html: freeTierUpdateHtml(name, unsub) };
+    case 'grandfather_pricing':  return { subject: grandfatherPricingSubject, html: grandfatherPricingHtml(name, unsub) };
   }
 }
 

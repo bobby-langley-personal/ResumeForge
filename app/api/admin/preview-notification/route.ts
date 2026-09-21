@@ -8,6 +8,7 @@ import { addMoreExperienceHtml, addMoreExperienceSubject } from '@/lib/emails/ad
 import { jobHuntCheckinHtml, jobHuntCheckinSubject } from '@/lib/emails/job-hunt-checkin';
 import { tryExtensionHtml, tryExtensionSubject } from '@/lib/emails/try-extension';
 import { freeTierUpdateHtml, freeTierUpdateSubject } from '@/lib/emails/free-tier-update';
+import { grandfatherPricingHtml, grandfatherPricingSubject } from '@/lib/emails/grandfather-pricing';
 
 const PREVIEW_UNSUB = 'https://easy-apply.ai/unsubscribe?preview=true';
 
@@ -26,11 +27,13 @@ function buildPreview(type: NotificationType): { subject: string; html: string }
       return { subject: tryExtensionSubject, html: tryExtensionHtml(name, PREVIEW_UNSUB) };
     case 'free_tier_update':
       return { subject: freeTierUpdateSubject, html: freeTierUpdateHtml(name, PREVIEW_UNSUB) };
+    case 'grandfather_pricing':
+      return { subject: grandfatherPricingSubject, html: grandfatherPricingHtml(name, PREVIEW_UNSUB) };
   }
 }
 
 const VALID_TYPES: NotificationType[] = [
-  'setup_experience', 'first_tailor', 'add_more_experience', 'job_hunt_checkin', 'try_extension', 'free_tier_update',
+  'setup_experience', 'first_tailor', 'add_more_experience', 'job_hunt_checkin', 'try_extension', 'free_tier_update', 'grandfather_pricing',
 ];
 
 export async function GET(req: NextRequest) {

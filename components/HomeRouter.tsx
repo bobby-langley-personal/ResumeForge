@@ -7,6 +7,7 @@ import GoalScreen from '@/components/GoalScreen';
 import OnboardingOverlay from '@/components/OnboardingOverlay';
 
 const SKIP_KEY = 'resumeforge_skip_goal_screen';
+const SPARSE_DISMISSED_KEY = 'resumeforge_sparse_dismissed';
 
 interface Props {
   firstName: string | null;
@@ -17,7 +18,8 @@ interface Props {
 export default function HomeRouter({ firstName, documentCount, hasApplications }: Props) {
   const router = useRouter();
   const [checked, setChecked] = useState(false);
-  const [overlayDismissed, setOverlayDismissed] = useState(false);
+  const [newOverlayDismissed, setNewOverlayDismissed] = useState(false);
+  const [sparseDismissed, setSparseDismissed] = useState(false);
 
   useEffect(() => {
     // Users with multiple docs + skip flag → go straight to tailor
@@ -25,24 +27,32 @@ export default function HomeRouter({ firstName, documentCount, hasApplications }
       router.replace('/tailor');
       return;
     }
+    // Sparse overlay persists dismissal across sessions
+    setSparseDismissed(localStorage.getItem(SPARSE_DISMISSED_KEY) === 'true');
     setChecked(true);
   }, [documentCount, router]);
 
   if (!checked) return null;
 
-  // No documents — always show the orientation overlay, then WelcomeScreen
+  // No documents — show the orientation overlay, then WelcomeScreen
   if (documentCount === 0) {
-    if (!overlayDismissed) {
-      return <OnboardingOverlay variant="new" onDismiss={() => setOverlayDismissed(true)} />;
+    if (!newOverlayDismissed) {
+      return <OnboardingOverlay variant="new" onDismiss={() => setNewOverlayDismissed(true)} />;
     }
     return <WelcomeScreen />;
   }
 
-  // Exactly one document — nudge to enrich the library, then GoalScreen
-  if (documentCount === 1) {
-    if (!overlayDismissed) {
-      return <OnboardingOverlay variant="sparse" onDismiss={() => setOverlayDismissed(true)} />;
-    }
+  // Exactly one document — nudge to enrich the library (once per browser, then skip)
+  if (documentCount === 1 && !sparseDismissed) {
+    return (
+      <OnboardingOverlay
+        variant="sparse"
+        onDismiss={() => {
+          localStorage.setItem(SPARSE_DISMISSED_KEY, 'true');
+          setSparseDismissed(true);
+        }}
+      />
+    );
   }
 
   return (

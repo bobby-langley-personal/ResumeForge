@@ -16,15 +16,16 @@ interface BillingStatus {
 type Plan = 'monthly' | 'quarterly' | 'annual';
 
 const PLANS: { key: Plan; label: string; price: string; period: string; badge: string | null; highlight?: boolean }[] = [
-  { key: 'monthly',   label: 'Monthly',   price: '$9',  period: '/mo',        badge: null },
-  { key: 'quarterly', label: 'Quarterly', price: '$23', period: '/3 months',  badge: 'Save 15%' },
-  { key: 'annual',    label: 'Annual',    price: '$79', period: '/yr',        badge: 'Save 27%', highlight: true },
+  { key: 'monthly',   label: 'Monthly',   price: '$16',  period: '/mo',        badge: null },
+  { key: 'quarterly', label: 'Quarterly', price: '$42',  period: '/3 months',  badge: 'Save 12%' },
+  { key: 'annual',    label: 'Annual',    price: '$134', period: '/yr',        badge: 'Save 30%', highlight: true },
 ];
 
 const PRO_FEATURES = [
-  'Unlimited tailored resumes',
+  'Unlimited tailored resumes + DOCX export',
   'Cover letters',
   'Polished resume generator',
+  'Keyword match score & gap analysis',
   'Interview prep',
   'Chrome extension full access',
   'Application Q&A answers',

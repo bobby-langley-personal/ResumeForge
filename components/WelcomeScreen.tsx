@@ -386,7 +386,7 @@ export default function WelcomeScreen() {
         </Link>
         {' · '}
         <Link href="/dashboard" className="underline underline-offset-2 hover:text-muted-foreground transition-colors">
-          AI Resumes
+          My Applications
         </Link>
       </p>
     </div>

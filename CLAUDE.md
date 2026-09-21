@@ -6,13 +6,20 @@ This file contains important guidelines and rules for working with the Easy Appl
 
 Every feature is not complete until ALL of the following are done:
 1. Code works and `npx tsc --noEmit` passes
-2. **`CLAUDE.md` updated** — routes, components, terminology, architecture decisions
-3. **`README.md` updated** — user-facing feature descriptions and project structure
-4. **`TYPES.md` updated** — if any types or DB columns changed
-5. **GitHub issue comment posted** summarising what was built
-6. **Issue closed**
+2. **Tests written and passing** — unit tests for pure logic (`tests/unit/`), integration tests for new API routes (`tests/integration/`), E2E assertions for user-visible behaviour (`e2e/`)
+3. **`CLAUDE.md` updated** — routes, components, terminology, architecture decisions
+4. **`README.md` updated** — user-facing feature descriptions and project structure
+5. **`TYPES.md` updated** — if any types or DB columns changed
+6. **GitHub issue comment posted** summarising what was built
+7. **Issue closed**
 
 Do not skip any of these steps. If you finish coding but haven't updated docs and closed the issue, you are not done.
+
+### Test writing rules
+- Every new pure function in `lib/` gets a unit test in `tests/unit/`.
+- Every new API route gets integration tests covering: 401 (auth), 400 (validation), ownership/403, and the happy path.
+- Use `mockFrom.mockReset()` in `beforeEach` (not just `vi.clearAllMocks()`) whenever Supabase mocks use `mockReturnValueOnce` — leftover unconsumed values survive `clearAllMocks` and pollute the next test.
+- E2E specs live alongside the page they test (`e2e/authenticated/` or `e2e/public/`); one spec file per page/feature area.
 
 ---
 
@@ -56,7 +63,7 @@ Use these terms consistently in all user-facing text:
 |---------|------------|
 | The page at `/` | "Home" (goal selection / welcome screen) |
 | The page at `/tailor` | "Tailor New Resume" (generation form) |
-| The page at `/dashboard` | "AI Resumes" |
+| The page at `/dashboard` | "My Applications" |
 | The page at `/resumes` | "My Experience" (nav label and page heading) |
 | The page at `/polished-resume` | "Polished Resume" |
 | A generated resume record | "resume" (not "application") |
@@ -64,9 +71,11 @@ Use these terms consistently in all user-facing text:
 | Saved items in the library | "experience files" (not "documents") |
 | Save action | "Save to My Experience" (not "Save to My Documents") |
 
-Nav labels (hamburger menu): "Tailor New Resume" → `/tailor`, "AI Resumes" → `/dashboard`, "My Experience" → `/resumes`.
+Nav labels: "Tailor New Résumé" → `/tailor`, "My Applications" → `/dashboard`, "My Experience" → `/resumes`, "AI Interview" → `/interview`, "Polished Résumé" → `/polished-resume`.
 
-Never use "Dashboard", "Library", "application/s" (in UI copy), "New Application", or the legacy repo name "ResumeForge" — these were replaced. Product name is "Easy Apply" or "Easy Apply AI".
+Desktop (`≥md`): persistent horizontal nav bar with all 5 links visible at all times. Mobile: hamburger menu with same links + utility items (Tour, Theme, Feedback, Billing).
+
+Never use "Dashboard", "Library", "application/s" (in UI copy), "New Application", "AI Resumes", or the legacy repo name "ResumeForge" — these were replaced. Product name is "Easy Apply" or "Easy Apply AI".
 
 ---
 
@@ -239,7 +248,7 @@ const { SONNET, HAIKU } = await getModels();
 
 ---
 
-## AI Resumes Dashboard (`/dashboard`)
+## My Applications Dashboard (`/dashboard`)
 
 - No status editing — removed intentionally
 - ApplicationList has a search bar at the top — filters by company or job title using `useMemo`
@@ -393,11 +402,13 @@ The home page is a server component that detects user state and routes according
 
 ## Navbar
 
-- Hamburger menu (`Menu` icon) is visible on **all screen sizes** for signed-in users — no always-visible nav links on desktop
-- Hamburger dropdown contains: Tailor New Resume (`/tailor`), AI Resumes (`/dashboard`), My Experience (`/resumes`), divider, Take the Tour, Light/Dark Mode toggle, divider, Feedback
+- Desktop (`≥md`): persistent horizontal nav with 5 text-only links — "Tailor New Résumé", "My Applications", "My Experience", "AI Interview", "Polished Résumé"; active link highlighted via `usePathname()`; account dropdown (billing, tour, theme, feedback) as a `ChevronDown` icon button
+- Mobile (`md:hidden`): hamburger (`Menu` icon) always visible for signed-in users; dropdown contains all 5 PRIMARY_NAV links + utility items (Tour, Theme, Feedback, Billing/Upgrade)
+- Previously the hamburger was hidden behind a `document_count > 0` billing gate — this was a bug that left new users with no navigation. Gate was intentionally removed.
 - Signed-out users see a persistent Sun/Moon toggle + Sign In button (no hamburger)
 - `FeedbackModal` is `dynamic` imported with `ssr: false` in both `Navbar.tsx` and `Footer.tsx`
 - **Logo link bug fix**: Logo uses `<a href="/">` (plain anchor) instead of Next.js `<Link href="/">` — forces a full page reload so the router cache does not serve a stale "no documents" WelcomeScreen to returning users
+- `SPARSE_DISMISSED_KEY = 'resumeforge_sparse_dismissed'` — localStorage key used to persist the sparse-overlay dismissal across sessions (in `HomeRouter.tsx`); was previously session-only state which caused the overlay to re-fire on every visit
 
 ## Footer
 
@@ -485,7 +496,7 @@ Contact info is stored in `user_profiles` (one row per user, upserted — not in
 - Chat lock: grayed `MessageCircle` + `Lock` overlay badge on the card button; click shows inline error
 - Interview Prep lock: `Lock` overlay badge on `Target` button; server returns 402 after exhaustion
 - Experience Interview lock: `InterviewClient` fetches billing on mount; shows dedicated locked screen instead of entry flow if limit reached
-- **Pricing page** (`/pricing`): Public. Three plan cards (Monthly $19/mo, Quarterly $47, Annual $149). Pro users see "You're on Pro ✓" + Manage Subscription instead of CTAs.
+- **Pricing page** (`/pricing`): Public. Three plan cards (Monthly $16/mo, Quarterly $42/3mo, Annual $134/yr). Pro users see "You're on Pro ✓" + Manage Subscription instead of CTAs. Existing subscribers are grandfathered on their original Price IDs — new Price IDs created for $16/$42/$134 tiers, old ones kept active in Stripe.
 - **Stripe singleton**: `lib/stripe.ts` — exports `stripe` instance and `PRICE_IDS` (resolved from env vars). Use `PRICE_IDS` only server-side — never expose to client.
 - **Webhook**: `POST /api/webhooks/stripe` — registered at `https://easy-apply.ai/api/webhooks/stripe` in Stripe Dashboard. Required events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_succeeded`, `invoice.payment_failed`.
 - **Stripe API version**: `2026-03-25.dahlia` (v22).

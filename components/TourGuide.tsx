@@ -117,7 +117,7 @@ export function startTour() {
         popover: {
           title: "Hit Generate — you're ready",
           description:
-            'Get a tailored resume in about 30 seconds. Your result is saved to AI Resumes so you can re-download or refine it anytime.<br/><br/>💡 <strong>Pro tip:</strong> Install the <a href="https://chromewebstore.google.com/detail/foodpkmblpknlbkmdnnlgjkbnnhmbcid" target="_blank" style="color:#60a5fa;text-decoration:underline">Chrome Extension</a> — it reads any job board tab and fills all of this in for you automatically.',
+            'Get a tailored resume in about 30 seconds. Your result is saved to My Applications so you can re-download or refine it anytime.<br/><br/>💡 <strong>Pro tip:</strong> Install the <a href="https://chromewebstore.google.com/detail/foodpkmblpknlbkmdnnlgjkbnnhmbcid" target="_blank" style="color:#60a5fa;text-decoration:underline">Chrome Extension</a> — it reads any job board tab and fills all of this in for you automatically.',
           side: 'top',
           align: 'center',
         },
@@ -129,7 +129,7 @@ export function startTour() {
         popover: {
           title: 'Navigate from here',
           description:
-            'Use this menu to get around — <strong>AI Resumes</strong> shows your saved applications, <strong>My Experience</strong> is where you manage your uploaded files.',
+            'Use this menu to get around — <strong>My Applications</strong> shows your saved résumés, <strong>My Experience</strong> is where you manage your uploaded files.',
           side: 'bottom',
           align: 'end',
         },

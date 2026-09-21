@@ -105,7 +105,7 @@ export default function PrivacyPage() {
         <section className="mb-8">
           <h2 className="text-xl font-semibold mb-3">Data Retention</h2>
           <p className="text-muted-foreground leading-relaxed">
-            Your account data and generated documents are retained as long as your account is active. You may delete individual documents at any time from the AI Resumes dashboard. To request full account deletion, contact us at the email below.
+            Your account data and generated documents are retained as long as your account is active. You may delete individual documents at any time from the My Applications page. To request full account deletion, contact us at the email below.
           </p>
         </section>
 

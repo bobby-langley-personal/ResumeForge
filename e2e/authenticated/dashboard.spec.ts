@@ -1,5 +1,5 @@
 /**
- * Dashboard (AI Résumés) — authenticated.
+ * Dashboard (My Applications) — authenticated.
  */
 import { test, expect } from '@playwright/test';
 
@@ -10,8 +10,8 @@ test.beforeEach(async ({ page }) => {
 
 // ── Page load ──────────────────────────────────────────────────────────────────
 
-test('shows AI Résumés heading', async ({ page }) => {
-  await expect(page.getByRole('heading', { name: /ai résumés/i })).toBeVisible();
+test('shows My Applications heading', async ({ page }) => {
+  await expect(page.getByRole('heading', { name: /my applications/i })).toBeVisible();
 });
 
 test('search bar is present', async ({ page }) => {
@@ -45,6 +45,18 @@ test('clearing search restores results', async ({ page }) => {
   await searchBar.clear();
   // Should be back to normal — either cards or original empty state (no "no match" msg)
   await expect(page.getByText(/no résumés match/i)).not.toBeVisible({ timeout: 3_000 }).catch(() => {});
+});
+
+// ── Icon row ───────────────────────────────────────────────────────────────────
+
+test('icon action row is present on cards', async ({ page }) => {
+  // Only meaningful when cards exist
+  const hasCards = await page.locator('[id^="app_"], [data-testid="application-card"]').first().isVisible().catch(() => false);
+  if (!hasCards) return;
+
+  // At least one of the icon buttons should be visible on the first card
+  const iconButtons = page.getByRole('button', { name: /fit analysis|interview prep|job description|delete/i });
+  await expect(iconButtons.first()).toBeVisible();
 });
 
 // ── Tailor New Resume link ─────────────────────────────────────────────────────

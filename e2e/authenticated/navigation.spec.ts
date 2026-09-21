@@ -15,18 +15,25 @@ test('hamburger menu opens', async ({ page }) => {
   await expect(page.getByRole('link', { name: /tailor new resume/i })).toBeVisible();
 });
 
-test('nav links are present in hamburger menu', async ({ page }) => {
-  await page.getByRole('button', { name: /menu|hamburger/i }).click();
-  await expect(page.getByRole('link', { name: /tailor new resume/i })).toBeVisible();
-  await expect(page.getByRole('link', { name: /ai resumes/i })).toBeVisible();
-  await expect(page.getByRole('link', { name: /my experience/i })).toBeVisible();
+test('nav links are present', async ({ page }) => {
+  // On desktop the links are persistent; on mobile they're in the hamburger
+  const hasDesktopNav = await page.getByRole('link', { name: /my applications/i }).isVisible();
+  if (!hasDesktopNav) {
+    await page.getByRole('button', { name: /menu|hamburger/i }).click();
+  }
+  await expect(page.getByRole('link', { name: /tailor new r[eé]sum[eé]/i }).first()).toBeVisible();
+  await expect(page.getByRole('link', { name: /my applications/i }).first()).toBeVisible();
+  await expect(page.getByRole('link', { name: /my experience/i }).first()).toBeVisible();
 });
 
-test('AI Resumes link navigates to dashboard', async ({ page }) => {
-  await page.getByRole('button', { name: /menu|hamburger/i }).click();
-  await page.getByRole('link', { name: /ai resumes/i }).click();
+test('My Applications link navigates to dashboard', async ({ page }) => {
+  const hasDesktopNav = await page.getByRole('link', { name: /my applications/i }).isVisible();
+  if (!hasDesktopNav) {
+    await page.getByRole('button', { name: /menu|hamburger/i }).click();
+  }
+  await page.getByRole('link', { name: /my applications/i }).first().click();
   await expect(page).toHaveURL(/\/dashboard/);
-  await expect(page.getByRole('heading', { name: /ai résumés/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /my applications/i })).toBeVisible();
 });
 
 test('My Experience link navigates to resumes page', async ({ page }) => {

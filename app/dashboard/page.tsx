@@ -7,7 +7,7 @@ import ApplicationList from './ApplicationList';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, FileSearch } from 'lucide-react';
 
-export const metadata = { title: 'AI Résumés — Easy Apply AI' };
+export const metadata = { title: 'My Applications — Easy Apply AI' };
 
 export default async function DashboardPage() {
   const { userId } = await auth();
@@ -31,7 +31,7 @@ export default async function DashboardPage() {
             <ArrowLeft className="w-4 h-4" />
             Back to résumé generator
           </Link>
-          <h2 className="text-2xl font-bold text-foreground">AI Résumés</h2>
+          <h2 className="text-2xl font-bold text-foreground">My Applications</h2>
         </div>
 
         {(applications ?? []).length === 0 ? (
