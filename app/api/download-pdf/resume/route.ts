@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth, currentUser } from '@clerk/nextjs/server'
-import { renderToBuffer } from '@react-pdf/renderer'
-import { createElement } from 'react'
 import { supabaseServer } from '@/lib/supabase'
 import ResumePDF from '@/lib/pdf/ResumePDF'
-import { stripBlankTrailingPages } from '@/lib/pdf/strip-blank-pages'
+import { renderWithAutoCompact } from '@/lib/pdf/render-with-autocompact'
 import { withApiLogging } from '@/lib/with-api-logging'
 
 export const runtime = 'nodejs'
@@ -54,9 +52,7 @@ export const POST = withApiLogging('/api/download-pdf/resume', async (request: N
       jobTitle: application.job_title,
     }
 
-    const element = createElement(ResumePDF, props)
-    const rawBuffer = await renderToBuffer(element as React.ReactElement<any>)
-    const pdfBuffer = await stripBlankTrailingPages(Buffer.from(rawBuffer))
+    const pdfBuffer = await renderWithAutoCompact(ResumePDF, props, 2)
 
     const slugify = (s: string) => s.replace(/\bat\b/gi, '').replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')
     const companyName = slugify(application.company)
