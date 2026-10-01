@@ -10,7 +10,6 @@ import { stripBlankTrailingPages } from './strip-blank-pages'
  * The component must accept a `compact?: boolean` prop (e.g. ResumePDF).
  */
 export async function renderWithAutoCompact(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   Component: React.ComponentType<any>,
   props: Record<string, unknown>,
   targetPages = 2
