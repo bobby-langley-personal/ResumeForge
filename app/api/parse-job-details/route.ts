@@ -26,7 +26,6 @@ export const POST = withApiLogging('/api/parse-job-details', async (req: NextReq
     const response = await anthropic.messages.create({
       model: HAIKU,
       max_tokens: 1000,
-      temperature: 0.2,
       system: `Extract the company name, job title, and application questions from job description text.
 Output valid JSON only — no markdown fences, no explanation, nothing else:
 {"company": "...", "jobTitle": "...", "questions": ["...", "..."]}
