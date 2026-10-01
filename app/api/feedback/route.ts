@@ -25,7 +25,6 @@ async function createGitHubIssue(
     const aiRes = await client.messages.create({
       model: HAIKU,
       max_tokens: 200,
-      temperature: 0.3,
       messages: [{
         role: 'user',
         content: `Write a concise GitHub issue title (max 60 chars, no quotes) and a one-sentence TL;DR summary for this user feedback.\n\nSource: ${source}\nType: ${type}\nMessage: ${message}\n\nRespond in exactly this format:\nTITLE: <title>\nSUMMARY: <summary>`,

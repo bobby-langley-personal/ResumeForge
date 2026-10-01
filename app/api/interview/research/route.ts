@@ -23,7 +23,6 @@ export const POST = withApiLogging('/api/interview/research', async (req: NextRe
   const message = await client.messages.create({
     model: HAIKU,
     max_tokens: 512,
-    temperature: 0.2,
     system: `You are a knowledgeable career researcher. Given a company name and job title, write a concise 3–5 sentence summary covering:
 1. What the company does (industry, product, size if known)
 2. What someone in this role typically does day-to-day at this type of company

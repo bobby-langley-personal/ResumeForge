@@ -34,7 +34,6 @@ export const POST = withApiLogging('/api/interview/extract-roles', async (req: N
   const message = await client.messages.create({
     model: HAIKU,
     max_tokens: 512,
-    temperature: 0.2,
     system: `Extract work history from the provided documents. Return the most recent job roles in reverse chronological order (most recent first).
 
 Return ONLY a JSON array — no markdown, no explanation, no code fences. Example:

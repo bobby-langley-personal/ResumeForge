@@ -33,7 +33,6 @@ export const POST = withApiLogging('/api/base-resume-chat', async (req: NextRequ
     const response = await anthropic.messages.create({
       model: SONNET,
       max_tokens: 6000,
-      temperature: 0.4,
       system: `You are a resume writing expert helping the user refine their base resume — a comprehensive master resume that covers their full career history.
 
 The user's current base resume:

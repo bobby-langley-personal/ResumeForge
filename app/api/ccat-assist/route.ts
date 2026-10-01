@@ -46,7 +46,6 @@ async function callModel(anthropic: Anthropic, model: string, system: string, pr
   const response = await anthropic.messages.create({
     model,
     max_tokens: 1024,
-    temperature: 0.1,
     system,
     messages: [{ role: 'user', content: prompt }],
   })

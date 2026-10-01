@@ -36,7 +36,6 @@ export const POST = withApiLogging('/api/answer-questions', async (req: NextRequ
     const response = await anthropic.messages.create({
       model: SONNET,
       max_tokens: 2000,
-      temperature: 0.4,
       system: `You are an expert career coach writing job application question answers on behalf of a candidate.
 
 Write authentic, specific answers to each application question.

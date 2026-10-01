@@ -140,7 +140,6 @@ export async function POST(req: NextRequest) {
             const resumeStream = await anthropic.messages.create({
             model: SONNET,
             max_tokens: 4000,
-            temperature: 0.3,
             system: `You are an expert resume writer with 15+ years of experience helping candidates land roles at top companies. Your job is to deeply analyze the candidate's background and the job description, then produce a tailored, ATS-optimized resume that gives them the best possible chance of getting an interview.
 
 Rules:
@@ -237,7 +236,6 @@ Output the resume in EXACTLY this format. Do NOT put dates on the company line â
               const coverLetterStream = await anthropic.messages.create({
                 model: SONNET,
                 max_tokens: 2000,
-                temperature: 0.3,
                 system: `You are an expert cover letter writer. Write a professional 3-4 paragraph cover letter tailored to the role. Never invent experience. Use the generated resume content as context.`,
                 messages: [
                   {
@@ -282,7 +280,6 @@ Output the resume in EXACTLY this format. Do NOT put dates on the company line â
               const questionsResponse = await anthropic.messages.create({
                 model: SONNET,
                 max_tokens: 2000,
-                temperature: 0.4,
                 system: `You are an expert career coach helping a job applicant write their own application answers. Write every answer in FIRST PERSON ("I", "my", "me") â€” the applicant is speaking directly. Never refer to the candidate in third person by name or pronoun. Use ONLY the candidate's real experience from their background and any provided context documents. Never invent experience, companies, titles, or metrics.
 
 Rules for answers:

@@ -56,7 +56,6 @@ export const POST = withApiLogging('/api/interview/generate', async (req: NextRe
   const message = await client.messages.create({
     model: SONNET,
     max_tokens: 4096,
-    temperature: 0.3,
     system: `You are an expert career coach. Based on this interview transcript, write a detailed, well-organized experience document that captures everything the candidate shared.
 
 Format per role:
