@@ -273,16 +273,15 @@ The PDF parser (`lib/pdf/ResumePDF.tsx`) detects:
 
 These rules are baked into the generation prompt and must be preserved whenever the prompt is edited:
 
-- **Bullet count by role seniority** — most recent/primary role 8–10; supporting roles 6–8; early career/less relevant roles 4–5. Aim for the higher end of each range — a well-written resume for a candidate with 4+ years of experience should fill 2 pages. Only combine bullets if truly redundant. Hard ceiling: 10 bullets per role.
+- **Bullet count by role seniority** — most recent/primary role 6–8; supporting roles 4–6; early career/less relevant roles 3–4. Every bullet must earn its place — do not pad to hit the max. If two bullets cover closely related work, combine them. Hard ceiling: 8 bullets per role.
 - **Max 180 chars per bullet** — if it runs long, split into two bullets rather than wrapping to a third line
 - **No repeated action verbs** — never use the same opening verb more than once within a single role's bullets. Scan all bullets for that role before writing. Synonyms: Built → Engineered, Developed, Created, Designed, Shipped, Delivered, Launched, Implemented, Deployed, Authored; Led → Managed, Directed, Oversaw, Guided, Mentored, Headed; Improved → Reduced, Increased, Accelerated, Optimized, Streamlined, Elevated, Boosted
 - **No hedging on leadership** — words like "Informally", "Somewhat", "Partially", "Helped with", "Assisted in leading" undermine the candidate. If they led, they led. Reframe confidently: "Informally led a team" → "Managed a team of 2 engineers"; "Helped lead" → "Co-led" or just "Led"
 
 ## PDF Page Overflow Policy
-2-page resumes are acceptable and normal for candidates with
-4+ years of experience. The PDF template should never truncate
-content to force single-page output. Spacing optimizations
-should only target unnecessary whitespace — never content.
+2-page resumes are acceptable and normal for candidates with 4+ years of experience. The generation prompt targets 2 pages (~800–1000 words). The PDF renderer enforces this as a hard limit via auto-compact.
+
+**Auto-compact rendering** — `lib/pdf/render-with-autocompact.ts` is used by all resume PDF download routes (`/resume`, `/polished`). It renders at normal spacing, checks the page count with `pdf-lib`, and if the result exceeds the target (2 pages for resumes) it re-renders with `compact=true` (0.85x spacing). This catches cases where the AI overshoots the page target. Do not bypass this in new PDF routes that use `ResumePDF`.
 
 **Trailing whitespace** — all generated resume and cover letter text is trimmed (`.trim().replace(/\n+$/, '')`) after stream completion in `generate-documents`, before return in `generate-polished-resume`, and on CHANGE responses in `base-resume-chat`. This prevents trailing blank lines from pushing content onto a near-empty second page.
 

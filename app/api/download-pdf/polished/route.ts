@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { renderToBuffer } from '@react-pdf/renderer';
-import { createElement } from 'react';
 import { supabaseServer } from '@/lib/supabase';
 import ResumePDF from '@/lib/pdf/ResumePDF';
-import { stripBlankTrailingPages } from '@/lib/pdf/strip-blank-pages';
+import { renderWithAutoCompact } from '@/lib/pdf/render-with-autocompact';
 import { withApiLogging } from '@/lib/with-api-logging';
 
 export const runtime = 'nodejs';
@@ -24,14 +22,12 @@ export const POST = withApiLogging('/api/download-pdf/polished', async (request:
     ]);
     const fullName = profileResult.data?.full_name || user?.fullName || user?.firstName || 'User';
 
-    const element = createElement(ResumePDF, {
+    const pdfBuffer = await renderWithAutoCompact(ResumePDF, {
       resumeText,
       candidateName: fullName,
       company: '',
       jobTitle: '',
-    });
-    const rawBuffer = await renderToBuffer(element as React.ReactElement);
-    const pdfBuffer = await stripBlankTrailingPages(Buffer.from(rawBuffer));
+    }, 2);
 
     const safeName = (fileName || 'Polished_Resume').replace(/[^a-zA-Z0-9_-]/g, '_');
 
