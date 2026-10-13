@@ -6,6 +6,8 @@ import { parseStageJSON, buildContextBlock } from '@/lib/pipeline-utils';
 import { FitAnalysis } from '@/types/fit-analysis';
 import { logApiCall } from '@/lib/log-api';
 
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   const startMs = Date.now();
   try {
@@ -68,7 +70,11 @@ Output valid JSON only, no markdown fences:
       ]
     });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    const textBlock = response.content.find(b => b.type === 'text') as { text: string } | undefined;
+    const text = textBlock?.text ?? '';
+    if (!text) {
+      console.error('[analyze-fit] No text block in response. stop_reason:', response.stop_reason, 'blocks:', response.content.map(b => b.type).join(','));
+    }
     console.log('[analyze-fit] Raw model response length:', text.length);
     console.log('[analyze-fit] Raw model response:', text.slice(0, 500));
 
@@ -89,7 +95,7 @@ Output valid JSON only, no markdown fences:
     return Response.json(fitAnalysis);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error('[analyze-fit] Failed:', message);
+    console.error('[analyze-fit] Failed:', message, '| model:', (await getModels().catch(() => null))?.HAIKU);
     logApiCall({
       route: '/api/analyze-fit',
       method: 'POST',

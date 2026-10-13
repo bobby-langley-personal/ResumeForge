@@ -18,7 +18,6 @@ export async function extractContactFields(text: string): Promise<ContactFields>
     const response = await anthropic.messages.create({
       model: HAIKU,
       max_tokens: 200,
-      temperature: 0.2,
       system: `Extract contact info from resume text. Return valid JSON only — no markdown, no fences.
 Schema: { "full_name": "", "email": "", "location": "", "linkedin_url": "" }
 - full_name: candidate's full name (first + last)
@@ -29,7 +28,7 @@ Use empty string for any field not found.`,
       messages: [{ role: 'user', content: text.slice(0, 800) }],
     });
 
-    let raw = response.content[0].type === 'text' ? response.content[0].text.trim() : '{}';
+    let raw = (response.content.find(b => b.type === 'text') as { text: string } | undefined)?.text.trim() ?? '{}';
     // Haiku sometimes wraps JSON in markdown fences despite instructions — strip them
     raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
     const match = raw.match(/\{[\s\S]*\}/);
@@ -40,7 +39,8 @@ Use empty string for any field not found.`,
       location: parsed.location ?? '',
       linkedin_url: parsed.linkedin_url ?? '',
     };
-  } catch {
+  } catch (err) {
+    console.error('[extract-contact] Failed:', err instanceof Error ? err.message : String(err));
     return { ...EMPTY };
   }
 }
